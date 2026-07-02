@@ -30,7 +30,7 @@ This portal provides a centralized platform to organize and present University o
 
 # Project Team
 
-- **Reem **
+- **Reem**
 - **Fatima**
 - **Sara**
 
