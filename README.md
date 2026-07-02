@@ -7,15 +7,16 @@ A web platform for the University of Bahrain to manage and display partnerships,
 This portal provides a centralized platform to organize and present University of Bahrain partnerships and sustainability impact. It allows users to browse agreements, view initiatives, explore SDGs, and access partnership information in a structured and user-friendly way.
 
 ## Main Features
-
-- Browse university agreements
-- View partnership details
-- Display sustainability initiatives
-- Explore SDGs and related initiatives
-- Partnership network/map
-- Admin dashboard
+- Agreements Management
+- Sustainability Initiatives
+- SDGs Integration
+- Partnership Network
+- Search & Filters
+- Admin Dashboard
 - Notifications
-- Arabic and English interface
+- Bilingual Support (Arabic & English)
+- AI-powered SDG Suggestions
+- And more...
 
 ## Technologies Used
 
@@ -29,7 +30,7 @@ This portal provides a centralized platform to organize and present University o
 
 # Project Team
 
-- **Reem Saleh**
+- **Reem **
 - **Fatima**
 - **Sara**
 
