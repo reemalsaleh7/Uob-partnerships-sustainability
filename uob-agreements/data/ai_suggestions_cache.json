@@ -1,0 +1,150 @@
+{
+    "7c4eb83921fb43ee95bf8caa40ef14bf": {
+        "created_at": 1778337149,
+        "suggestions": {
+            "initiatives": [
+                {
+                    "title_ar": "معهد الابتكار الرقمي في السياحة والفنون",
+                    "title_en": "Digital Innovation Institute in Tourism and Arts",
+                    "summary_ar": "إنشاء معهد يركز على دمج التقنيات الرقمية مع السياحة والفنون، مما يوفر للطلاب دراسة العملية والبحث لتطوير مشاريع مبتكرة في هذا المجال.",
+                    "summary_en": "Establish an institute focused on integrating digital technologies with tourism and arts, providing students with practical studies and research to develop innovative projects in this field.",
+                    "target_group_ar": "طلبة الإعلام والسياحة والفنون، أعضاء هيئة التدريس، القطاع الصناعي",
+                    "target_group_en": "Students of media, tourism, and arts, faculty members, industry sector",
+                    "implementation_ar": "تحديد الشراكات مع شركات التكنولوجيا، تنظيم ورش عمل تطبيقية، تطوير مناهج تعليمية بالشراكة مع خبراء في الصناعة، بدء برامج بحثية مشتركة.",
+                    "implementation_en": "Identify partnerships with technology companies, organize hands-on workshops, develop educational curricula in collaboration with industry experts, and initiate joint research programs.",
+                    "expected_outputs_ar": "تطوير 5 مشاريع مبتكرة، إنشاء شراكتين مع شركات تكنولوجيا، إعداد تقرير بحثي عن النتائج.",
+                    "expected_outputs_en": "Development of 5 innovative projects, establishment of 2 partnerships with technology companies, preparation of a research report on outcomes.",
+                    "sdgs": "SDG 4, SDG 8",
+                    "why_suitable_ar": "يلبي هذا المشروع الاتجاهات الحديثة نحو التحول الرقمي في السياحة والفنون، ويعزز التعاون بين الجامعة والصناعة.",
+                    "why_suitable_en": "This initiative aligns with current trends towards digital transformation in tourism and arts, enhancing collaboration between the university and industry.",
+                    "initiative_type": "Applied Impact",
+                    "duration": "12 months"
+                },
+                {
+                    "title_ar": "برنامج البحوث السياحية المستدامة",
+                    "title_en": "Sustainable Tourism Research Program",
+                    "summary_ar": "برنامج يهدف إلى إجراء أبحاث تطبيقية حول السياحة المستدامة، يتضمن مشروعات بحثية مشتركة مع منظمات مجتمعية وصناعية.",
+                    "summary_en": "A program aimed at conducting applied research on sustainable tourism, including joint research projects with community and industry organizations.",
+                    "target_group_ar": "طلبة الإعلام والسياحة، مؤسسات المجتمع المحلي، القطاع السياحي",
+                    "target_group_en": "Students of media and tourism, local community organizations, tourism sector",
+                    "implementation_ar": "تشكيل فرق بحثية، إطلاق دراسات ميدانية، تنظيم مؤتمرات علمية لعرض النتائج، التعاون مع هيئات السياحة المحلية.",
+                    "implementation_en": "Form research teams, launch field studies, organize scientific conferences to present findings, collaborate with local tourism bodies.",
+                    "expected_outputs_ar": "إنتاج 3 بحوث منشورة، تنظيم مؤتمر علمي بمشاركة 100 شخص، تطوير دليل سياحي مستدام.",
+                    "expected_outputs_en": "Production of 3 published research papers, organization of a scientific conference with 100 participants, development of a sustainable tourism guide.",
+                    "sdgs": "SDG 8, SDG 11",
+                    "why_suitable_ar": "يعمل على تعزيز ممارسات السياحة المستدامة ويدعم الجامعات في تحقيق أهداف الاستدامة.",
+                    "why_suitable_en": "Promotes sustainable tourism practices and supports universities in achieving sustainability goals.",
+                    "initiative_type": "Research Translation",
+                    "duration": "18 months"
+                },
+                {
+                    "title_ar": "شراكة الفنون المحلية والفنون الرقمية",
+                    "title_en": "Local Arts and Digital Arts Partnership",
+                    "summary_ar": "إنشاء شراكة بين الفنانين المحليين وطلاب الفنون الرقمية لتطوير مشاريع فنية تعكس ثقافة البحرين وتعزز السياحة الثقافية.",
+                    "summary_en": "Establish a partnership between local artists and digital arts students to develop art projects that reflect Bahraini culture and enhance cultural tourism.",
+                    "target_group_ar": "الفنانون المحليون، طلبة الفنون، السياح",
+                    "target_group_en": "Local artists, arts students, tourists",
+                    "implementation_ar": "تنظيم ورش عمل فنية، إنشاء معرض فني، تطوير مشاريع فنية رقمية بالتعاون مع المجتمع المحلي.",
+                    "implementation_en": "Organize artistic workshops, create an art exhibition, develop digital art projects in collaboration with the local community.",
+                    "expected_outputs_ar": "إنتاج 10 أعمال فنية، تنظيم معرض بمشاركة 200 شخص، تطوير منصة رقمية لعرض الأعمال الفنية.",
+                    "expected_outputs_en": "Production of 10 art pieces, organization of an exhibition with 200 attendees, development of a digital platform to showcase artworks.",
+                    "sdgs": "SDG 11, SDG 17",
+                    "why_suitable_ar": "يعزز هذا البرنامج الثقافة المحلية ويعزز السياحة الثقافية، مما يدعم رؤية البحرين كوجهة فنية.",
+                    "why_suitable_en": "This program enhances local culture and boosts cultural tourism, supporting Bahrain's vision as an artistic destination.",
+                    "initiative_type": "Community Impact",
+                    "duration": "10 months"
+                },
+                {
+                    "title_ar": "ورشة الابتكار في الإعلام",
+                    "title_en": "Innovation Hub in Media",
+                    "summary_ar": "إنشاء مركز ابتكاري في الإعلام يتضمن مختبرات لتطوير محتوى رقمي جديد، ويعمل على مشاريع مشتركة مع وسائل الإعلام المحلية.",
+                    "summary_en": "Establish an innovation hub in media that includes labs for developing new digital content, working on joint projects with local media outlets.",
+                    "target_group_ar": "طلبة الإعلام، المؤسسات الإعلامية، المجتمع المحلي",
+                    "target_group_en": "Media students, media institutions, local community",
+                    "implementation_ar": "توفير المعدات اللازمة للمختبرات، إقامة شراكات مع وسائل الإعلام، تنظيم مشاريع تطبيقية تستهدف قضايا مجتمعية.",
+                    "implementation_en": "Provide necessary equipment for labs, establish partnerships with media outlets, organize applied projects targeting community issues.",
+                    "expected_outputs_ar": "تطوير 5 محتويات إعلامية مبتكرة، إقامة شراكة مع 3 مؤسسات إعلامية، تقديم تقرير عن تأثير المشاريع على المجتمع.",
+                    "expected_outputs_en": "Development of 5 innovative media contents, establishment of partnerships with 3 media institutions, submission of an impact report on community initiatives.",
+                    "sdgs": "SDG 4, SDG 9",
+                    "why_suitable_ar": "يدعم هذا الابتكار تطوير مهارات الطلبة ويربطهم بالصناعة الإعلامية، مما يعزز من صورة الجامعة.",
+                    "why_suitable_en": "This innovation supports the development of students' skills and connects them with the media industry, enhancing the university's image.",
+                    "initiative_type": "Industry Collaboration",
+                    "duration": "12 months"
+                }
+            ]
+        }
+    },
+    "0ec6aec361549af98372347a964f9b05": {
+        "created_at": 1778337526,
+        "suggestions": [
+            {
+                "title_ar": "مختبر الابتكار الرقمي",
+                "title_en": "Digital Innovation Lab",
+                "summary_ar": "إنشاء مختبر للابتكار الرقمي يعزز من تطوير حلول تقنية واقعية للشركات المحلية، مع التركيز على الذكاء الصناعي وتحليل البيانات.",
+                "summary_en": "Establish a Digital Innovation Lab focused on developing practical tech solutions for local businesses, with an emphasis on artificial intelligence and data analytics.",
+                "target_group_ar": "طلبة علوم الكمبيوتر، الشركات المحلية، أعضاء هيئة التدريس",
+                "target_group_en": "Computer Science students, local businesses, faculty members",
+                "implementation_ar": "تحديد شراكات مع الشركات المحلية، تجهيز المختبر بالبرمجيات والأدوات اللازمة، تنظيم مسابقات لتحدي الطلاب في حلول فردية، وإطلاق مشاريع مشتركة.",
+                "implementation_en": "Identify partnerships with local businesses, equip the lab with necessary software and tools, organize challenges for students to develop individual solutions, and launch joint projects.",
+                "expected_outputs_ar": "إنتاج 10 حلول تقنية، إقامة 3 شراكات استراتيجية، تقرير عن تأثير الابتكار على الشركات.",
+                "expected_outputs_en": "Deliver 10 tech solutions, establish 3 strategic partnerships, and produce a report on the innovation impact on businesses.",
+                "sdgs": "SDG 9",
+                "why_suitable_ar": "هذا المختبر يواكب احتياجات السوق المحلي ويساهم في تحويل الأفكار إلى واقع ملموس، مما يعزز من مكانة الجامعة في تصنيفات الابتكار.",
+                "why_suitable_en": "This lab aligns with local market needs and transforms ideas into tangible results, enhancing the university's position in innovation rankings.",
+                "initiative_type": "Applied Impact",
+                "duration": "12 months"
+            },
+            {
+                "title_ar": "برنامج تنسيق مشاريع البحث التطبيقي",
+                "title_en": "Applied Research Coordination Program",
+                "summary_ar": "إنشاء برنامج لتنسيق جهود البحث لتطوير مشاريع تطبيقية تركز على التحديات الحقيقية في المجتمع والصناعة.",
+                "summary_en": "Establish a program to coordinate research efforts focusing on developing applied projects that address real challenges in the community and industry.",
+                "target_group_ar": "أعضاء هيئة التدريس، الطلاب، القطاع الصناعي",
+                "target_group_en": "Faculty members, students, industrial sector",
+                "implementation_ar": "تشكيل لجنة تنسيق تضم أعضاء من الكلية والصناعة، إجراء تقييمات دورية للاحتياجات، وتنظيم معارض لعرض النتائج.",
+                "implementation_en": "Form a coordination committee including members from the college and industry, conduct periodic needs assessments, and organize exhibitions to showcase results.",
+                "expected_outputs_ar": "تنفيذ 5 مشاريع بحثية تطبيقية، إعداد تقرير شامل عن التحديات والحلول، وإقامة 2 معرض سنوي.",
+                "expected_outputs_en": "Implement 5 applied research projects, prepare a comprehensive report on challenges and solutions, and host 2 annual exhibitions.",
+                "sdgs": "SDG 17",
+                "why_suitable_ar": "يملأ هذا البرنامج فجوة بين البحث النظري والتطبيق العملي، مما يعزز من تأثير الأبحاث الجامعية في المجتمع.",
+                "why_suitable_en": "This program bridges the gap between theoretical research and practical application, enhancing the impact of university research in the community.",
+                "initiative_type": "Research Translation",
+                "duration": "18 months"
+            },
+            {
+                "title_ar": "برنامج الاستدامة والتكنولوجيا الخضراء",
+                "title_en": "Sustainability and Green Technology Program",
+                "summary_ar": "تطوير برنامج يركز على البحث وتطبيق التقنيات الحديثة لتعزيز الاستدامة في مجالات الطاقة وإدارة الموارد.",
+                "summary_en": "Develop a program focusing on researching and applying modern technologies to enhance sustainability in energy and resource management.",
+                "target_group_ar": "طلاب، أعضاء هيئة التدريس، مجتمعات محلية، صناعات",
+                "target_group_en": "Students, faculty members, local communities, industries",
+                "implementation_ar": "تطوير شراكات مع المنظمات البيئية، تنظيم ورش عمل للتقنية الخضراء، وإجراء أبحاث لتطوير حلول مبتكرة.",
+                "implementation_en": "Develop partnerships with environmental organizations, conduct workshops on green technology, and carry out research to develop innovative solutions.",
+                "expected_outputs_ar": "إنتاج 3 دراسات حالة، تنظيم 4 ورش عمل، وإعداد تقرير عن التأثير البيئي.",
+                "expected_outputs_en": "Deliver 3 case studies, organize 4 workshops, and prepare a report on environmental impact.",
+                "sdgs": "SDG 13",
+                "why_suitable_ar": "يتماشى هذا البرنامج مع توجهات الاستدامة العالمية ويعزز قدرة الجامعة على تحسين تصنيفاتها في البحث البيئي.",
+                "why_suitable_en": "This program aligns with global sustainability trends and enhances the university's ability to improve its rankings in environmental research.",
+                "initiative_type": "Sustainability",
+                "duration": "24 months"
+            },
+            {
+                "title_ar": "مركز تطوير نظم الذكاء الاصطناعي",
+                "title_en": "Artificial Intelligence Systems Development Center",
+                "summary_ar": "إنشاء مركز متخصص في تطوير نظم الذكاء الاصطناعي، مع التركيز على التطبيقات العملية في الصناعة.",
+                "summary_en": "Establish a specialized center for the development of artificial intelligence systems, focusing on practical applications in industry.",
+                "target_group_ar": "طلاب، أعضاء هيئة التدريس، شركات التقنية",
+                "target_group_en": "Students, faculty members, tech companies",
+                "implementation_ar": "تجهيز المركز بالأدوات التقنية، توظيف خبراء في الذكاء الاصطناعي، وتحديد مشروعات بحثية مشتركة مع الشركات.",
+                "implementation_en": "Equip the center with technical tools, hire AI experts, and identify joint research projects with companies.",
+                "expected_outputs_ar": "إنتاج 5 حلول ذكاء اصطناعي، إعداد 2 منشورات أكاديمية، وإقامة شراكة مع 3 شركات.",
+                "expected_outputs_en": "Deliver 5 AI solutions, prepare 2 academic publications, and establish partnerships with 3 companies.",
+                "sdgs": "SDG 9",
+                "why_suitable_ar": "هذا المركز يعكس قدرة الجامعة على تقديم حلول مبتكرة تعالج التحديات الصناعية عبر الذكاء الاصطناعي.",
+                "why_suitable_en": "This center reflects the university's capability to provide innovative solutions addressing industrial challenges through artificial intelligence.",
+                "initiative_type": "Industry Collaboration",
+                "duration": "36 months"
+            }
+        ]
+    }
+}

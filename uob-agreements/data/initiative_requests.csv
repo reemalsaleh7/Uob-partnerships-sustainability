@@ -1,0 +1,16 @@
+request_id,submitted_by,full_name,email,college,department,initiative_title,initiative_type,description,expected_date,status,admin_notes,approved_by,approved_at,used,created_at
+REQ-20260430230007,any@stu.uob.edu.bh,deema,any@stu.uob.edu.bh,"College of Information Technology","Computer Science","ai event","برنامج تدريبي",kjvkfuylukktktcdkt,2026-06-17,approved,,admin@uob.edu.bh,"2026-05-01 02:18:15",0,
+REQ-20260501130251,admin@uob.edu.bh,deema,admin@uob.edu.bh,"كلية الآداب","قسم الإعلام والسياحة والفنون","ورشة اعلام","ورشة عمل","ورشة اعلام داخل الجامعة ةتلانتشضسنرلاتا",2026-06-03,pending,,,,0,"2026-05-01 13:02:51"
+REQ-20260501203822,any@stu.uob.edu.bh,any@stu.uob.edu.bh,"College of Information Technology","Computer Science","معمل الابتكار في البرمجة","تطوير مهني","إنشاء معمل متخصص لتطوير البرمجيات يتيح للطلاب والموظفين العمل على مشاريع مبتكرة باستخدام تقنيات حديثة.
+
+يتيح للطلاب تطوير مهاراتهم التقنية من خلال العمل على مشروعات حقيقية، مما يعزز من جاهزيتهم لسوق العمل.","الطلاب، أعضاء هيئة التدريس، والموظفين","إنشاء 5 مشاريع برمجية مبتكرة، تنظيم 3 مسابقات برمجية، وتوفير منصة للعرض الرقمي للمشاريع.","SDG 4, SDG 9","قيد المراجعة",,"2026-05-01 20:38:22"
+REQ-20260501220232,any@stu.uob.edu.bh,any@stu.uob.edu.bh,"College of Information Technology","Computer Science","تحدي البرمجة الإبداعية","Student Challenge","فعالية تنافسية حيث يتعاون الطلاب في فرق لتطوير حلول برمجية لأفكار مبتكرة خلال يوم كامل.
+
+1. تحديد موضوع التحدي وتوزيع الفرق. 2. تقديم الدعم والإشراف من قبل الدكاترة. 3. تنظيم عرض نهائي للأفكار مع تقييم من قبل لجنة تحكيم.
+
+يتيح للطلاب تطبيق مهارات البرمجة في بيئة تنافسية ويعزز الابتكار.","طلاب قسم علوم الحاسب","ابتكارات برمجية جديدة وتعاون بين الطلاب.","SDG 4, SDG 8","قيد المراجعة",,"2026-05-01 22:02:32"
+REQ-20260503160731,any@stu.uob.edu.bh,any@stu.uob.edu.bh,"College of Information Technology","Computer Science","مختبر ابتكار تطبيقي للقسم","Innovation / Partnership","إنشاء مساحة تطبيقية قصيرة المدى داخل Computer Science لتطوير حلول بحثية أو عملية تخدم الجامعة والمجتمع.
+
+تحديد تحدي واقعي، تشكيل فرق، تنفيذ نموذج أولي، ثم عرض النتائج.
+
+يناسب Computer Science لأنه يحول المعرفة الأكاديمية إلى حلول قابلة للقياس.","أعضاء هيئة التدريس، الموظفون، والطلبة المشاركون","نماذج أولية، تقرير أثر، عرض نهائي، وتوصيات للتطبيق.","SDG 4, SDG 9, SDG 17","قيد المراجعة",,"2026-05-03 16:07:31"

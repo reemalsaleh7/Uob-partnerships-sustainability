@@ -1,0 +1,3 @@
+notification_id,target_type,target_college,target_department,target_email,title,message,type,status,created_by,created_at,is_read
+NOT-20260504185925-372,all,,,,"تمت إضافة اتفاقية جديدة","تمت إضافة اتفاقية جديدة بعنوان: اتفاقية تعاون في البحث العلمي والتدريب",agreement,active,admin@uob.edu.bh,"2026-05-04 18:59:25",1
+,,,,,,,,,,,1

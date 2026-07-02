@@ -1,0 +1,18 @@
+{
+    "any@stu.uob.edu.bh": {
+        "liked_types": [
+            "Innovation \/ Partnership"
+        ],
+        "rejected_types": [
+            "Partnership",
+            "Innovation",
+            "Community"
+        ]
+    },
+    "admin@uob.edu.bh": {
+        "liked_types": [
+            "Innovation \/ Partnership"
+        ],
+        "rejected_types": []
+    }
+}
