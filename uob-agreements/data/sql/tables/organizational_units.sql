@@ -23,7 +23,7 @@ CREATE TABLE organizational_units (
 
     unit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    display_order INTEGER NOT NULL DEFAULT 0
+    display_order INTEGER NOT NULL DEFAULT 0,
 
     name TEXT NOT NULL,
 

@@ -8,9 +8,19 @@
 -- Creates a clean database for development.
 -- ==========================================================
 
-DROP DATABASE IF EXISTS UOB_Partnership_and_Initiative;
+DO $$
+DECLARE
+    db_name text := 'UOB_Partnership_and_Initiative';
+BEGIN
+    PERFORM pg_terminate_backend(pid)
+    FROM pg_stat_activity
+    WHERE datname = db_name
+      AND pid <> pg_backend_pid();
+END $$;
 
-CREATE DATABASE UOB_Partnership_and_Initiative
+DROP DATABASE IF EXISTS "UOB_Partnership_and_Initiative";
+
+CREATE DATABASE "UOB_Partnership_and_Initiative"
     WITH
     OWNER = postgres
     ENCODING = 'UTF8'
