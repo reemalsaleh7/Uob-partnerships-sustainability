@@ -1,0 +1,2 @@
+CHECK (name <> '')
+CHECK (code <> '')
