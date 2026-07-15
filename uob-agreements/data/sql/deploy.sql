@@ -56,6 +56,7 @@
 \ir seed/permissions.sql
 \ir seed/roles.sql
 \ir seed/role_permissions.sql
+\ir seed/organizational_units.sql
 \ir seed/workflows.sql
 
 -- Views

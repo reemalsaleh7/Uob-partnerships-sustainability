@@ -1,13 +1,15 @@
 -- ==========================================================
 -- University Partnerships & Initiatives System
 -- Database Creation Script
+-- PostgreSQL 17
+-- Schema Version: 1.0.0
 --
--- Database: PostgreSQL 17
---
--- Purpose:
--- Creates a clean database for development.
+-- NOTE:
+-- Run this script while connected to the 'postgres' database.
 -- ==========================================================
 
+-- Run this script while connected to the 'postgres' database,
+-- not to UOB_Partnership_and_Initiative.
 DO $$
 DECLARE
     db_name text := 'UOB_Partnership_and_Initiative';
@@ -27,3 +29,4 @@ CREATE DATABASE "UOB_Partnership_and_Initiative"
     LC_COLLATE = 'C'
     LC_CTYPE = 'C'
     TEMPLATE = template0;
+    -- Use template0 to ensure a clean UTF-8 database.

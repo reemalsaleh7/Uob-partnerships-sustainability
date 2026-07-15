@@ -74,12 +74,12 @@ A user belongs to one organizational unit.
 
 Examples
 
-| user    | unit                         |
-| ------- | ---------------------------- |
-| Ahmed   | President Office             |
-| Ali     | Vice President Office        |
-| Sara    | Legal Office                 |
-| Fatima  | Computer Science Department  |
+| user   | unit                        |
+| ------ | --------------------------- |
+| Ahmed  | President Office            |
+| Ali    | Vice President Office       |
+| Sara   | Legal Office                |
+| Fatima | Computer Science Department |
 
 ## Positions
 
@@ -211,8 +211,6 @@ agreements
 initiatives
 ```
 
-
-
 # Organizational Structure
 
 ## Purpose
@@ -232,7 +230,6 @@ The organizational_units table stores the hierarchical structure of the universi
 - Every college belongs to the university.
 - Offices belong directly to the university.
 - Organizational units are never physically deleted.
-
 
 ## Organizational Unit Types
 
