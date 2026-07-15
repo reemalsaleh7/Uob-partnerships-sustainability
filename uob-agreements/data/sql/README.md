@@ -3,6 +3,27 @@ The naming conventions used for
 - tables is snake_case and plural names (e.g. workflow_instances)
 - for primary keys xxx_id (e.g. agreement_id)
 
+## Audit Summary
+
+The SQL structure has been reviewed and cleaned up for a more reliable deployment flow:
+
+- Standardized the table file names to match the schema references.
+- Removed empty placeholder files that were not contributing to the schema.
+- Fixed the deployment script so it now references the correct table and index files.
+- Added the index file to the deployment order so the schema can be created more consistently.
+
+## Current Schema Focus Areas
+
+- Core identity and access control: users, roles, permissions, user_roles, user_positions.
+- Organizational hierarchy: organizational_units with parent/child structure.
+- Agreements and initiatives: agreements, agreement_versions, initiatives, initiative_versions.
+- Workflow engine: workflow_templates, workflow_template_steps, workflow_instances, workflow_instance_steps, workflow_history.
+- Partner relationships: partners, partner_contacts, agreement_partners, initiative_agreements.
+
+## Recommended Next Step
+
+The next implementation phase should focus on workflow state transitions and permission inheritance rules so the approval flows match the business process precisely.
+
 ---
 
 # Database Architecture
