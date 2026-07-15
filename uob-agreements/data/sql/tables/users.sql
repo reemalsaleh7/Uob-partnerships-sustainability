@@ -29,6 +29,16 @@ CREATE TABLE users (
         TEXT
         NOT NULL,
 
+    last_login
+        TIMESTAMP,
+
+    failed_login_attempts
+        INTEGER NOT NULL
+        DEFAULT 0,
+
+    password_changed_at
+        TIMESTAMP,
+
     is_active
         BOOLEAN NOT NULL
         DEFAULT TRUE,

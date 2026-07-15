@@ -45,6 +45,35 @@ CREATE TYPE initiative_status AS ENUM (
     'CANCELLED'
 );
 
+CREATE TYPE workflow_status AS ENUM (
+    'IN_PROGRESS',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED'
+);
+
+CREATE TYPE workflow_step_status AS ENUM (
+    'PENDING',
+    'IN_PROGRESS',
+    'APPROVED',
+    'REJECTED',
+    'SKIPPED'
+);
+
+CREATE TYPE workflow_approval_type AS ENUM (
+    'CREATOR',
+    'APPROVAL',
+    'REJECTION'
+);
+
+CREATE TYPE workflow_action_type AS ENUM (
+    'SUBMITTED',
+    'APPROVED',
+    'REJECTED',
+    'REDRAFTED',
+    'COMPLETED'
+);
+
 -- ==========================================================
 -- Tables
 -- ==========================================================
@@ -57,6 +86,9 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(30),
     password_hash TEXT NOT NULL,
+    last_login TIMESTAMP,
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    password_changed_at TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -174,7 +206,7 @@ CREATE TABLE agreements (
     created_by BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_agreements_creator FOREIGN KEY(created_by) REFERENCES users(user_id),
+    CONSTRAINT fk_agreements_creator FOREIGN KEY(created_by) REFERENCES users(user_id) ON DELETE RESTRICT,
     CONSTRAINT chk_agreement_title_not_empty CHECK (length(trim(title)) > 0),
     CONSTRAINT chk_agreement_type_not_empty CHECK (length(trim(agreement_type)) > 0)
 );
@@ -204,7 +236,7 @@ CREATE TABLE agreement_relationships (
     relationship_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     parent_agreement_id BIGINT NOT NULL,
     related_agreement_id BIGINT NOT NULL,
-    relationship_type VARCHAR(50) NOT NULL,
+    relationship_type agreement_relationship_type NOT NULL,
     created_by BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_parent_agreement FOREIGN KEY(parent_agreement_id) REFERENCES agreements(agreement_id),
@@ -232,7 +264,7 @@ CREATE TABLE initiatives (
     created_by BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_initiative_creator FOREIGN KEY(created_by) REFERENCES users(user_id),
+    CONSTRAINT fk_initiative_creator FOREIGN KEY(created_by) REFERENCES users(user_id) ON DELETE RESTRICT,
     CONSTRAINT chk_initiative_title_not_empty CHECK (length(trim(title)) > 0),
     CONSTRAINT chk_initiative_type_not_empty CHECK (length(trim(initiative_type)) > 0)
 );
@@ -271,7 +303,7 @@ CREATE TABLE workflow_template_steps (
     template_step_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     workflow_template_id BIGINT NOT NULL,
     step_order INTEGER NOT NULL,
-    approval_type VARCHAR(50) NOT NULL,
+    approval_type workflow_approval_type NOT NULL,
     required_unit_id BIGINT,
     required_position_id BIGINT,
     is_optional BOOLEAN NOT NULL DEFAULT FALSE,
@@ -289,7 +321,7 @@ CREATE TABLE workflow_instances (
     entity_type VARCHAR(50) NOT NULL,
     entity_id BIGINT NOT NULL,
     current_step INTEGER NOT NULL DEFAULT 1,
-    status VARCHAR(50) NOT NULL DEFAULT 'IN_PROGRESS',
+    status workflow_status NOT NULL DEFAULT 'IN_PROGRESS',
     started_by BIGINT NOT NULL,
     started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP,
@@ -303,9 +335,11 @@ CREATE TABLE workflow_instance_steps (
     step_order INTEGER NOT NULL,
     assigned_unit_id BIGINT,
     assigned_position_id BIGINT,
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    status workflow_step_status NOT NULL DEFAULT 'PENDING',
     approved_by BIGINT,
     approved_at TIMESTAMP,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
     comments TEXT,
     FOREIGN KEY(workflow_instance_id) REFERENCES workflow_instances(workflow_instance_id),
     FOREIGN KEY(assigned_unit_id) REFERENCES organizational_units(unit_id),
@@ -313,11 +347,45 @@ CREATE TABLE workflow_instance_steps (
     FOREIGN KEY(approved_by) REFERENCES users(user_id)
 );
 
+CREATE TABLE workflow_step_assignments (
+    assignment_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    workflow_instance_step_id BIGINT NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT fk_step_assignment_step FOREIGN KEY(workflow_instance_step_id) REFERENCES workflow_instance_steps(instance_step_id),
+    CONSTRAINT fk_step_assignment_user FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE audit_logs (
+    audit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT,
+    action VARCHAR(100),
+    table_name VARCHAR(100),
+    record_id BIGINT,
+    old_data JSONB,
+    new_data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE agreement_documents (
+    document_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    agreement_id BIGINT NOT NULL,
+    file_name VARCHAR(255),
+    file_path TEXT,
+    document_type VARCHAR(100),
+    uploaded_by BIGINT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(agreement_id) REFERENCES agreements(agreement_id) ON DELETE CASCADE,
+    FOREIGN KEY(uploaded_by) REFERENCES users(user_id)
+);
+
 CREATE TABLE workflow_history (
     history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     workflow_instance_id BIGINT NOT NULL,
     workflow_step_id BIGINT NOT NULL,
-    action VARCHAR(50) NOT NULL,
+    action workflow_action_type NOT NULL,
     performed_by BIGINT NOT NULL,
     comments TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -357,8 +425,12 @@ BEGIN
             SELECT 1
             FROM user_positions
             WHERE position_id = NEW.position_id
-            AND unit_id = NEW.unit_id
-            AND is_active = TRUE
+              AND unit_id = NEW.unit_id
+              AND is_active = TRUE
+              AND (
+                  TG_OP = 'INSERT'
+                  OR user_position_id <> NEW.user_position_id
+              )
         ) THEN
             RAISE EXCEPTION 'This position already exists in this organizational unit';
         END IF;
@@ -389,7 +461,7 @@ BEFORE UPDATE ON organizational_units
 FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER trg_unique_positions
-BEFORE INSERT ON user_positions
+BEFORE INSERT OR UPDATE ON user_positions
 FOR EACH ROW EXECUTE FUNCTION check_unique_position();
 
 -- ==========================================================
@@ -422,15 +494,43 @@ FROM roles r, permissions p
 WHERE r.role_name='Agreement Approver'
 AND p.permission_code IN ('APPROVE_AGREEMENT', 'REJECT_AGREEMENT');
 
-INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order) VALUES
-('University', 'UOB', 'UNIVERSITY', NULL, 1),
-('President Office', 'PRES', 'OFFICE', 1, 2),
-('Vice President Office', 'VP', 'OFFICE', 1, 3),
-('Legal Office', 'LEGAL', 'OFFICE', 1, 4),
-('Financial Office', 'FIN', 'OFFICE', 1, 5),
-('College of Information Technology', 'CIT', 'COLLEGE', 1, 6),
-('Department of Computer Science', 'CS', 'DEPARTMENT', 6, 7),
-('Department of Information Systems', 'IS', 'DEPARTMENT', 6, 8);
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+VALUES ('University', 'UOB', 'UNIVERSITY', NULL, 1);
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'President Office', 'PRES', 'OFFICE', unit_id, 2
+FROM organizational_units
+WHERE code = 'UOB';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'Vice President Office', 'VP', 'OFFICE', unit_id, 3
+FROM organizational_units
+WHERE code = 'UOB';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'Legal Office', 'LEGAL', 'OFFICE', unit_id, 4
+FROM organizational_units
+WHERE code = 'UOB';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'Financial Office', 'FIN', 'OFFICE', unit_id, 5
+FROM organizational_units
+WHERE code = 'UOB';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'College of Information Technology', 'CIT', 'COLLEGE', unit_id, 6
+FROM organizational_units
+WHERE code = 'UOB';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'Department of Computer Science', 'CS', 'DEPARTMENT', unit_id, 7
+FROM organizational_units
+WHERE code = 'CIT';
+
+INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
+SELECT 'Department of Information Systems', 'IS', 'DEPARTMENT', unit_id, 8
+FROM organizational_units
+WHERE code = 'CIT';
 
 INSERT INTO workflow_templates (name, process_type) VALUES
 ('Agreement Approval', 'AGREEMENT'),
@@ -484,7 +584,7 @@ CREATE OR REPLACE VIEW organization_structure AS
 SELECT u.unit_id, u.name, u.code, u.unit_type, u.parent_unit_id, u.is_active
 FROM organizational_units u;
 
-CREATE OR REPLACE VIEW user_positions AS
+CREATE OR REPLACE VIEW v_current_user_positions AS
 SELECT up.user_position_id, up.user_id, up.position_id, up.unit_id, up.start_date, up.end_date, up.is_active
 FROM user_positions up;
 
@@ -498,3 +598,14 @@ CREATE OR REPLACE VIEW pending_workflows AS
 SELECT wi.workflow_instance_id, wi.entity_type, wi.entity_id, wi.current_step, wi.status
 FROM workflow_instances wi
 WHERE wi.status = 'IN_PROGRESS';
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_agreements_status ON agreements(status);
+CREATE INDEX idx_workflow_instances_status ON workflow_instances(status);
+CREATE INDEX idx_workflow_instances_entity ON workflow_instances(entity_type, entity_id);
+CREATE INDEX idx_workflow_step_assignments_user ON workflow_step_assignments(user_id);
+CREATE INDEX idx_workflow_instance_steps_status ON workflow_instance_steps(status);
+
+CREATE UNIQUE INDEX uq_active_position_assignment
+ON user_positions(position_id, unit_id)
+WHERE is_active = TRUE;

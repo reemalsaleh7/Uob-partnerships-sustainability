@@ -1,63 +1,31 @@
 CREATE OR REPLACE FUNCTION check_unique_position()
-
 RETURNS TRIGGER
-
 LANGUAGE plpgsql
-
 AS $$
-
 DECLARE
-
     unique_position BOOLEAN;
-
-
 BEGIN
+    SELECT is_unique
+    INTO unique_position
+    FROM positions
+    WHERE position_id = NEW.position_id;
 
-
-SELECT is_unique
-
-INTO unique_position
-
-FROM positions
-
-WHERE position_id = NEW.position_id;
-
-
-
-IF unique_position = TRUE
-THEN
-
-
-    IF EXISTS (
-
-        SELECT 1
-
-        FROM user_positions
-
-        WHERE position_id = NEW.position_id
-
-        AND unit_id = NEW.unit_id
-
-        AND is_active = TRUE
-
-    )
-
-    THEN
-
-        RAISE EXCEPTION
-
-        'This position already exists in this organizational unit';
-
+    IF unique_position = TRUE THEN
+        IF EXISTS (
+            SELECT 1
+            FROM user_positions
+            WHERE position_id = NEW.position_id
+              AND unit_id = NEW.unit_id
+              AND is_active = TRUE
+              AND (
+                  TG_OP = 'INSERT'
+                  OR user_position_id <> OLD.user_position_id
+              )
+        ) THEN
+            RAISE EXCEPTION 'This position already exists in this organizational unit';
+        END IF;
     END IF;
 
-
-END IF;
-
-
-
-RETURN NEW;
-
-
+    RETURN NEW;
 END;
-
 $$;

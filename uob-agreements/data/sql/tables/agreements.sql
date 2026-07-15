@@ -39,7 +39,8 @@ CREATE TABLE agreements (
 
     CONSTRAINT fk_agreements_creator
         FOREIGN KEY(created_by)
-        REFERENCES users(user_id),
+        REFERENCES users(user_id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT chk_agreement_title_not_empty
         CHECK (length(trim(title)) > 0),

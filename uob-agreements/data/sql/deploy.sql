@@ -40,6 +40,9 @@
 \ir tables/workflow_instances.sql
 \ir tables/workflow_instance_steps.sql
 \ir tables/workflow_history.sql
+\ir tables/workflow_step_assignments.sql
+\ir tables/audit_logs.sql
+\ir tables/agreement_documents.sql
 
 -- Indexes
 \ir indexes/indexes.sql
