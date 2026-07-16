@@ -34,6 +34,16 @@ if ($method === 'GET' && $uri === '/agreements') {
     $controller->delete((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/submit$#', $uri, $matches)) {
     $controller->submit((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/versions/([0-9]+)$#', $uri, $matches)) {
+    $controller->version((int) $matches[1], (int) $matches[2]);
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/versions$#', $uri, $matches)) {
+    $controller->versions((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/documents$#', $uri, $matches)) {
+    $controller->documents((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/documents$#', $uri, $matches)) {
+    $controller->uploadDocument((int) $matches[1]);
+} elseif ($method === 'DELETE' && preg_match('#^/documents/([0-9]+)$#', $uri, $matches)) {
+    $controller->deleteDocument((int) $matches[1]);
 } else {
     header('HTTP/1.1 404 Not Found');
     echo json_encode(['error' => 'Route not found']);

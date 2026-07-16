@@ -14,7 +14,6 @@ class AgreementRepository {
                 title,
                 agreement_type,
                 description,
-                partner_id,
                 created_by,
                 status,
                 created_at
@@ -22,7 +21,6 @@ class AgreementRepository {
                 :title,
                 :agreement_type,
                 :description,
-                :partner_id,
                 :created_by,
                 :status,
                 NOW()
@@ -33,7 +31,6 @@ class AgreementRepository {
             'title' => $data['title'],
             'agreement_type' => $data['agreement_type'] ?? null,
             'description' => $data['description'] ?? null,
-            'partner_id' => $data['partner_id'] ?? null,
             'created_by' => $data['created_by'],
             'status' => $data['status'] ?? 'DRAFT',
         ]);
@@ -45,7 +42,7 @@ class AgreementRepository {
         $fields = [];
         $params = ['agreement_id' => $agreementId];
 
-        foreach (['title', 'agreement_type', 'description', 'partner_id', 'status'] as $field) {
+        foreach (['title', 'agreement_type', 'description', 'status'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = :$field";
                 $params[$field] = $data[$field];
@@ -68,19 +65,37 @@ class AgreementRepository {
     }
 
     public function findById(int $agreementId): ?array {
-        $stmt = $this->db->prepare('SELECT * FROM agreements WHERE agreement_id = :agreement_id LIMIT 1');
+        $stmt = $this->db->prepare('
+            SELECT a.*, ap.partner_id
+            FROM agreements a
+            LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            WHERE a.agreement_id = :agreement_id
+            ORDER BY ap.partner_id
+            LIMIT 1
+        ');
         $stmt->execute(['agreement_id' => $agreementId]);
         $agreement = $stmt->fetch();
         return $agreement ?: null;
     }
 
     public function findAll(): array {
-        $stmt = $this->db->query('SELECT * FROM agreements ORDER BY created_at DESC');
+        $stmt = $this->db->query('
+            SELECT a.*, ap.partner_id
+            FROM agreements a
+            LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            ORDER BY a.created_at DESC, ap.partner_id
+        ');
         return $stmt->fetchAll();
     }
 
     public function findByStatus(string $status): array {
-        $stmt = $this->db->prepare('SELECT * FROM agreements WHERE status = :status ORDER BY created_at DESC');
+        $stmt = $this->db->prepare('
+            SELECT a.*, ap.partner_id
+            FROM agreements a
+            LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            WHERE a.status = :status
+            ORDER BY a.created_at DESC, ap.partner_id
+        ');
         $stmt->execute(['status' => $status]);
         return $stmt->fetchAll();
     }
@@ -88,5 +103,17 @@ class AgreementRepository {
     public function changeStatus(int $agreementId, string $status): void {
         $stmt = $this->db->prepare('UPDATE agreements SET status = :status WHERE agreement_id = :agreement_id');
         $stmt->execute(['status' => $status, 'agreement_id' => $agreementId]);
+    }
+
+    public function replacePartners(int $agreementId, array $partnerIds): void {
+        $delete = $this->db->prepare('DELETE FROM agreement_partners WHERE agreement_id = :agreement_id');
+        $delete->execute(['agreement_id' => $agreementId]);
+
+        $insert = $this->db->prepare(
+            'INSERT INTO agreement_partners (agreement_id, partner_id) VALUES (:agreement_id, :partner_id)'
+        );
+        foreach (array_unique(array_map('intval', $partnerIds)) as $partnerId) {
+            $insert->execute(['agreement_id' => $agreementId, 'partner_id' => $partnerId]);
+        }
     }
 }

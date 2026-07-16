@@ -15,6 +15,7 @@ class AgreementVersionRepository {
                 version_number,
                 document_path,
                 change_summary,
+                agreement_snapshot,
                 created_by,
                 created_at
             ) VALUES (
@@ -22,6 +23,7 @@ class AgreementVersionRepository {
                 :version_number,
                 :document_path,
                 :change_summary,
+                CAST(:agreement_snapshot AS JSONB),
                 :created_by,
                 NOW()
             ) RETURNING version_id
@@ -32,6 +34,7 @@ class AgreementVersionRepository {
             'version_number' => $data['version_number'],
             'document_path' => $data['document_path'] ?? null,
             'change_summary' => $data['change_summary'] ?? null,
+            'agreement_snapshot' => json_encode($data['agreement_snapshot'], JSON_THROW_ON_ERROR),
             'created_by' => $data['created_by'],
         ]);
 
@@ -41,6 +44,22 @@ class AgreementVersionRepository {
     public function findByAgreement(int $agreementId): array {
         $stmt = $this->db->prepare('SELECT * FROM agreement_versions WHERE agreement_id = :agreement_id ORDER BY version_number DESC');
         $stmt->execute(['agreement_id' => $agreementId]);
-        return $stmt->fetchAll();
+        return array_map(fn(array $version): array => $this->hydrateSnapshot($version), $stmt->fetchAll());
+    }
+
+    public function findByAgreementAndVersion(int $agreementId, int $versionNumber): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM agreement_versions WHERE agreement_id = :agreement_id AND version_number = :version_number LIMIT 1'
+        );
+        $stmt->execute(['agreement_id' => $agreementId, 'version_number' => $versionNumber]);
+        $version = $stmt->fetch();
+        return $version ? $this->hydrateSnapshot($version) : null;
+    }
+
+    private function hydrateSnapshot(array $version): array {
+        if (is_string($version['agreement_snapshot'] ?? null)) {
+            $version['agreement_snapshot'] = json_decode($version['agreement_snapshot'], true, 512, JSON_THROW_ON_ERROR);
+        }
+        return $version;
     }
 }

@@ -79,7 +79,7 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('DELETE_AGREEMENT');
 
-        $this->agreementService->deleteAgreement($agreementId);
+        $this->agreementService->deleteAgreement($agreementId, (int) $_SESSION['user_id']);
         Response::success(['message' => 'Agreement deleted']);
     }
 
@@ -88,6 +88,18 @@ class AgreementController {
         PermissionMiddleware::require('VIEW_AGREEMENT');
 
         Response::success($this->agreementService->findVersions($agreementId));
+    }
+
+    public function version(int $agreementId, int $versionNumber): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $version = $this->agreementService->findVersion($agreementId, $versionNumber);
+        if (!$version) {
+            Response::error('Agreement version not found', 404);
+        }
+
+        Response::success($version);
     }
 
     public function uploadDocument(int $agreementId): void {
@@ -110,5 +122,16 @@ class AgreementController {
         PermissionMiddleware::require('VIEW_AGREEMENT');
 
         Response::success($this->agreementService->listDocuments($agreementId));
+    }
+
+    public function deleteDocument(int $documentId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('DELETE_AGREEMENT');
+
+        if (!$this->agreementService->deleteDocument($documentId, (int) $_SESSION['user_id'])) {
+            Response::error('Document not found', 404);
+        }
+
+        Response::success(['message' => 'Document deleted']);
     }
 }

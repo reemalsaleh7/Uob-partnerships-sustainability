@@ -44,6 +44,13 @@ class AgreementDocumentRepository {
         return $stmt->fetchAll();
     }
 
+    public function findById(int $documentId): ?array {
+        $stmt = $this->db->prepare('SELECT * FROM agreement_documents WHERE document_id = :document_id LIMIT 1');
+        $stmt->execute(['document_id' => $documentId]);
+        $document = $stmt->fetch();
+        return $document ?: null;
+    }
+
     public function delete(int $documentId): void {
         $stmt = $this->db->prepare('DELETE FROM agreement_documents WHERE document_id = :document_id');
         $stmt->execute(['document_id' => $documentId]);
