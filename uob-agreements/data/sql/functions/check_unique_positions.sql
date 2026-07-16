@@ -19,7 +19,7 @@ BEGIN
               AND is_active = TRUE
               AND (
                   TG_OP = 'INSERT'
-                  OR user_position_id <> OLD.user_position_id
+                  OR user_position_id <> COALESCE(OLD.user_position_id, -1)
               )
         ) THEN
             RAISE EXCEPTION 'This position already exists in this organizational unit';

@@ -47,3 +47,32 @@ CREATE TYPE initiative_status AS ENUM (
     'COMPLETED',
     'CANCELLED'
 );
+
+CREATE TYPE workflow_status AS ENUM (
+    'IN_PROGRESS',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED'
+);
+
+CREATE TYPE workflow_step_status AS ENUM (
+    'PENDING',
+    'IN_PROGRESS',
+    'APPROVED',
+    'REJECTED',
+    'SKIPPED'
+);
+
+CREATE TYPE workflow_approval_type AS ENUM (
+    'CREATOR',
+    'APPROVAL',
+    'REJECTION'
+);
+
+CREATE TYPE workflow_action_type AS ENUM (
+    'SUBMITTED',
+    'APPROVED',
+    'REJECTED',
+    'REDRAFTED',
+    'COMPLETED'
+);

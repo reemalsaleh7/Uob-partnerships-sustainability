@@ -10,7 +10,7 @@ CREATE TABLE workflow_template_steps (
     step_order INTEGER
         NOT NULL,
 
-    approval_type VARCHAR(50)
+    approval_type workflow_approval_type
         NOT NULL,
 
     required_unit_id BIGINT,
