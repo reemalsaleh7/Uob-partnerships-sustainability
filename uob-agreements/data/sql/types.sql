@@ -76,3 +76,13 @@ CREATE TYPE workflow_action_type AS ENUM (
     'REDRAFTED',
     'COMPLETED'
 );
+
+CREATE TYPE audit_action AS ENUM (
+    'INSERT',
+    'UPDATE',
+    'DELETE',
+    'LOGIN',
+    'LOGOUT',
+    'APPROVE',
+    'REJECT'
+);
