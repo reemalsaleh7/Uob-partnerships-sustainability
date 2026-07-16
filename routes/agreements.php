@@ -1,0 +1,40 @@
+<?php
+session_start();
+
+require_once __DIR__ . '/../controllers/AgreementController.php';
+
+$controller = new AgreementController();
+$uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$method = $_SERVER['REQUEST_METHOD'];
+
+$basePaths = [];
+if (!empty($_SERVER['SCRIPT_NAME'])) {
+    $basePaths[] = dirname($_SERVER['SCRIPT_NAME']);
+}
+$basePaths[] = '/Uob-partnerships-sustainability';
+
+foreach ($basePaths as $basePath) {
+    if ($basePath && $basePath !== '/' && strpos($uri, $basePath) === 0) {
+        $uri = substr($uri, strlen($basePath));
+        break;
+    }
+}
+
+$uri = '/' . ltrim($uri, '/');
+
+if ($method === 'GET' && $uri === '/agreements') {
+    $controller->index();
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
+    $controller->show((int) $matches[1]);
+} elseif ($method === 'POST' && $uri === '/agreements') {
+    $controller->create();
+} elseif ($method === 'PUT' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
+    $controller->update((int) $matches[1]);
+} elseif ($method === 'DELETE' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
+    $controller->delete((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/submit$#', $uri, $matches)) {
+    $controller->submit((int) $matches[1]);
+} else {
+    header('HTTP/1.1 404 Not Found');
+    echo json_encode(['error' => 'Route not found']);
+}
