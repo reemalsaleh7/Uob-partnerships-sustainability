@@ -82,12 +82,12 @@ SET position_type_id = EXCLUDED.position_type_id, description = EXCLUDED.descrip
 
 INSERT INTO users (university_id, first_name, last_name, email, password_hash, is_active)
 VALUES
-    ('DEV-ADMIN-001', 'Dev', 'Administrator', 'dev.admin@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE),
-    ('DEV-PRES-001', 'Dev', 'President', 'dev.president@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE),
-    ('DEV-VP-001', 'Dev', 'VicePresident', 'dev.vp@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE),
-    ('DEV-DEAN-001', 'Dev', 'Dean', 'dev.dean@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE),
-    ('DEV-HEAD-001', 'Dev', 'DepartmentHead', 'dev.head@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE),
-    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$A4Vgkc3iXYoQKQCcmepNTOU99X6z9/RHiDtMvS9r.i69AxW7tjPOq', TRUE)
+    ('DEV-ADMIN-001', 'Dev', 'Administrator', 'dev.admin@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-PRES-001', 'Dev', 'President', 'dev.president@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-VP-001', 'Dev', 'VicePresident', 'dev.vp@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-DEAN-001', 'Dev', 'Dean', 'dev.dean@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-HEAD-001', 'Dev', 'DepartmentHead', 'dev.head@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE)
 ON CONFLICT (email) DO UPDATE
 SET university_id = EXCLUDED.university_id, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
     password_hash = EXCLUDED.password_hash, is_active = TRUE;
