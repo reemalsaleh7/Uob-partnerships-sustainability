@@ -1,4 +1,3 @@
-```php
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
@@ -14,7 +13,7 @@ $adminEmail = 'admin@uob.edu.bh';
    Page Setup
 ========================= */
 $pageTitle = "تسجيل الدخول";
-$pageSubtitle = "الدخول لطلاب الجامعة (@stu.uob.edu.bh) — والأدمن بريد محدد.";
+$pageSubtitle = "هذه الصفحة مخصصة لموظفي وإدارة جامعة البحرين المخولين فقط لإدارة محتوى بوابة الشراكات والاستدامة";
 $breadcrumb = [
   ['label' => 'تسجيل الدخول', 'href' => 'login.php', 'active' => true]
 ];
@@ -52,13 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['user_email'] = $email;
     $_SESSION['role'] = 'admin';
 
-  } elseif (str_ends_with($email, '@stu.uob.edu.bh')) {
+  } elseif (str_ends_with($email, '@uob.edu.bh')) {
     // USER
     $_SESSION['user_email'] = $email;
     $_SESSION['role'] = 'user';
 
   } else {
-    $error = "غير مسموح. يجب استخدام بريد جامعي ينتهي بـ @stu.uob.edu.bh";
+    $error = "غير مسموح. يجب استخدام بريد جامعي ينتهي بـ @uob.edu.bh";
   }
 
   if (!$error) {
@@ -94,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               class="form-control"
               name="email"
               type="email"
-              placeholder="name@stu.uob.edu.bh"
+              placeholder="name@uob.edu.bh"
               required
             >
           </div>
@@ -107,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="small text-muted mt-3">
           <div><strong>Admin:</strong> <?= h($adminEmail) ?></div>
-          <div><strong>User:</strong> any<code>@stu.uob.edu.bh</code></div>
+          <div><strong>User:</strong> any<code>@uob.edu.bh</code></div>
         </div>
 
       </div>
@@ -117,4 +116,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
-```
+
