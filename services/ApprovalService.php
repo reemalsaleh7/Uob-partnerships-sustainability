@@ -668,6 +668,354 @@ private function processSpecialistReview(
                 : 'SPECIALIST_REVIEW',
     ];
 }
+
+public function completeFinalVpReview(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments = null
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result = $this->processFinalVpReview(
+            $instanceId,
+            $performedBy,
+            $comments
+        );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processFinalVpReview(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments
+): array {
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $finalVpStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'VP_FINAL',
+                true
+            );
+
+    $presidentStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'PRESIDENT_APPROVAL',
+                true
+            );
+
+    if (
+        $finalVpStep === null
+        || $presidentStep === null
+    ) {
+        throw new DomainException(
+            'Final approval steps were not found'
+        );
+    }
+
+    if ($finalVpStep['status'] !== 'IN_PROGRESS') {
+        throw new DomainException(
+            'Final VP review is not active'
+        );
+    }
+
+    if ($presidentStep['status'] !== 'PENDING') {
+        throw new DomainException(
+            'President approval step is not pending'
+        );
+    }
+
+    $finalVpStepId =
+        (int) $finalVpStep['instance_step_id'];
+
+    $isAssigned =
+        $this->workflowRepository
+            ->isUserAssignedToStep(
+                $finalVpStepId,
+                $performedBy
+            );
+
+    if (!$isAssigned) {
+        throw new DomainException(
+            'User is not assigned to the final VP review'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $finalVpStepId,
+            'APPROVED',
+            $performedBy,
+            $comments
+        );
+
+    $this->workflowRepository
+        ->deactivateStepAssignments(
+            $finalVpStepId
+        );
+
+    $historyComment =
+        'Final VP review approved; President approval requested';
+
+    if ($comments) {
+        $historyComment .=
+            '. VP comments: ' . $comments;
+    }
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        $finalVpStepId,
+        'APPROVED',
+        $performedBy,
+        $historyComment
+    );
+
+    $presidentAssignments =
+        $this->activateOfficeStep(
+            $presidentStep,
+            'President'
+        );
+
+    $this->workflowRepository
+        ->setCurrentStep(
+            $instanceId,
+            6
+        );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'completed_step_key' =>
+            'VP_FINAL',
+        'president_step_activated' =>
+            true,
+        'president_assignments' =>
+            $presidentAssignments,
+        'current_stage' =>
+            'PRESIDENT_APPROVAL',
+    ];
+}
+
+public function completePresidentApproval(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments = null
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processPresidentApproval(
+                $instanceId,
+                $performedBy,
+                $comments
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processPresidentApproval(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments
+): array {
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $presidentStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'PRESIDENT_APPROVAL',
+                true
+            );
+
+    if ($presidentStep === null) {
+        throw new DomainException(
+            'President approval step was not found'
+        );
+    }
+
+    if (
+        $presidentStep['status']
+        !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'President approval is not active'
+        );
+    }
+
+    $presidentStepId =
+        (int) $presidentStep[
+            'instance_step_id'
+        ];
+
+    $isAssigned =
+        $this->workflowRepository
+            ->isUserAssignedToStep(
+                $presidentStepId,
+                $performedBy
+            );
+
+    if (!$isAssigned) {
+        throw new DomainException(
+            'User is not assigned to President approval'
+        );
+    }
+
+    $agreementId =
+        (int) $instance['entity_id'];
+
+    $agreement =
+        $this->agreementRepository
+            ->findById($agreementId);
+
+    if ($agreement === null) {
+        throw new DomainException(
+            'Agreement associated with the workflow was not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $presidentStepId,
+            'APPROVED',
+            $performedBy,
+            $comments
+        );
+
+    $this->workflowRepository
+        ->deactivateStepAssignments(
+            $presidentStepId
+        );
+
+    $historyComment =
+        'President approved the Agreement';
+
+    if ($comments) {
+        $historyComment .=
+            '. President comments: ' . $comments;
+    }
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        $presidentStepId,
+        'APPROVED',
+        $performedBy,
+        $historyComment
+    );
+
+    $this->workflowRepository
+        ->setInstanceStatus(
+            $instanceId,
+            'COMPLETED'
+        );
+
+    $this->agreementRepository
+        ->changeStatus(
+            $agreementId,
+            'APPROVED'
+        );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'agreement_id' =>
+            $agreementId,
+        'completed_step_key' =>
+            'PRESIDENT_APPROVAL',
+        'workflow_status' =>
+            'COMPLETED',
+        'agreement_status' =>
+            'APPROVED',
+        'current_stage' =>
+            'COMPLETED',
+    ];
+}
 private function activateOfficeStep(
     array $step,
     string $officeName
