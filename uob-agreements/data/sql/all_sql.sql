@@ -72,6 +72,7 @@ CREATE TYPE workflow_action_type AS ENUM (
     'SUBMITTED',
     'APPROVED',
     'CHANGES_REQUESTED',
+    'ROUTED_TO_VP',
     'ROUTED_TO_CREATOR',
     'ROUTED_TO_LEGAL',
     'ROUTED_TO_FINANCE',
