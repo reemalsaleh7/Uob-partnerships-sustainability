@@ -177,7 +177,12 @@ class WorkflowRepository
         $completedAt =
             in_array(
                 $status,
-                ['APPROVED', 'REJECTED', 'SKIPPED'],
+                [
+                    'APPROVED',
+                    'CHANGES_REQUESTED',
+                    'REJECTED',
+                    'SKIPPED',
+                ],
                 true
             )
                 ? $now
@@ -487,6 +492,120 @@ class WorkflowRepository
             'instance_step_id' => $instanceStepId,
         ]);
     }
+
+    public function prepareStepForReview(
+    int $instanceStepId,
+    string $status = 'IN_PROGRESS'
+): void {
+    if (
+        !in_array(
+            $status,
+            ['PENDING', 'IN_PROGRESS'],
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'A reset workflow step must be PENDING or IN_PROGRESS'
+        );
+    }
+
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_instance_steps
+         SET status =
+                CAST(:status AS workflow_step_status),
+             approved_by = NULL,
+             approved_at = NULL,
+             completed_at = NULL,
+             comments = NULL,
+             started_at =
+                CASE
+                    WHEN :status = \'IN_PROGRESS\'
+                        THEN NOW()
+                    ELSE NULL
+                END
+         WHERE instance_step_id =
+               :instance_step_id'
+    );
+
+    $stmt->execute([
+        'status' => $status,
+        'instance_step_id' => $instanceStepId,
+    ]);
+}
+
+public function assignUserToStep(
+    int $instanceStepId,
+    int $userId
+): int {
+    $stmt = $this->db->prepare(
+        'INSERT INTO workflow_step_assignments (
+            workflow_instance_step_id,
+            user_id,
+            assigned_at,
+            is_active
+         ) VALUES (
+            :instance_step_id,
+            :user_id,
+            NOW(),
+            TRUE
+         )
+         ON CONFLICT DO NOTHING'
+    );
+
+    $stmt->execute([
+        'instance_step_id' => $instanceStepId,
+        'user_id' => $userId,
+    ]);
+
+    return $stmt->rowCount();
+}
+
+public function deactivateInstanceAssignments(
+    int $instanceId
+): void {
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_step_assignments
+         SET is_active = FALSE
+         WHERE is_active = TRUE
+           AND workflow_instance_step_id IN (
+               SELECT instance_step_id
+               FROM workflow_instance_steps
+               WHERE workflow_instance_id =
+                     :instance_id
+           )'
+    );
+
+    $stmt->execute([
+        'instance_id' => $instanceId,
+    ]);
+}
+
+public function incrementReviewCycle(
+    int $instanceId
+): int {
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_instances
+         SET review_cycle = review_cycle + 1,
+             completed_at = NULL
+         WHERE workflow_instance_id =
+               :instance_id
+         RETURNING review_cycle'
+    );
+
+    $stmt->execute([
+        'instance_id' => $instanceId,
+    ]);
+
+    $reviewCycle = $stmt->fetchColumn();
+
+    if ($reviewCycle === false) {
+        throw new DomainException(
+            'Workflow instance was not found'
+        );
+    }
+
+    return (int) $reviewCycle;
+}
 
     public function addHistory(
         int $instanceId,
