@@ -189,7 +189,262 @@ class ApprovalService
             'steps' => $createdSteps,
         ];
     }
+    public function completeInitialVpReview(
+    int $instanceId,
+    int $performedBy,
+    bool $includeFinance,
+    ?string $comments = null
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
 
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processInitialVpReview(
+                $instanceId,
+                $performedBy,
+                $includeFinance,
+                $comments
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processInitialVpReview(
+    int $instanceId,
+    int $performedBy,
+    bool $includeFinance,
+    ?string $comments
+): array {
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $initialVpStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'VP_INITIAL',
+                true
+            );
+
+    if ($initialVpStep === null) {
+        throw new DomainException(
+            'Initial VP workflow step was not found'
+        );
+    }
+
+    if (
+        $initialVpStep['status']
+        !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Initial VP review is not active'
+        );
+    }
+
+    $isAssigned =
+        $this->workflowRepository
+            ->isUserAssignedToStep(
+                (int) $initialVpStep[
+                    'instance_step_id'
+                ],
+                $performedBy
+            );
+
+    if (!$isAssigned) {
+        throw new DomainException(
+            'User is not assigned to the initial VP review'
+        );
+    }
+
+    $legalStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'LEGAL_REVIEW',
+                true
+            );
+
+    $financeStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'FINANCE_REVIEW',
+                true
+            );
+
+    if (
+        $legalStep === null
+        || $financeStep === null
+    ) {
+        throw new DomainException(
+            'Specialist review steps were not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            (int) $initialVpStep[
+                'instance_step_id'
+            ],
+            'APPROVED',
+            $performedBy,
+            $comments
+        );
+
+    $this->workflowRepository
+        ->deactivateStepAssignments(
+            (int) $initialVpStep[
+                'instance_step_id'
+            ]
+        );
+
+    $this->workflowRepository
+        ->setFinanceReviewRequired(
+            $instanceId,
+            $includeFinance
+        );
+
+    $legalAssignments =
+        $this->activateOfficeStep(
+            $legalStep,
+            'Legal'
+        );
+
+    $financeAssignments = 0;
+
+    if ($includeFinance) {
+        $financeAssignments =
+            $this->activateOfficeStep(
+                $financeStep,
+                'Finance'
+            );
+    } else {
+        $this->workflowRepository
+            ->setStepStatus(
+                (int) $financeStep[
+                    'instance_step_id'
+                ],
+                'SKIPPED',
+                null,
+                'Finance review was not requested by VP'
+            );
+    }
+
+    $this->workflowRepository
+        ->setCurrentStep(
+            $instanceId,
+            3
+        );
+
+    $historyComment = $includeFinance
+        ? 'Initial VP review approved; Legal and Finance reviews requested'
+        : 'Initial VP review approved; Legal review requested and Finance skipped';
+
+    if ($comments) {
+        $historyComment .=
+            '. VP comments: ' . $comments;
+    }
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        (int) $initialVpStep[
+            'instance_step_id'
+        ],
+        'APPROVED',
+        $performedBy,
+        $historyComment
+    );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'finance_review_required' =>
+            $includeFinance,
+        'legal_assignments' =>
+            $legalAssignments,
+        'finance_assignments' =>
+            $financeAssignments,
+        'current_stage' =>
+            'SPECIALIST_REVIEW',
+    ];
+}
+
+private function activateOfficeStep(
+    array $step,
+    string $officeName
+): int {
+    $unitId =
+        (int) ($step['assigned_unit_id'] ?? 0);
+
+    if ($unitId <= 0) {
+        throw new DomainException(
+            "{$officeName} review has no assigned office"
+        );
+    }
+
+    $instanceStepId =
+        (int) $step['instance_step_id'];
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $instanceStepId,
+            'IN_PROGRESS'
+        );
+
+    $assignments =
+        $this->workflowRepository
+            ->assignEligibleUsersForUnit(
+                $instanceStepId,
+                $unitId
+            );
+
+    if ($assignments < 1) {
+        throw new DomainException(
+            "No eligible {$officeName} reviewer is available"
+        );
+    }
+
+    return $assignments;
+}
     private function assertExpectedTemplate(
         array $templateSteps
     ): void {
