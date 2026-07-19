@@ -100,14 +100,31 @@ DELETE FROM user_roles
 WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE 'dev.%@uob.test');
 
 INSERT INTO user_roles (user_id, role_id)
-SELECT u.user_id, r.role_id
-FROM users u
-JOIN roles r ON r.role_name = CASE
-    WHEN u.email = 'dev.admin@uob.test' THEN 'System Administrator'
-    WHEN u.email IN ('dev.faculty@uob.test', 'dev.head@uob.test') THEN 'Agreement Creator'
-    ELSE 'Agreement Approver'
-END
-WHERE u.email LIKE 'dev.%@uob.test';
+SELECT
+    u.user_id,
+    r.role_id
+FROM (
+    VALUES
+        ('dev.admin@uob.test', 'System Administrator'),
+
+        ('dev.president@uob.test', 'Agreement Creator'),
+        ('dev.president@uob.test', 'Agreement Approver'),
+
+        ('dev.vp@uob.test', 'Agreement Creator'),
+        ('dev.vp@uob.test', 'Agreement Approver'),
+
+        ('dev.dean@uob.test', 'Agreement Creator'),
+
+        ('dev.legal@uob.test', 'Agreement Approver'),
+        ('dev.finance@uob.test', 'Agreement Approver'),
+
+        ('dev.head@uob.test', 'Initiative Creator'),
+        ('dev.faculty@uob.test', 'Initiative Creator')
+) AS assignments(email, role_name)
+JOIN users u
+    ON u.email = assignments.email
+JOIN roles r
+    ON r.role_name = assignments.role_name;
 
 INSERT INTO organizational_units (
     name,
