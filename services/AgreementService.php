@@ -8,9 +8,10 @@ require_once __DIR__ . '/../services/AuditService.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/AgreementStatus.php';
 require_once __DIR__ . '/../helpers/AuditAction.php';
-
+require_once __DIR__ . '/../services/ApprovalService.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
+    private ApprovalService $approvalService;
     private AgreementVersionRepository $agreementVersionRepo;
     private AgreementDocumentRepository $agreementDocumentRepo;
     private AuditRepository $auditRepo;
@@ -22,6 +23,7 @@ class AgreementService {
         $this->agreementDocumentRepo = new AgreementDocumentRepository();
         $this->auditRepo = new AuditRepository();
         $this->auditService = new AuditService();
+        $this->approvalService = new ApprovalService();
     }
 
     public function createAgreement(array $data): array {
@@ -94,34 +96,131 @@ class AgreementService {
         }
     }
 
-    public function submitAgreement(int $agreementId, int $userId): array {
-        $db = Database::connect();
+    public function submitAgreement(
+    int $agreementId,
+    int $userId
+): array {
+    $db = Database::connect();
+    $ownsTransaction = !$db->inTransaction();
+
+    if ($ownsTransaction) {
         $db->beginTransaction();
-        try {
-            $existing = $this->agreementRepo->findById($agreementId);
-            if (!$existing) {
+    }
+
+    try {
+        $existing =
+            $this->agreementRepo->findById(
+                $agreementId
+            );
+
+        if (!$existing) {
+            if (
+                $ownsTransaction
+                && $db->inTransaction()
+            ) {
                 $db->rollBack();
-                return ['success' => false, 'errors' => ['Agreement not found']];
             }
-            $this->agreementRepo->changeStatus($agreementId, AgreementStatus::UNDER_REVIEW);
-            $updated = $this->agreementRepo->findById($agreementId);
-            $versions = $this->agreementVersionRepo->findByAgreement($agreementId);
-            $this->agreementVersionRepo->create($agreementId, [
-                'version_number' => count($versions) + 1,
-                'change_summary' => 'Agreement submitted for review',
+
+            return [
+                'success' => false,
+                'errors' => ['Agreement not found'],
+            ];
+        }
+
+        if ($existing['status'] !== AgreementStatus::DRAFT) {
+            if (
+                $ownsTransaction
+                && $db->inTransaction()
+            ) {
+                $db->rollBack();
+            }
+
+            return [
+                'success' => false,
+                'errors' => [
+                    'Only a DRAFT Agreement may be submitted',
+                ],
+            ];
+        }
+
+        $workflow =
+            $this->approvalService
+                ->startAgreementWorkflow(
+                    $agreementId,
+                    $userId
+                );
+
+        $this->agreementRepo->changeStatus(
+            $agreementId,
+            AgreementStatus::UNDER_REVIEW
+        );
+
+        $updated =
+            $this->agreementRepo->findById(
+                $agreementId
+            );
+
+        $versions =
+            $this->agreementVersionRepo
+                ->findByAgreement($agreementId);
+
+        $this->agreementVersionRepo->create(
+            $agreementId,
+            [
+                'version_number' =>
+                    count($versions) + 1,
+                'change_summary' =>
+                    'Agreement submitted for review',
                 'agreement_snapshot' => $updated,
                 'created_by' => $userId,
-            ]);
-            $this->auditService->write('agreements', $agreementId, AuditAction::UPDATE, $userId, $existing, $updated);
+            ]
+        );
+
+        $this->auditService->write(
+            'agreements',
+            $agreementId,
+            AuditAction::UPDATE,
+            $userId,
+            $existing,
+            $updated
+        );
+
+        if ($ownsTransaction) {
             $db->commit();
-            return ['success' => true];
-        } catch (Throwable $exception) {
-            if ($db->inTransaction()) {
-                $db->rollBack();
-            }
-            throw $exception;
         }
+
+        return [
+            'success' => true,
+            'workflow_instance_id' =>
+                $workflow['workflow_instance_id'],
+            'current_step_key' =>
+                $workflow['current_step_key'],
+        ];
+    } catch (DomainException $exception) {
+        if (
+            $ownsTransaction
+            && $db->inTransaction()
+        ) {
+            $db->rollBack();
+        }
+
+        return [
+            'success' => false,
+            'errors' => [
+                $exception->getMessage(),
+            ],
+        ];
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $db->inTransaction()
+        ) {
+            $db->rollBack();
+        }
+
+        throw $exception;
     }
+}
 
     public function deleteAgreement(int $agreementId, int $userId): void {
         $db = Database::connect();

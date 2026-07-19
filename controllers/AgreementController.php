@@ -67,13 +67,30 @@ class AgreementController {
         Response::success(['message' => 'Agreement updated']);
     }
 
-    public function submit(int $agreementId): void {
-        AuthMiddleware::handle();
-        PermissionMiddleware::require('SUBMIT_AGREEMENT');
+    public function submit(int $agreementId): void
+{
+    AuthMiddleware::handle();
 
-        $result = $this->agreementService->submitAgreement($agreementId, (int) ($_SESSION['user_id'] ?? 0));
-        Response::success($result);
+    PermissionMiddleware::require(
+        'SUBMIT_AGREEMENT'
+    );
+
+    $result =
+        $this->agreementService
+            ->submitAgreement(
+                $agreementId,
+                (int) ($_SESSION['user_id'] ?? 0)
+            );
+
+    if (!$result['success']) {
+        Response::error(
+            implode(', ', $result['errors']),
+            422
+        );
     }
+
+    Response::success($result);
+}
 
     public function delete(int $agreementId): void {
         AuthMiddleware::handle();
