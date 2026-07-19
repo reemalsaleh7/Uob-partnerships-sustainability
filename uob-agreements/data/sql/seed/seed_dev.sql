@@ -1,5 +1,5 @@
 -- Development-only fixtures. Run after deploy.sql on an empty or development database.
--- All accounts use the password: DevPassword123!
+-- Local development accounts use the password: UobDev2026!
 
 BEGIN;
 
@@ -55,8 +55,8 @@ ON CONFLICT (code) DO UPDATE
 SET parent_unit_id = EXCLUDED.parent_unit_id, display_order = EXCLUDED.display_order, is_active = TRUE;
 
 INSERT INTO organizational_units (name, code, unit_type, parent_unit_id, display_order)
-SELECT 'College of Information Technology', 'CIT', 'COLLEGE', unit_id, 4
-FROM organizational_units WHERE code = 'VP'
+SELECT 'College of Information Technology', 'CIT', 'COLLEGE', unit_id, 6
+FROM organizational_units WHERE code = 'UOB'
 ON CONFLICT (code) DO UPDATE
 SET parent_unit_id = EXCLUDED.parent_unit_id, display_order = EXCLUDED.display_order, is_active = TRUE;
 
@@ -74,7 +74,9 @@ FROM (VALUES
     ('Leadership', 'Vice President', 'Vice president', TRUE),
     ('Leadership', 'Dean', 'College dean', TRUE),
     ('Leadership', 'Department Head', 'Department head', TRUE),
-    ('Academic', 'Faculty Member', 'Faculty agreement creator', FALSE)
+    ('Academic', 'Faculty Member', 'Faculty agreement creator', FALSE),
+    ('Administrative', 'Legal Reviewer', 'Legal Office agreement reviewer', FALSE),
+('Administrative', 'Finance Reviewer', 'Financial Office agreement reviewer', FALSE)
 ) AS v(type_name, name, description, is_unique)
 JOIN position_types pt ON pt.name = v.type_name
 ON CONFLICT (name) DO UPDATE
@@ -87,7 +89,9 @@ VALUES
     ('DEV-VP-001', 'Dev', 'VicePresident', 'dev.vp@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
     ('DEV-DEAN-001', 'Dev', 'Dean', 'dev.dean@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
     ('DEV-HEAD-001', 'Dev', 'DepartmentHead', 'dev.head@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE)
+    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+    ('DEV-LEGAL-001', 'Dev', 'LegalReviewer', 'dev.legal@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
+('DEV-FIN-001', 'Dev', 'FinanceReviewer', 'dev.finance@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE)
 ON CONFLICT (email) DO UPDATE
 SET university_id = EXCLUDED.university_id, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
     password_hash = EXCLUDED.password_hash, is_active = TRUE;
@@ -104,6 +108,40 @@ JOIN roles r ON r.role_name = CASE
     ELSE 'Agreement Approver'
 END
 WHERE u.email LIKE 'dev.%@uob.test';
+
+INSERT INTO organizational_units (
+    name,
+    code,
+    unit_type,
+    parent_unit_id,
+    display_order
+)
+SELECT 'Legal Office', 'LEGAL', 'OFFICE', unit_id, 4
+FROM organizational_units
+WHERE code = 'UOB'
+ON CONFLICT (code) DO UPDATE
+SET
+    name = EXCLUDED.name,
+    parent_unit_id = EXCLUDED.parent_unit_id,
+    display_order = EXCLUDED.display_order,
+    is_active = TRUE;
+
+INSERT INTO organizational_units (
+    name,
+    code,
+    unit_type,
+    parent_unit_id,
+    display_order
+)
+SELECT 'Financial Office', 'FIN', 'OFFICE', unit_id, 5
+FROM organizational_units
+WHERE code = 'UOB'
+ON CONFLICT (code) DO UPDATE
+SET
+    name = EXCLUDED.name,
+    parent_unit_id = EXCLUDED.parent_unit_id,
+    display_order = EXCLUDED.display_order,
+    is_active = TRUE;
 
 -- Give the administrator every current permission and creators the complete Agreement CRUD set.
 INSERT INTO role_permissions (role_id, permission_id)
@@ -134,7 +172,9 @@ FROM (VALUES
     ('dev.vp@uob.test', 'Vice President', 'VP'),
     ('dev.dean@uob.test', 'Dean', 'CIT'),
     ('dev.head@uob.test', 'Department Head', 'CS'),
-    ('dev.faculty@uob.test', 'Faculty Member', 'CS')
+    ('dev.faculty@uob.test', 'Faculty Member', 'CS'),
+    ('dev.legal@uob.test', 'Legal Reviewer', 'LEGAL'),
+('dev.finance@uob.test', 'Finance Reviewer', 'FIN')
 ) AS v(email, position_name, unit_code)
 JOIN users u ON u.email = v.email
 JOIN positions p ON p.name = v.position_name
