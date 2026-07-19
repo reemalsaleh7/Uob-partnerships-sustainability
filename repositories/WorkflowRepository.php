@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../config/database.php';
 
 class WorkflowRepository
@@ -11,8 +13,9 @@ class WorkflowRepository
         $this->db = Database::connect();
     }
 
-    public function findActiveTemplate(string $processType): ?array
-    {
+    public function findActiveTemplate(
+        string $processType
+    ): ?array {
         $stmt = $this->db->prepare(
             'SELECT *
              FROM workflow_templates
@@ -31,8 +34,9 @@ class WorkflowRepository
         return $template ?: null;
     }
 
-    public function findTemplateSteps(int $templateId): array
-    {
+    public function findTemplateSteps(
+        int $templateId
+    ): array {
         $stmt = $this->db->prepare(
             'SELECT
                 wts.*,
@@ -100,6 +104,9 @@ class WorkflowRepository
 
     public function createInstance(array $data): int
     {
+        $financeReviewRequired =
+            $data['finance_review_required'] ?? null;
+
         $stmt = $this->db->prepare(
             'INSERT INTO workflow_instances (
                 workflow_template_id,
@@ -115,7 +122,7 @@ class WorkflowRepository
                 :entity_type,
                 :entity_id,
                 :current_step,
-                :finance_review_required,
+                CAST(:finance_review_required AS BOOLEAN),
                 CAST(:status AS workflow_status),
                 :started_by,
                 NOW()
@@ -124,13 +131,21 @@ class WorkflowRepository
         );
 
         $stmt->execute([
-            'workflow_template_id' => $data['workflow_template_id'],
-            'entity_type' => strtoupper($data['entity_type']),
+            'workflow_template_id' =>
+                $data['workflow_template_id'],
+            'entity_type' =>
+                strtoupper($data['entity_type']),
             'entity_id' => $data['entity_id'],
-            'current_step' => $data['current_step'] ?? 1,
+            'current_step' =>
+                $data['current_step'] ?? 1,
             'finance_review_required' =>
-                $data['finance_review_required'] ?? null,
-            'status' => $data['status'] ?? 'IN_PROGRESS',
+                $financeReviewRequired === null
+                    ? null
+                    : $this->toPostgresBoolean(
+                        $financeReviewRequired
+                    ),
+            'status' =>
+                $data['status'] ?? 'IN_PROGRESS',
             'started_by' => $data['started_by'],
         ]);
 
@@ -143,6 +158,31 @@ class WorkflowRepository
         string $status = 'PENDING',
         ?int $actedBy = null
     ): int {
+        $now = $this->currentTimestamp();
+
+        $approvedAt =
+            $actedBy !== null
+                ? $now
+                : null;
+
+        $startedAt =
+            in_array(
+                $status,
+                ['IN_PROGRESS', 'APPROVED'],
+                true
+            )
+                ? $now
+                : null;
+
+        $completedAt =
+            in_array(
+                $status,
+                ['APPROVED', 'REJECTED', 'SKIPPED'],
+                true
+            )
+                ? $now
+                : null;
+
         $stmt = $this->db->prepare(
             'INSERT INTO workflow_instance_steps (
                 workflow_instance_id,
@@ -164,38 +204,37 @@ class WorkflowRepository
                 :step_key,
                 :assigned_unit_id,
                 :assigned_position_id,
-                :is_optional,
+                CAST(:is_optional AS BOOLEAN),
                 CAST(:status AS workflow_step_status),
                 :acted_by,
-                CASE
-                    WHEN :acted_by IS NOT NULL THEN NOW()
-                    ELSE NULL
-                END,
-                CASE
-                    WHEN :status IN (\'IN_PROGRESS\', \'APPROVED\')
-                    THEN NOW()
-                    ELSE NULL
-                END,
-                CASE
-                    WHEN :status IN (\'APPROVED\', \'REJECTED\', \'SKIPPED\')
-                    THEN NOW()
-                    ELSE NULL
-                END
+                :approved_at,
+                :started_at,
+                :completed_at
              )
              RETURNING instance_step_id'
         );
 
         $stmt->execute([
             'workflow_instance_id' => $instanceId,
-            'template_step_id' => $templateStep['template_step_id'],
-            'step_order' => $templateStep['step_order'],
-            'step_key' => $templateStep['step_key'],
-            'assigned_unit_id' => $templateStep['required_unit_id'],
+            'template_step_id' =>
+                $templateStep['template_step_id'],
+            'step_order' =>
+                $templateStep['step_order'],
+            'step_key' =>
+                $templateStep['step_key'],
+            'assigned_unit_id' =>
+                $templateStep['required_unit_id'],
             'assigned_position_id' =>
                 $templateStep['required_position_id'],
-            'is_optional' => $templateStep['is_optional'],
+            'is_optional' =>
+                $this->toPostgresBoolean(
+                    $templateStep['is_optional']
+                ),
             'status' => $status,
             'acted_by' => $actedBy,
+            'approved_at' => $approvedAt,
+            'started_at' => $startedAt,
+            'completed_at' => $completedAt,
         ]);
 
         return (int) $stmt->fetchColumn();
@@ -255,38 +294,48 @@ class WorkflowRepository
         ?int $actedBy = null,
         ?string $comments = null
     ): void {
+        $fields = [
+            'status = CAST(:status AS workflow_step_status)',
+        ];
+
+        $params = [
+            'status' => $status,
+            'instance_step_id' => $instanceStepId,
+        ];
+
+        if ($actedBy !== null) {
+            $fields[] = 'approved_by = :acted_by';
+            $fields[] = 'approved_at = NOW()';
+            $params['acted_by'] = $actedBy;
+        }
+
+        if ($status === 'IN_PROGRESS') {
+            $fields[] =
+                'started_at = COALESCE(started_at, NOW())';
+        }
+
+        if (
+            in_array(
+                $status,
+                ['APPROVED', 'REJECTED', 'SKIPPED'],
+                true
+            )
+        ) {
+            $fields[] = 'completed_at = NOW()';
+        }
+
+        if ($comments !== null) {
+            $fields[] = 'comments = :comments';
+            $params['comments'] = $comments;
+        }
+
         $stmt = $this->db->prepare(
             'UPDATE workflow_instance_steps
-             SET
-                status = CAST(:status AS workflow_step_status),
-                approved_by = CASE
-                    WHEN :acted_by IS NOT NULL THEN :acted_by
-                    ELSE approved_by
-                END,
-                approved_at = CASE
-                    WHEN :acted_by IS NOT NULL THEN NOW()
-                    ELSE approved_at
-                END,
-                started_at = CASE
-                    WHEN :status = \'IN_PROGRESS\'
-                    THEN COALESCE(started_at, NOW())
-                    ELSE started_at
-                END,
-                completed_at = CASE
-                    WHEN :status IN (\'APPROVED\', \'REJECTED\', \'SKIPPED\')
-                    THEN NOW()
-                    ELSE completed_at
-                END,
-                comments = COALESCE(:comments, comments)
+             SET ' . implode(', ', $fields) . '
              WHERE instance_step_id = :instance_step_id'
         );
 
-        $stmt->execute([
-            'status' => $status,
-            'acted_by' => $actedBy,
-            'comments' => $comments,
-            'instance_step_id' => $instanceStepId,
-        ]);
+        $stmt->execute($params);
     }
 
     public function setFinanceReviewRequired(
@@ -295,12 +344,14 @@ class WorkflowRepository
     ): void {
         $stmt = $this->db->prepare(
             'UPDATE workflow_instances
-             SET finance_review_required = :required
+             SET finance_review_required =
+                 CAST(:required AS BOOLEAN)
              WHERE workflow_instance_id = :instance_id'
         );
 
         $stmt->execute([
-            'required' => $required,
+            'required' =>
+                $this->toPostgresBoolean($required),
             'instance_id' => $instanceId,
         ]);
     }
@@ -325,15 +376,25 @@ class WorkflowRepository
         int $instanceId,
         string $status
     ): void {
+        $fields = [
+            'status = CAST(:status AS workflow_status)',
+        ];
+
+        if (
+            in_array(
+                $status,
+                ['COMPLETED', 'REJECTED', 'CANCELLED'],
+                true
+            )
+        ) {
+            $fields[] = 'completed_at = NOW()';
+        } else {
+            $fields[] = 'completed_at = NULL';
+        }
+
         $stmt = $this->db->prepare(
             'UPDATE workflow_instances
-             SET
-                status = CAST(:status AS workflow_status),
-                completed_at = CASE
-                    WHEN :status IN (\'COMPLETED\', \'REJECTED\', \'CANCELLED\')
-                    THEN NOW()
-                    ELSE NULL
-                END
+             SET ' . implode(', ', $fields) . '
              WHERE workflow_instance_id = :instance_id'
         );
 
@@ -356,7 +417,7 @@ class WorkflowRepository
                 is_active
              )
              SELECT DISTINCT
-                :instance_step_id,
+                CAST(:instance_step_id AS BIGINT),
                 up.user_id,
                 NOW(),
                 TRUE
@@ -396,7 +457,8 @@ class WorkflowRepository
         $stmt = $this->db->prepare(
             'SELECT 1
              FROM workflow_step_assignments
-             WHERE workflow_instance_step_id = :instance_step_id
+             WHERE workflow_instance_step_id =
+                   :instance_step_id
                AND user_id = :user_id
                AND is_active = TRUE
              LIMIT 1'
@@ -416,7 +478,8 @@ class WorkflowRepository
         $stmt = $this->db->prepare(
             'UPDATE workflow_step_assignments
              SET is_active = FALSE
-             WHERE workflow_instance_step_id = :instance_step_id
+             WHERE workflow_instance_step_id =
+                   :instance_step_id
                AND is_active = TRUE'
         );
 
@@ -462,8 +525,9 @@ class WorkflowRepository
         return (int) $stmt->fetchColumn();
     }
 
-    public function findInboxForUser(int $userId): array
-    {
+    public function findInboxForUser(
+        int $userId
+    ): array {
         $stmt = $this->db->prepare(
             'SELECT
                 wi.workflow_instance_id,
@@ -490,7 +554,9 @@ class WorkflowRepository
                AND wsa.is_active = TRUE
                AND wi.status = \'IN_PROGRESS\'
                AND wis.status = \'IN_PROGRESS\'
-             ORDER BY wis.started_at, wi.workflow_instance_id'
+             ORDER BY
+                wis.started_at,
+                wi.workflow_instance_id'
         );
 
         $stmt->execute([
@@ -499,7 +565,8 @@ class WorkflowRepository
 
         return $stmt->fetchAll();
     }
-        public function findActiveUnitByCode(
+
+    public function findActiveUnitByCode(
         string $unitCode
     ): ?array {
         $stmt = $this->db->prepare(
@@ -521,7 +588,8 @@ class WorkflowRepository
 
     public function findEligibleUsersForUnit(
         string $unitCode,
-        string $permissionCode = 'APPROVE_AGREEMENT'
+        string $permissionCode =
+            'APPROVE_AGREEMENT'
     ): array {
         $stmt = $this->db->prepare(
             'SELECT DISTINCT
@@ -592,5 +660,23 @@ class WorkflowRepository
         ]);
 
         return $stmt->fetchAll();
+    }
+
+    private function toPostgresBoolean(
+        bool|string|int $value
+    ): string {
+        return in_array(
+            $value,
+            [true, 1, '1', 't', 'true'],
+            true
+        )
+            ? 'true'
+            : 'false';
+    }
+
+    private function currentTimestamp(): string
+    {
+        return (new DateTimeImmutable())
+            ->format('Y-m-d H:i:s.u');
     }
 }
