@@ -499,4 +499,98 @@ class WorkflowRepository
 
         return $stmt->fetchAll();
     }
+        public function findActiveUnitByCode(
+        string $unitCode
+    ): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT *
+             FROM organizational_units
+             WHERE code = :unit_code
+               AND is_active = TRUE
+             LIMIT 1'
+        );
+
+        $stmt->execute([
+            'unit_code' => strtoupper($unitCode),
+        ]);
+
+        $unit = $stmt->fetch();
+
+        return $unit ?: null;
+    }
+
+    public function findEligibleUsersForUnit(
+        string $unitCode,
+        string $permissionCode = 'APPROVE_AGREEMENT'
+    ): array {
+        $stmt = $this->db->prepare(
+            'SELECT DISTINCT
+                u.user_id,
+                u.email,
+                u.first_name,
+                u.last_name
+             FROM organizational_units ou
+             JOIN user_positions up
+                ON up.unit_id = ou.unit_id
+               AND up.is_active = TRUE
+               AND (
+                   up.end_date IS NULL
+                   OR up.end_date >= CURRENT_DATE
+               )
+             JOIN users u
+                ON u.user_id = up.user_id
+               AND u.is_active = TRUE
+             JOIN user_roles ur
+                ON ur.user_id = u.user_id
+             JOIN role_permissions rp
+                ON rp.role_id = ur.role_id
+             JOIN permissions p
+                ON p.permission_id = rp.permission_id
+               AND p.permission_code = :permission_code
+             WHERE ou.code = :unit_code
+               AND ou.is_active = TRUE
+             ORDER BY u.user_id'
+        );
+
+        $stmt->execute([
+            'unit_code' => strtoupper($unitCode),
+            'permission_code' => $permissionCode,
+        ]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function findActiveMembershipsForUser(
+        int $userId
+    ): array {
+        $stmt = $this->db->prepare(
+            'SELECT
+                up.user_position_id,
+                p.name AS position_name,
+                p.is_unique,
+                ou.unit_id,
+                ou.code AS unit_code,
+                ou.name AS unit_name,
+                ou.unit_type
+             FROM user_positions up
+             JOIN positions p
+                ON p.position_id = up.position_id
+             JOIN organizational_units ou
+                ON ou.unit_id = up.unit_id
+               AND ou.is_active = TRUE
+             WHERE up.user_id = :user_id
+               AND up.is_active = TRUE
+               AND (
+                   up.end_date IS NULL
+                   OR up.end_date >= CURRENT_DATE
+               )
+             ORDER BY up.user_position_id'
+        );
+
+        $stmt->execute([
+            'user_id' => $userId,
+        ]);
+
+        return $stmt->fetchAll();
+    }
 }
