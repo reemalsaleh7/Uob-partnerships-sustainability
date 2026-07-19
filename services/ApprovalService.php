@@ -408,6 +408,266 @@ private function processInitialVpReview(
     ];
 }
 
+public function completeSpecialistReview(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    ?string $comments = null
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processSpecialistReview(
+                $instanceId,
+                $stepKey,
+                $performedBy,
+                $comments
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processSpecialistReview(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    ?string $comments
+): array {
+    $stepKey = strtoupper(trim($stepKey));
+
+    if (
+        !in_array(
+            $stepKey,
+            [
+                'LEGAL_REVIEW',
+                'FINANCE_REVIEW',
+            ],
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'Only Legal or Finance specialist reviews may be completed here'
+        );
+    }
+
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    // Lock in a consistent order so parallel Legal and
+    // Finance decisions cannot activate final VP twice.
+    $legalStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'LEGAL_REVIEW',
+                true
+            );
+
+    $financeStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'FINANCE_REVIEW',
+                true
+            );
+
+    if (
+        $legalStep === null
+        || $financeStep === null
+    ) {
+        throw new DomainException(
+            'Specialist review steps were not found'
+        );
+    }
+
+    $targetStep =
+        $stepKey === 'LEGAL_REVIEW'
+            ? $legalStep
+            : $financeStep;
+
+    if ($targetStep['status'] !== 'IN_PROGRESS') {
+        throw new DomainException(
+            'The selected specialist review is not active'
+        );
+    }
+
+    if (
+        $stepKey === 'FINANCE_REVIEW'
+        && $instance['finance_review_required'] !== true
+    ) {
+        throw new DomainException(
+            'Finance review was not requested for this workflow'
+        );
+    }
+
+    $targetStepId =
+        (int) $targetStep['instance_step_id'];
+
+    $isAssigned =
+        $this->workflowRepository
+            ->isUserAssignedToStep(
+                $targetStepId,
+                $performedBy
+            );
+
+    if (!$isAssigned) {
+        throw new DomainException(
+            'User is not assigned to this specialist review'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $targetStepId,
+            'APPROVED',
+            $performedBy,
+            $comments
+        );
+
+    $this->workflowRepository
+        ->deactivateStepAssignments(
+            $targetStepId
+        );
+
+    $officeName =
+        $stepKey === 'LEGAL_REVIEW'
+            ? 'Legal'
+            : 'Finance';
+
+    $historyComment =
+        "{$officeName} review approved";
+
+    if ($comments) {
+        $historyComment .=
+            '. Reviewer comments: ' . $comments;
+    }
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        $targetStepId,
+        'APPROVED',
+        $performedBy,
+        $historyComment
+    );
+
+    $legalCompleted =
+        $stepKey === 'LEGAL_REVIEW'
+        || $legalStep['status'] === 'APPROVED';
+
+    $financeRequired =
+        $instance['finance_review_required'] === true;
+
+    $financeCompleted =
+        !$financeRequired
+        || $stepKey === 'FINANCE_REVIEW'
+        || $financeStep['status'] === 'APPROVED';
+
+    $finalVpActivated = false;
+    $vpAssignments = 0;
+
+    if (
+        $legalCompleted
+        && $financeCompleted
+    ) {
+        $finalVpStep =
+            $this->workflowRepository
+                ->findStepByKey(
+                    $instanceId,
+                    'VP_FINAL',
+                    true
+                );
+
+        if ($finalVpStep === null) {
+            throw new DomainException(
+                'Final VP workflow step was not found'
+            );
+        }
+
+        if ($finalVpStep['status'] === 'PENDING') {
+            $vpAssignments =
+                $this->activateOfficeStep(
+                    $finalVpStep,
+                    'Final VP'
+                );
+
+            $this->workflowRepository
+                ->setCurrentStep(
+                    $instanceId,
+                    5
+                );
+
+            $finalVpActivated = true;
+        } elseif (
+            $finalVpStep['status']
+            !== 'IN_PROGRESS'
+        ) {
+            throw new DomainException(
+                'Final VP workflow step cannot be activated'
+            );
+        }
+    }
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'completed_step_key' =>
+            $stepKey,
+        'legal_completed' =>
+            $legalCompleted,
+        'finance_review_required' =>
+            $financeRequired,
+        'finance_completed' =>
+            $financeCompleted,
+        'final_vp_activated' =>
+            $finalVpActivated,
+        'vp_assignments' =>
+            $vpAssignments,
+        'current_stage' =>
+            $finalVpActivated
+                ? 'VP_FINAL'
+                : 'SPECIALIST_REVIEW',
+    ];
+}
 private function activateOfficeStep(
     array $step,
     string $officeName
