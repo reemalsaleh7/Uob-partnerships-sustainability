@@ -22,6 +22,7 @@ CREATE TYPE organizational_unit_type AS ENUM (
 CREATE TYPE agreement_status AS ENUM (
     'DRAFT',
     'UNDER_REVIEW',
+    'REVISION_REQUIRED',
     'APPROVED',
     'ACTIVE',
     'REJECTED',
@@ -56,6 +57,7 @@ CREATE TYPE workflow_step_status AS ENUM (
     'PENDING',
     'IN_PROGRESS',
     'APPROVED',
+    'CHANGES_REQUESTED',
     'REJECTED',
     'SKIPPED'
 );
@@ -69,6 +71,11 @@ CREATE TYPE workflow_approval_type AS ENUM (
 CREATE TYPE workflow_action_type AS ENUM (
     'SUBMITTED',
     'APPROVED',
+    'CHANGES_REQUESTED',
+    'ROUTED_TO_CREATOR',
+    'ROUTED_TO_LEGAL',
+    'ROUTED_TO_FINANCE',
+    'RESUBMITTED',
     'REJECTED',
     'REDRAFTED',
     'COMPLETED'
@@ -330,17 +337,59 @@ CREATE TABLE workflow_template_steps (
 );
 
 CREATE TABLE workflow_instances (
-    workflow_instance_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    workflow_template_id BIGINT NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id BIGINT NOT NULL,
-    current_step INTEGER NOT NULL DEFAULT 1,
-    status workflow_status NOT NULL DEFAULT 'IN_PROGRESS',
-    started_by BIGINT NOT NULL,
-    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    workflow_instance_id BIGINT
+        GENERATED ALWAYS AS IDENTITY
+        PRIMARY KEY,
+
+    workflow_template_id BIGINT
+        NOT NULL,
+
+    entity_type VARCHAR(50)
+        NOT NULL,
+
+    entity_id BIGINT
+        NOT NULL,
+
+    current_step INTEGER
+        NOT NULL
+        DEFAULT 1,
+
+    -- NULL: Initial VP has not decided.
+    -- FALSE: Legal review only.
+    -- TRUE: Legal and Finance reviews.
+    finance_review_required BOOLEAN,
+
+    -- Starts at 1 and increases after each redraft
+    -- is resubmitted for another review.
+    review_cycle INTEGER
+        NOT NULL
+        DEFAULT 1,
+
+    status workflow_status
+        NOT NULL
+        DEFAULT 'IN_PROGRESS',
+
+    started_by BIGINT
+        NOT NULL,
+
+    started_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
     completed_at TIMESTAMP,
-    FOREIGN KEY(workflow_template_id) REFERENCES workflow_templates(workflow_template_id),
-    FOREIGN KEY(started_by) REFERENCES users(user_id)
+
+    CONSTRAINT fk_workflow_instance_template
+        FOREIGN KEY (workflow_template_id)
+        REFERENCES workflow_templates(
+            workflow_template_id
+        ),
+
+    CONSTRAINT fk_workflow_instance_starter
+        FOREIGN KEY (started_by)
+        REFERENCES users(user_id),
+
+    CONSTRAINT chk_workflow_review_cycle_positive
+        CHECK (review_cycle > 0)
 );
 
 CREATE TABLE workflow_instance_steps (

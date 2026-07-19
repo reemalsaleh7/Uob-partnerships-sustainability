@@ -21,6 +21,12 @@ CREATE TABLE workflow_instances (
     -- TRUE: Legal and Finance reviews.
     finance_review_required BOOLEAN,
 
+    -- Starts at 1 and increases whenever a revised
+    -- Agreement is resubmitted for another review cycle.
+    review_cycle INTEGER
+        NOT NULL
+        DEFAULT 1,
+
     status workflow_status
         NOT NULL
         DEFAULT 'IN_PROGRESS',
@@ -40,5 +46,8 @@ CREATE TABLE workflow_instances (
 
     CONSTRAINT fk_workflow_instance_starter
         FOREIGN KEY (started_by)
-        REFERENCES users(user_id)
+        REFERENCES users(user_id),
+
+        CONSTRAINT chk_workflow_review_cycle_positive
+        CHECK (review_cycle > 0)
 );
