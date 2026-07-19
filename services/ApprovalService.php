@@ -1016,6 +1016,280 @@ private function processPresidentApproval(
             'COMPLETED',
     ];
 }
+
+public function requestAgreementChanges(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    string $reason
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processAgreementChangeRequest(
+                $instanceId,
+                $stepKey,
+                $performedBy,
+                $reason
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processAgreementChangeRequest(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    string $reason
+): array {
+    $stepKey = strtoupper(trim($stepKey));
+    $reason = trim($reason);
+
+    $allowedSteps = [
+        'LEGAL_REVIEW',
+        'FINANCE_REVIEW',
+        'PRESIDENT_APPROVAL',
+    ];
+
+    if (
+        !in_array(
+            $stepKey,
+            $allowedSteps,
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'Only Legal, Finance, or President may route a change request to VP'
+        );
+    }
+
+    if ($reason === '') {
+        throw new InvalidArgumentException(
+            'A reason is required when requesting changes'
+        );
+    }
+
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $sourceStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                $stepKey,
+                true
+            );
+
+    if ($sourceStep === null) {
+        throw new DomainException(
+            'Change-request source step was not found'
+        );
+    }
+
+    if ($sourceStep['status'] !== 'IN_PROGRESS') {
+        throw new DomainException(
+            'The selected review step is not active'
+        );
+    }
+
+    $sourceStepId =
+        (int) $sourceStep['instance_step_id'];
+
+    if (
+        !$this->workflowRepository
+            ->isUserAssignedToStep(
+                $sourceStepId,
+                $performedBy
+            )
+    ) {
+        throw new DomainException(
+            'User is not assigned to the selected review step'
+        );
+    }
+
+    $finalVpStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'VP_FINAL',
+                true
+            );
+
+    if ($finalVpStep === null) {
+        throw new DomainException(
+            'VP mediation step was not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $sourceStepId,
+            'CHANGES_REQUESTED',
+            $performedBy,
+            $reason
+        );
+
+    /*
+     * Pause every current assignment. The VP mediation
+     * assignment is created again below.
+     */
+    $this->workflowRepository
+        ->deactivateInstanceAssignments(
+            $instanceId
+        );
+
+    /*
+     * If Legal or Finance requested changes while the other
+     * specialist was still working, pause that parallel step.
+     * Previously completed specialist decisions remain in
+     * place until the VP decides whether they need repeating.
+     */
+    if (
+        in_array(
+            $stepKey,
+            [
+                'LEGAL_REVIEW',
+                'FINANCE_REVIEW',
+            ],
+            true
+        )
+    ) {
+        $parallelStepKey =
+            $stepKey === 'LEGAL_REVIEW'
+                ? 'FINANCE_REVIEW'
+                : 'LEGAL_REVIEW';
+
+        $parallelStep =
+            $this->workflowRepository
+                ->findStepByKey(
+                    $instanceId,
+                    $parallelStepKey,
+                    true
+                );
+
+        if (
+            $parallelStep !== null
+            && $parallelStep['status']
+                === 'IN_PROGRESS'
+        ) {
+            $this->workflowRepository
+                ->prepareStepForReview(
+                    (int) $parallelStep[
+                        'instance_step_id'
+                    ],
+                    'PENDING'
+                );
+        }
+    }
+
+    /*
+     * VP_FINAL doubles as the VP mediation stage after a
+     * returned review. Its previous decision is cleared if
+     * the request came back from the President.
+     */
+    $this->workflowRepository
+        ->prepareStepForReview(
+            (int) $finalVpStep[
+                'instance_step_id'
+            ],
+            'PENDING'
+        );
+
+    $vpAssignments =
+        $this->activateOfficeStep(
+            $finalVpStep,
+            'VP mediation'
+        );
+
+    $this->workflowRepository
+        ->setCurrentStep(
+            $instanceId,
+            5
+        );
+
+    $sourceName = match ($stepKey) {
+        'LEGAL_REVIEW' =>
+            'Legal',
+        'FINANCE_REVIEW' =>
+            'Finance',
+        'PRESIDENT_APPROVAL' =>
+            'President',
+    };
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        $sourceStepId,
+        'CHANGES_REQUESTED',
+        $performedBy,
+        "{$sourceName} requested changes: {$reason}"
+    );
+
+    $this->workflowRepository->addHistory(
+        $instanceId,
+        (int) $finalVpStep[
+            'instance_step_id'
+        ],
+        'ROUTED_TO_VP',
+        $performedBy,
+        "{$sourceName} change request routed to VP for mediation"
+    );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'source_step_key' =>
+            $stepKey,
+        'source_step_status' =>
+            'CHANGES_REQUESTED',
+        'vp_mediation_activated' =>
+            true,
+        'vp_assignments' =>
+            $vpAssignments,
+        'current_stage' =>
+            'VP_MEDIATION',
+    ];
+}
+
 private function activateOfficeStep(
     array $step,
     string $officeName
