@@ -1,21 +1,181 @@
+
 # Agreement regression matrix
 
-Run these scenarios against the `seed_dev.sql` users after restarting Apache.
+Run these scenarios against the development fixtures after applying all migrations and restarting Apache. Service smoke tests execute inside transactions and roll back temporary records. HTTP lifecycle tests persist only the explicitly created development record.
 
-| Scenario | Actor | Expected result |
-| --- | --- | --- |
-| Create an agreement with a fixture partner | Faculty | `201/200`; agreement, partner link, version 1 snapshot, and `INSERT` audit record exist. |
-| Omit title, type, description, or partner | Faculty | `422` with validation errors and no persisted rows. |
-| Use a nonexistent partner ID | Faculty | Database rejection and full transaction rollback. |
-| Update title and partner | Faculty | Version number increments, snapshot preserves the prior version, and an `UPDATE` audit record exists. |
-| Read version 1 after update | Faculty | Returns version 1's original `agreement_snapshot`. |
-| Submit | Faculty | Status becomes `UNDER_REVIEW`, a new snapshot/version is created, and an `UPDATE` audit record exists. |
-| Add and remove document metadata | Faculty | Metadata row is created then removed; `INSERT` and `DELETE` audit records exist. |
-| Delete agreement | Faculty | Agreement, partner links, documents, and versions are removed; `DELETE` audit remains. |
-| Attempt delete | Approver | `403` because Agreement Approver lacks `DELETE_AGREEMENT`. |
-| Request without a session | Any | `401`. |
-| Malformed JSON or invalid IDs | Any | `4xx` response; no database changes. |
+## Development actors
+
+| Actor            | Email                      | Primary responsibility                                                              |
+| ---------------- | -------------------------- | ----------------------------------------------------------------------------------- |
+| Dean             | `dev.dean@uob.test`      | Create, update, submit, redraft, and resubmit Agreements.                           |
+| Vice President   | `dev.vp@uob.test`        | Initial review, Finance selection, mediation, routing, final review, and rejection. |
+| Legal reviewer   | `dev.legal@uob.test`     | Legal approval or change request.                                                   |
+| Finance reviewer | `dev.finance@uob.test`   | Finance approval or change request when required.                                   |
+| President        | `dev.president@uob.test` | Final approval, change request, or rejection.                                       |
+
+Development-only password: `UobDev2026!`.
+
+## CRUD, versions, documents, and audit
+
+| ID   | Scenario                                         | Actor              | Expected result                                                                                                  |
+| ---- | ------------------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| A-01 | Create an Agreement with a valid fixture partner | Dean               | Agreement begins as`DRAFT`; partner link, version 1 snapshot, and `INSERT` audit record exist.               |
+| A-02 | Omit title, type, description, or partner        | Dean               | `422`; no Agreement, version, partner link, or audit record persists.                                          |
+| A-03 | Use a nonexistent partner ID                     | Dean               | Database rejection and full transaction rollback.                                                                |
+| A-04 | Update title, description, or partner            | Dean               | Agreement updates; version number increments; immutable snapshot and`UPDATE` audit record exist.               |
+| A-05 | Read an earlier version after updating           | Authorized viewer  | Original historical`agreement_snapshot` remains unchanged.                                                     |
+| A-06 | Submit a`DRAFT` Agreement                      | Eligible creator   | Agreement becomes`UNDER_REVIEW`; submission version and audit record exist; workflow begins at `VP_INITIAL`. |
+| A-07 | Submit a non-`DRAFT` Agreement                 | Any creator        | `409`/`422`; no second active workflow is created.                                                           |
+| A-08 | Add and remove document metadata                 | Authorized creator | Metadata row is created then removed;`INSERT` and `DELETE` audit records exist.                              |
+| A-09 | Delete a permitted Agreement                     | Authorized user    | Agreement and dependent partner/version/document rows are removed; deletion audit remains.                       |
+| A-10 | Attempt deletion without permission              | Approver           | `403`; no rows change.                                                                                         |
+
+## Workflow creation and hierarchy
+
+| ID   | Scenario                                                    | Actor              | Expected result                                                                                                                 |
+| ---- | ----------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| W-01 | Start workflow as Dean                                      | Dean               | Allowed; creator step is`APPROVED`; Initial VP is `IN_PROGRESS`.                                                            |
+| W-02 | Start workflow as VP Office member                          | VP                 | Allowed.                                                                                                                        |
+| W-03 | Start workflow as President Office member                   | President          | Allowed.                                                                                                                        |
+| W-04 | Start workflow as Faculty, Legal, or Finance                | Unauthorized actor | Rejected because the actor is not an eligible Agreement initiator.                                                              |
+| W-05 | Resolve active office approvers                             | System             | VP, Legal, Finance, and President users resolve from active positions, roles, and`APPROVE_AGREEMENT`.                         |
+| W-06 | Attempt to start a second active workflow for one Agreement | Creator            | Rejected; the original active workflow remains unchanged.                                                                       |
+| W-07 | Inspect new workflow steps                                  | System             | Six ordered keys exist:`CREATOR`, `VP_INITIAL`, `LEGAL_REVIEW`, `FINANCE_REVIEW`, `VP_FINAL`, `PRESIDENT_APPROVAL`. |
+
+## Initial VP and specialist reviews
+
+| ID   | Scenario                                        | Actor          | Expected result                                                                                              |
+| ---- | ----------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| W-08 | Initial VP requests Legal and Finance           | VP             | VP step becomes`APPROVED`; both specialist steps become `IN_PROGRESS`; both offices receive assignments. |
+| W-09 | Initial VP requests Legal only                  | VP             | Legal becomes`IN_PROGRESS`; Finance becomes `SKIPPED`; Finance receives no active assignment.            |
+| W-10 | Unassigned user attempts Initial VP decision    | Other approver | Rejected; workflow state remains unchanged.                                                                  |
+| W-11 | Finance approves before Legal                   | Finance        | Finance becomes`APPROVED`; Final VP remains `PENDING`.                                                   |
+| W-12 | Legal approves after Finance                    | Legal          | Legal and Finance are both approved; Final VP becomes`IN_PROGRESS` exactly once.                           |
+| W-13 | Legal approves when Finance was skipped         | Legal          | Final VP activates immediately.                                                                              |
+| W-14 | Complete Finance when Finance was not requested | Finance        | Rejected; Finance remains`SKIPPED`.                                                                        |
+| W-15 | Repeat a completed specialist approval          | Specialist     | Rejected; duplicate history and assignments are not created.                                                 |
+
+## Final approval
+
+| ID   | Scenario                                     | Actor     | Expected result                                                                                                              |
+| ---- | -------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| W-16 | Final VP approves after required specialists | VP        | Final VP becomes`APPROVED`; President becomes `IN_PROGRESS`; President Office receives an assignment.                    |
+| W-17 | Final VP acts before specialists finish      | VP        | Rejected because Final VP is not active.                                                                                     |
+| W-18 | President approves                           | President | President step becomes`APPROVED`; workflow becomes `COMPLETED`; Agreement becomes `APPROVED`; `completed_at` is set. |
+| W-19 | Repeat President approval                    | President | Rejected because the workflow is no longer active.                                                                           |
+| W-20 | Inspect President inbox after completion     | President | Completed assignment is absent.                                                                                              |
+
+## Specialist and President change requests
+
+| ID   | Scenario                                       | Actor      | Expected result                                                                                          |
+| ---- | ---------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| R-01 | Legal requests changes while Finance is active | Legal      | Legal becomes`CHANGES_REQUESTED`; Finance pauses at `PENDING`; VP mediation becomes active.          |
+| R-02 | Finance requests changes                       | Finance    | Finance becomes`CHANGES_REQUESTED`; other active specialist work pauses; VP mediation activates.       |
+| R-03 | President requests changes                     | President  | President becomes`CHANGES_REQUESTED`; previous Final VP decision is cleared; VP mediation reactivates. |
+| R-04 | Submit a blank change-request reason           | Reviewer   | `422`; no workflow state changes.                                                                      |
+| R-05 | Unassigned user requests changes               | Other user | Rejected; no assignment or history changes.                                                              |
+| R-06 | Inspect change-request history                 | System     | Ordered`CHANGES_REQUESTED` and `ROUTED_TO_VP` records exist with actor and reason.                   |
+
+## VP mediation and routing
+
+| ID   | Scenario                                      | Actor          | Expected result                                                                                                                 |
+| ---- | --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| R-07 | Route to creator                              | VP             | Creator becomes`IN_PROGRESS`; Agreement becomes `REVISION_REQUIRED`; current version is stored as `redraft_base_version`. |
+| R-08 | Route to Legal                                | VP             | Legal is reset and becomes`IN_PROGRESS`; only Legal receives the new active specialist assignment.                            |
+| R-09 | Route to Finance                              | VP             | Finance becomes required and`IN_PROGRESS`; only Finance receives the new active specialist assignment.                        |
+| R-10 | Reject during mediation                       | VP             | VP mediation step, workflow, and Agreement become`REJECTED`; `completed_at` is recorded.                                    |
+| R-11 | Select an unsupported routing destination     | VP             | `422`; no workflow state changes.                                                                                             |
+| R-12 | Route when no change request awaits mediation | VP             | Rejected; normal Final VP approval state cannot be misused as mediation.                                                        |
+| R-13 | Unassigned user attempts VP routing           | Other approver | Rejected.                                                                                                                       |
+| R-14 | Inspect routing history                       | System         | Exactly one corresponding`ROUTED_TO_CREATOR`, `ROUTED_TO_LEGAL`, `ROUTED_TO_FINANCE`, or `REJECTED` action exists.      |
+
+## Creator redraft and resubmission
+
+| ID   | Scenario                                    | Actor            | Expected result                                                                                                      |
+| ---- | ------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| R-15 | Resubmit without creating a newer version   | Creator          | Rejected; creator step stays active; baseline remains stored.                                                        |
+| R-16 | Update Agreement after creator routing      | Creator          | A newer immutable version is created with change summary and snapshot.                                               |
+| R-17 | Resubmit with a newer version               | Original creator | Review cycle increments; creator becomes`APPROVED`; Agreement returns to `UNDER_REVIEW`; Initial VP reactivates. |
+| R-18 | Inspect downstream steps after resubmission | System           | Legal, Finance, Final VP, and President reset to`PENDING`; prior history remains.                                  |
+| R-19 | Inspect instance after resubmission         | System           | `finance_review_required` and `redraft_base_version` are `NULL`; current step is 2.                            |
+| R-20 | Non-creator attempts resubmission           | Other user       | Rejected even if the user has`SUBMIT_AGREEMENT`.                                                                   |
+| R-21 | Inspect resubmission history                | System           | `RESUBMITTED` contains the new version and review-cycle number.                                                    |
+
+## Direct VP decisions
+
+| ID   | Scenario                                   | Actor | Expected result                                                                                              |
+| ---- | ------------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------ |
+| R-22 | Initial VP returns directly to creator     | VP    | Initial VP becomes`CHANGES_REQUESTED`; creator redraft activates; Agreement becomes `REVISION_REQUIRED`. |
+| R-23 | Initial VP rejects                         | VP    | Initial VP, workflow, and Agreement become`REJECTED`.                                                      |
+| R-24 | Final VP returns directly to creator       | VP    | Final VP becomes`CHANGES_REQUESTED`; creator redraft activates; version baseline is recorded.              |
+| R-25 | Final VP rejects                           | VP    | Final VP, workflow, and Agreement become`REJECTED`.                                                        |
+| R-26 | Direct VP decision on a non-active VP step | VP    | Rejected; no state changes.                                                                                  |
+
+## President rejection
+
+| ID   | Scenario                                   | Actor     | Expected result                                                                                       |
+| ---- | ------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| R-27 | President rejects an active final decision | President | President step, workflow, and Agreement become`REJECTED`; completion time and history are recorded. |
+| R-28 | President rejection without a reason       | President | `422`; workflow remains active.                                                                     |
+| R-29 | Repeat President rejection                 | President | Rejected because workflow is terminal.                                                                |
+| R-30 | Inspect President inbox after rejection    | President | Rejected assignment is absent.                                                                        |
+
+## Assignment and review-cycle integrity
+
+| ID   | Scenario                                        | Expected result                                                                 |
+| ---- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| I-01 | Reactivate a previously completed step          | Prior decision fields and comments are cleared; step receives a new start time. |
+| I-02 | Reactivate a prior assignee                     | Earlier assignment remains inactive; exactly one new active assignment exists.  |
+| I-03 | Pause a workflow for VP mediation               | All obsolete active assignments are deactivated.                                |
+| I-04 | Increment review cycle                          | Value increases by one and stays positive.                                      |
+| I-05 | Parallel specialists finish near-simultaneously | Instance/step locks prevent duplicate Final VP activation.                      |
+| I-06 | Query inbox                                     | Only active assignments on active workflow steps are returned.                  |
+
+## HTTP routing, sessions, and permissions
+
+| ID   | Scenario                                            | Expected result                                                                                             |
+| ---- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| H-01 | Request workflow inbox without a session            | `401 Unauthorized`.                                                                                       |
+| H-02 | Call a valid workflow endpoint without a session    | `401 Unauthorized`, proving the dispatcher reached authentication middleware.                             |
+| H-03 | Call an invalid workflow route                      | `404` with `Approval route not found`.                                                                  |
+| H-04 | Log in with valid development credentials           | `200`; session cookie, identity, roles, permissions, and position are returned.                           |
+| H-05 | Call`/me` with saved cookie                       | Authenticated user data is returned.                                                                        |
+| H-06 | Use a valid session without the required permission | `403 Forbidden`.                                                                                          |
+| H-07 | Run the complete HTTP approval workflow             | Agreement ends`APPROVED`; workflow ends `COMPLETED`; all six steps and ordered history records persist. |
+| H-08 | Send malformed JSON                                 | `422` or controlled validation response; no data changes.                                                 |
+
+## Verified automated tests
+
+| Test file                                           | Coverage                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `tests/WorkflowRepositorySmokeTest.php`           | Template existence, order, mandatory Legal, optional Finance, and office codes. |
+| `tests/HierarchyResolverSmokeTest.php`            | Office approvers and eligible Agreement creators.                               |
+| `tests/InitialVpDecisionSmokeTest.php`            | Initial VP with Finance.                                                        |
+| `tests/InitialVpNoFinanceSmokeTest.php`           | Initial VP without Finance.                                                     |
+| `tests/SpecialistReviewSmokeTest.php`             | Parallel specialist completion and Legal-only completion.                       |
+| `tests/FinalVpReviewSmokeTest.php`                | Final VP activation of President.                                               |
+| `tests/PresidentApprovalSmokeTest.php`            | Workflow completion and Agreement approval.                                     |
+| `tests/ReturnWorkflowRepositorySmokeTest.php`     | Step reset, assignments, and review-cycle support.                              |
+| `tests/AgreementChangeRequestSmokeTest.php`       | Legal and President change requests routed to VP.                               |
+| `tests/VpRoutingDecisionSmokeTest.php`            | Creator, Legal, Finance, and rejection routing.                                 |
+| `tests/AgreementRedraftResubmissionSmokeTest.php` | Version enforcement and cycle-2 resubmission.                                   |
+| `tests/VpDirectDecisionSmokeTest.php`             | Initial and Final VP direct return/rejection.                                   |
+| `tests/PresidentRejectionSmokeTest.php`           | Terminal President rejection.                                                   |
 
 ## Transaction rollback checks
 
-For create, update, submit, document deletion, and agreement deletion, temporarily force the final audit write to fail in a local test branch. Confirm that the preceding data change is absent after the request. Remove the forced failure immediately after each check.
+For every multi-write operation, force a controlled failure at the final repository call in a temporary local test branch. Confirm that preceding status, assignment, history, version, and audit changes are absent after rollback. Remove the forced failure immediately after each test.
+
+Operations requiring rollback verification include:
+
+- Agreement create, update, submit, and delete.
+- Document metadata create and delete.
+- Workflow creation.
+- Initial VP activation of specialist steps.
+- Specialist completion and Final VP activation.
+- Final VP activation of President.
+- President approval or rejection.
+- Change request and VP mediation activation.
+- VP routing.
+- Creator redraft resubmission.
+- Direct VP return or rejection.
