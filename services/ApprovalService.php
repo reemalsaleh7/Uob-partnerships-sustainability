@@ -2020,6 +2020,330 @@ private function processRedraftResubmission(
             'VP_INITIAL',
     ];
 }
+
+public function decideVpReviewOutcome(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    string $decision,
+    string $reason
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processVpReviewOutcome(
+                $instanceId,
+                $stepKey,
+                $performedBy,
+                $decision,
+                $reason
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processVpReviewOutcome(
+    int $instanceId,
+    string $stepKey,
+    int $performedBy,
+    string $decision,
+    string $reason
+): array {
+    $stepKey = strtoupper(trim($stepKey));
+    $decision = strtoupper(trim($decision));
+    $reason = trim($reason);
+
+    if (
+        !in_array(
+            $stepKey,
+            [
+                'VP_INITIAL',
+                'VP_FINAL',
+            ],
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'VP decision step must be VP_INITIAL or VP_FINAL'
+        );
+    }
+
+    if (
+        !in_array(
+            $decision,
+            [
+                'RETURN_TO_CREATOR',
+                'REJECT',
+            ],
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'VP decision must be RETURN_TO_CREATOR or REJECT'
+        );
+    }
+
+    if ($reason === '') {
+        throw new InvalidArgumentException(
+            'A reason is required for the VP decision'
+        );
+    }
+
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $vpStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                $stepKey,
+                true
+            );
+
+    if ($vpStep === null) {
+        throw new DomainException(
+            'Selected VP review step was not found'
+        );
+    }
+
+    if ($vpStep['status'] !== 'IN_PROGRESS') {
+        throw new DomainException(
+            'Selected VP review step is not active'
+        );
+    }
+
+    $vpStepId =
+        (int) $vpStep['instance_step_id'];
+
+    if (
+        !$this->workflowRepository
+            ->isUserAssignedToStep(
+                $vpStepId,
+                $performedBy
+            )
+    ) {
+        throw new DomainException(
+            'User is not assigned to the selected VP review'
+        );
+    }
+
+    $agreementId =
+        (int) $instance['entity_id'];
+
+    $agreement =
+        $this->agreementRepository
+            ->findById($agreementId);
+
+    if ($agreement === null) {
+        throw new DomainException(
+            'Agreement associated with the workflow was not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->deactivateInstanceAssignments(
+            $instanceId
+        );
+
+    if ($decision === 'REJECT') {
+        $this->workflowRepository
+            ->setStepStatus(
+                $vpStepId,
+                'REJECTED',
+                $performedBy,
+                $reason
+            );
+
+        $this->workflowRepository
+            ->setInstanceStatus(
+                $instanceId,
+                'REJECTED'
+            );
+
+        $this->agreementRepository
+            ->changeStatus(
+                $agreementId,
+                'REJECTED'
+            );
+
+        $this->workflowRepository
+            ->addHistory(
+                $instanceId,
+                $vpStepId,
+                'REJECTED',
+                $performedBy,
+                "{$stepKey} rejected the Agreement: "
+                . $reason
+            );
+
+        return [
+            'success' => true,
+            'workflow_instance_id' =>
+                $instanceId,
+            'agreement_id' =>
+                $agreementId,
+            'step_key' =>
+                $stepKey,
+            'decision' =>
+                'REJECT',
+            'workflow_status' =>
+                'REJECTED',
+            'agreement_status' =>
+                'REJECTED',
+            'current_stage' =>
+                'REJECTED',
+        ];
+    }
+
+    $creatorStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'CREATOR',
+                true
+            );
+
+    if ($creatorStep === null) {
+        throw new DomainException(
+            'Creator redraft step was not found'
+        );
+    }
+
+    $redraftBaseVersion =
+        $this->agreementVersionRepository
+            ->findLatestVersionNumber(
+                $agreementId
+            );
+
+    $this->workflowRepository
+        ->setRedraftBaseVersion(
+            $instanceId,
+            $redraftBaseVersion
+        );
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $vpStepId,
+            'CHANGES_REQUESTED',
+            $performedBy,
+            $reason
+        );
+
+    $creatorStepId =
+        (int) $creatorStep[
+            'instance_step_id'
+        ];
+
+    $this->workflowRepository
+        ->prepareStepForReview(
+            $creatorStepId,
+            'IN_PROGRESS'
+        );
+
+    $creatorAssignments =
+        $this->workflowRepository
+            ->assignUserToStep(
+                $creatorStepId,
+                (int) $instance['started_by']
+            );
+
+    if ($creatorAssignments < 1) {
+        throw new DomainException(
+            'Creator could not be assigned to redraft the Agreement'
+        );
+    }
+
+    $this->agreementRepository
+        ->changeStatus(
+            $agreementId,
+            'REVISION_REQUIRED'
+        );
+
+    $this->workflowRepository
+        ->setCurrentStep(
+            $instanceId,
+            1
+        );
+
+    $this->workflowRepository
+        ->addHistory(
+            $instanceId,
+            $vpStepId,
+            'CHANGES_REQUESTED',
+            $performedBy,
+            "{$stepKey} requested creator changes: "
+            . $reason
+        );
+
+    $this->workflowRepository
+        ->addHistory(
+            $instanceId,
+            $creatorStepId,
+            'ROUTED_TO_CREATOR',
+            $performedBy,
+            "{$stepKey} returned the Agreement to its creator"
+        );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'agreement_id' =>
+            $agreementId,
+        'step_key' =>
+            $stepKey,
+        'decision' =>
+            'RETURN_TO_CREATOR',
+        'creator_assignments' =>
+            $creatorAssignments,
+        'redraft_base_version' =>
+            $redraftBaseVersion,
+        'agreement_status' =>
+            'REVISION_REQUIRED',
+        'current_stage' =>
+            'CREATOR_REDRAFT',
+    ];
+}
+
 private function activateOfficeStep(
     array $step,
     string $officeName
