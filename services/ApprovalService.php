@@ -1728,6 +1728,298 @@ private function processVpRoutingDecision(
     ];
 }
 
+public function resubmitAgreementAfterRedraft(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments = null
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processRedraftResubmission(
+                $instanceId,
+                $performedBy,
+                $comments
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processRedraftResubmission(
+    int $instanceId,
+    int $performedBy,
+    ?string $comments
+): array {
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    if (
+        (int) $instance['started_by']
+        !== $performedBy
+    ) {
+        throw new DomainException(
+            'Only the original Agreement creator may resubmit the redraft'
+        );
+    }
+
+    $agreementId =
+        (int) $instance['entity_id'];
+
+    $agreement =
+        $this->agreementRepository
+            ->findById($agreementId);
+
+    if ($agreement === null) {
+        throw new DomainException(
+            'Agreement associated with the workflow was not found'
+        );
+    }
+
+    if (
+        $agreement['status']
+        !== 'REVISION_REQUIRED'
+    ) {
+        throw new DomainException(
+            'Agreement is not awaiting creator revision'
+        );
+    }
+
+    $creatorStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'CREATOR',
+                true
+            );
+
+    if ($creatorStep === null) {
+        throw new DomainException(
+            'Creator redraft step was not found'
+        );
+    }
+
+    if ($creatorStep['status'] !== 'IN_PROGRESS') {
+        throw new DomainException(
+            'Creator redraft step is not active'
+        );
+    }
+
+    $creatorStepId =
+        (int) $creatorStep[
+            'instance_step_id'
+        ];
+
+    if (
+        !$this->workflowRepository
+            ->isUserAssignedToStep(
+                $creatorStepId,
+                $performedBy
+            )
+    ) {
+        throw new DomainException(
+            'Creator is not assigned to this redraft'
+        );
+    }
+
+    if (
+        $instance['redraft_base_version']
+        === null
+    ) {
+        throw new DomainException(
+            'Redraft version baseline is missing'
+        );
+    }
+
+    $baseVersion =
+        (int) $instance[
+            'redraft_base_version'
+        ];
+
+    $latestVersion =
+        $this->agreementVersionRepository
+            ->findLatestVersionNumber(
+                $agreementId
+            );
+
+    if ($latestVersion <= $baseVersion) {
+        throw new DomainException(
+            'Agreement must be updated and versioned before resubmission'
+        );
+    }
+
+    $initialVpStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'VP_INITIAL',
+                true
+            );
+
+    if ($initialVpStep === null) {
+        throw new DomainException(
+            'Initial VP review step was not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $creatorStepId,
+            'APPROVED',
+            $performedBy,
+            $comments
+        );
+
+    $this->workflowRepository
+        ->deactivateInstanceAssignments(
+            $instanceId
+        );
+
+    /*
+     * Reset every downstream decision for the new review
+     * cycle. Previous decisions remain in workflow_history.
+     */
+    foreach (
+        [
+            'VP_INITIAL',
+            'LEGAL_REVIEW',
+            'FINANCE_REVIEW',
+            'VP_FINAL',
+            'PRESIDENT_APPROVAL',
+        ]
+        as $stepKey
+    ) {
+        $step =
+            $this->workflowRepository
+                ->findStepByKey(
+                    $instanceId,
+                    $stepKey,
+                    true
+                );
+
+        if ($step === null) {
+            throw new DomainException(
+                "Workflow step {$stepKey} was not found"
+            );
+        }
+
+        $this->workflowRepository
+            ->prepareStepForReview(
+                (int) $step[
+                    'instance_step_id'
+                ],
+                'PENDING'
+            );
+    }
+
+    $vpAssignments =
+        $this->activateOfficeStep(
+            $initialVpStep,
+            'Initial VP redraft'
+        );
+
+    $reviewCycle =
+        $this->workflowRepository
+            ->incrementReviewCycle(
+                $instanceId
+            );
+
+    $this->workflowRepository
+        ->clearFinanceReviewRequired(
+            $instanceId
+        );
+
+    $this->workflowRepository
+        ->clearRedraftBaseVersion(
+            $instanceId
+        );
+
+    $this->workflowRepository
+        ->setCurrentStep(
+            $instanceId,
+            2
+        );
+
+    $this->agreementRepository
+        ->changeStatus(
+            $agreementId,
+            'UNDER_REVIEW'
+        );
+
+    $historyComment =
+        "Creator resubmitted Agreement version {$latestVersion} "
+        . "for review cycle {$reviewCycle}";
+
+    if ($comments) {
+        $historyComment .=
+            '. Creator comments: ' . $comments;
+    }
+
+    $this->workflowRepository
+        ->addHistory(
+            $instanceId,
+            $creatorStepId,
+            'RESUBMITTED',
+            $performedBy,
+            $historyComment
+        );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'agreement_id' =>
+            $agreementId,
+        'review_cycle' =>
+            $reviewCycle,
+        'submitted_version' =>
+            $latestVersion,
+        'vp_assignments' =>
+            $vpAssignments,
+        'agreement_status' =>
+            'UNDER_REVIEW',
+        'current_stage' =>
+            'VP_INITIAL',
+    ];
+}
 private function activateOfficeStep(
     array $step,
     string $officeName

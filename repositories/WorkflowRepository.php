@@ -645,6 +645,21 @@ public function clearRedraftBaseVersion(
         'instance_id' => $instanceId,
     ]);
 }
+
+    public function clearFinanceReviewRequired(
+    int $instanceId
+): void {
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_instances
+         SET finance_review_required = NULL
+         WHERE workflow_instance_id =
+               :instance_id'
+    );
+
+    $stmt->execute([
+        'instance_id' => $instanceId,
+    ]);
+}
     public function addHistory(
         int $instanceId,
         int $instanceStepId,
