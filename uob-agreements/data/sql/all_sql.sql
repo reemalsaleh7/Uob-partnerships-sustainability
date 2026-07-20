@@ -366,6 +366,10 @@ CREATE TABLE workflow_instances (
         NOT NULL
         DEFAULT 1,
 
+    -- Latest Agreement version at the time it was returned
+    -- to the creator. Resubmission requires a newer version.
+    redraft_base_version INTEGER,
+
     status workflow_status
         NOT NULL
         DEFAULT 'IN_PROGRESS',
@@ -390,7 +394,13 @@ CREATE TABLE workflow_instances (
         REFERENCES users(user_id),
 
     CONSTRAINT chk_workflow_review_cycle_positive
-        CHECK (review_cycle > 0)
+        CHECK (review_cycle > 0),
+
+    CONSTRAINT chk_redraft_base_version_nonnegative
+    CHECK (
+        redraft_base_version IS NULL
+        OR redraft_base_version >= 0
+    )
 );
 
 CREATE TABLE workflow_instance_steps (
