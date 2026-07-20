@@ -607,6 +607,44 @@ public function incrementReviewCycle(
     return (int) $reviewCycle;
 }
 
+    public function setRedraftBaseVersion(
+    int $instanceId,
+    int $versionNumber
+): void {
+    if ($versionNumber < 0) {
+        throw new InvalidArgumentException(
+            'Redraft base version cannot be negative'
+        );
+    }
+
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_instances
+         SET redraft_base_version =
+             :version_number
+         WHERE workflow_instance_id =
+               :instance_id'
+    );
+
+    $stmt->execute([
+        'version_number' => $versionNumber,
+        'instance_id' => $instanceId,
+    ]);
+}
+
+public function clearRedraftBaseVersion(
+    int $instanceId
+): void {
+    $stmt = $this->db->prepare(
+        'UPDATE workflow_instances
+         SET redraft_base_version = NULL
+         WHERE workflow_instance_id =
+               :instance_id'
+    );
+
+    $stmt->execute([
+        'instance_id' => $instanceId,
+    ]);
+}
     public function addHistory(
         int $instanceId,
         int $instanceStepId,

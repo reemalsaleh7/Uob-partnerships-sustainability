@@ -56,6 +56,24 @@ class AgreementVersionRepository {
         return $version ? $this->hydrateSnapshot($version) : null;
     }
 
+    public function findLatestVersionNumber(
+    int $agreementId
+): int {
+    $stmt = $this->db->prepare(
+        'SELECT COALESCE(
+            MAX(version_number),
+            0
+         )
+         FROM agreement_versions
+         WHERE agreement_id = :agreement_id'
+    );
+
+    $stmt->execute([
+        'agreement_id' => $agreementId,
+    ]);
+
+    return (int) $stmt->fetchColumn();
+}
     private function hydrateSnapshot(array $version): array {
         if (is_string($version['agreement_snapshot'] ?? null)) {
             $version['agreement_snapshot'] = json_decode($version['agreement_snapshot'], true, 512, JSON_THROW_ON_ERROR);

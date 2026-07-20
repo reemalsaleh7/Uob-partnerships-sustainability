@@ -6,14 +6,14 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 require_once __DIR__ . '/HierarchyResolver.php';
-
+require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
 class ApprovalService
 {
     private PDO $db;
     private AgreementRepository $agreementRepository;
     private WorkflowRepository $workflowRepository;
     private HierarchyResolver $hierarchyResolver;
-
+    private AgreementVersionRepository $agreementVersionRepository;
     public function __construct()
     {
         $this->db = Database::connect();
@@ -23,6 +23,8 @@ class ApprovalService
             new WorkflowRepository();
         $this->hierarchyResolver =
             new HierarchyResolver($this->workflowRepository);
+        $this->agreementVersionRepository =
+            new AgreementVersionRepository();
     }
 
     public function startAgreementWorkflow(
@@ -1536,6 +1538,18 @@ private function processVpRoutingDecision(
             );
         }
 
+        $redraftBaseVersion =
+            $this->agreementVersionRepository
+                ->findLatestVersionNumber(
+                    $agreementId
+                );
+
+        $this->workflowRepository
+            ->setRedraftBaseVersion(
+                $instanceId,
+                $redraftBaseVersion
+            );
+
         $creatorStepId =
             (int) $creatorStep[
                 'instance_step_id'
@@ -1592,6 +1606,8 @@ private function processVpRoutingDecision(
                 'CREATOR',
             'creator_assignments' =>
                 $creatorAssignments,
+            'redraft_base_version' =>
+                $redraftBaseVersion,
             'agreement_status' =>
                 'REVISION_REQUIRED',
             'current_stage' =>
