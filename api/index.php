@@ -53,6 +53,19 @@ try {
     }
 
     if (
+    $requestPath === '/workflow-inbox'
+    || str_starts_with(
+        $requestPath,
+        '/workflow-instances/'
+    )
+) {
+    require dirname(__DIR__)
+        . '/routes/approvals.php';
+
+    exit;
+}
+
+    if (
         str_starts_with($requestPath, '/agreements')
         || str_starts_with($requestPath, '/documents')
     ) {
