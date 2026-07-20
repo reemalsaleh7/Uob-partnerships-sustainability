@@ -2344,6 +2344,185 @@ private function processVpReviewOutcome(
     ];
 }
 
+public function rejectAgreementByPresident(
+    int $instanceId,
+    int $performedBy,
+    string $reason
+): array {
+    $ownsTransaction =
+        !$this->db->inTransaction();
+
+    if ($ownsTransaction) {
+        $this->db->beginTransaction();
+    }
+
+    try {
+        $result =
+            $this->processPresidentRejection(
+                $instanceId,
+                $performedBy,
+                $reason
+            );
+
+        if ($ownsTransaction) {
+            $this->db->commit();
+        }
+
+        return $result;
+    } catch (Throwable $exception) {
+        if (
+            $ownsTransaction
+            && $this->db->inTransaction()
+        ) {
+            $this->db->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+private function processPresidentRejection(
+    int $instanceId,
+    int $performedBy,
+    string $reason
+): array {
+    $reason = trim($reason);
+
+    if ($reason === '') {
+        throw new InvalidArgumentException(
+            'A reason is required for President rejection'
+        );
+    }
+
+    $instance =
+        $this->workflowRepository
+            ->findInstanceById(
+                $instanceId,
+                true
+            );
+
+    if ($instance === null) {
+        throw new DomainException(
+            'Workflow instance not found'
+        );
+    }
+
+    if (
+        $instance['entity_type'] !== 'AGREEMENT'
+        || $instance['status'] !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'Agreement workflow is not active'
+        );
+    }
+
+    $presidentStep =
+        $this->workflowRepository
+            ->findStepByKey(
+                $instanceId,
+                'PRESIDENT_APPROVAL',
+                true
+            );
+
+    if ($presidentStep === null) {
+        throw new DomainException(
+            'President approval step was not found'
+        );
+    }
+
+    if (
+        $presidentStep['status']
+        !== 'IN_PROGRESS'
+    ) {
+        throw new DomainException(
+            'President approval is not active'
+        );
+    }
+
+    $presidentStepId =
+        (int) $presidentStep[
+            'instance_step_id'
+        ];
+
+    if (
+        !$this->workflowRepository
+            ->isUserAssignedToStep(
+                $presidentStepId,
+                $performedBy
+            )
+    ) {
+        throw new DomainException(
+            'User is not assigned to President approval'
+        );
+    }
+
+    $agreementId =
+        (int) $instance['entity_id'];
+
+    $agreement =
+        $this->agreementRepository
+            ->findById($agreementId);
+
+    if ($agreement === null) {
+        throw new DomainException(
+            'Agreement associated with the workflow was not found'
+        );
+    }
+
+    $this->workflowRepository
+        ->setStepStatus(
+            $presidentStepId,
+            'REJECTED',
+            $performedBy,
+            $reason
+        );
+
+    $this->workflowRepository
+        ->deactivateInstanceAssignments(
+            $instanceId
+        );
+
+    $this->workflowRepository
+        ->setInstanceStatus(
+            $instanceId,
+            'REJECTED'
+        );
+
+    $this->agreementRepository
+        ->changeStatus(
+            $agreementId,
+            'REJECTED'
+        );
+
+    $this->workflowRepository
+        ->addHistory(
+            $instanceId,
+            $presidentStepId,
+            'REJECTED',
+            $performedBy,
+            'President rejected the Agreement: '
+            . $reason
+        );
+
+    return [
+        'success' => true,
+        'workflow_instance_id' =>
+            $instanceId,
+        'agreement_id' =>
+            $agreementId,
+        'completed_step_key' =>
+            'PRESIDENT_APPROVAL',
+        'decision' =>
+            'REJECT',
+        'workflow_status' =>
+            'REJECTED',
+        'agreement_status' =>
+            'REJECTED',
+        'current_stage' =>
+            'REJECTED',
+    ];
+}
+
 private function activateOfficeStep(
     array $step,
     string $officeName
