@@ -6,6 +6,7 @@ require_once __DIR__ . '/../services/AgreementPerformanceService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../helpers/ApiRequest.php';
 
 class AgreementPerformanceController
 {
@@ -60,7 +61,7 @@ class AgreementPerformanceController
     {
         AuthMiddleware::handle();
         PermissionMiddleware::require('MANAGE_AGREEMENT_REPORTS');
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = ApiRequest::json();
         try {
             Response::success(
                 $this->service->update($reportId, $this->userId(), $input)
@@ -89,7 +90,7 @@ class AgreementPerformanceController
     {
         AuthMiddleware::handle();
         PermissionMiddleware::require('REVIEW_AGREEMENT_REPORTS');
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = ApiRequest::json();
         try {
             Response::success($this->service->review(
                 $reportId,

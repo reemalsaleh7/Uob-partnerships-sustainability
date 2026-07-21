@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../services/AgreementLifecycleService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
+require_once __DIR__ . '/../helpers/ApiRequest.php';
 require_once __DIR__ . '/../helpers/Response.php';
 
 class AgreementLifecycleController
@@ -180,7 +181,7 @@ class AgreementLifecycleController
 
     private function input(): array
     {
-        return json_decode(file_get_contents('php://input'), true) ?? [];
+        return ApiRequest::json();
     }
 
     private function userId(): int

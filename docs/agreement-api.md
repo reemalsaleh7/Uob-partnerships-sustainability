@@ -1,5 +1,11 @@
 # Agreement API
 
+All state-changing workspace requests must include `X-UOB-Tab-Session`. JSON
+requests use `Content-Type: application/json`, contain a JSON object, and are
+limited to 1 MB. Malformed JSON returns `422`, unsupported media types return
+`415`, and oversized JSON returns `413`. Secure document uploads use multipart
+form data and retain their separate 10 MB limit.
+
 The Agreement API provides CRUD, versioning, document metadata, approval workflow, change-request, redraft, routing, and rejection operations.
 
 ## Base URL and authentication

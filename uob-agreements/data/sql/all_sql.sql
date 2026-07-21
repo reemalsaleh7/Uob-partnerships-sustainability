@@ -106,6 +106,7 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     last_login TIMESTAMP,
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TIMESTAMP,
     password_changed_at TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -721,3 +722,6 @@ WHERE is_active = TRUE;
 
 -- Annual reports, executive-program progress, KPI results, and dashboards.
 \ir migrations/20260721_agreement_performance_monitoring.sql
+
+-- Authentication, session, and release-integration hardening.
+\ir migrations/20260721_agreement_integration_hardening.sql

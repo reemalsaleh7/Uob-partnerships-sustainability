@@ -83,6 +83,9 @@
 -- Annual reports, executive-program progress, KPI results, and dashboards
 \ir migrations/20260721_agreement_performance_monitoring.sql
 
+-- Authentication, session, and release-integration hardening
+\ir migrations/20260721_agreement_integration_hardening.sql
+
 -- Views
 \ir views/organization_structure.sql
 \ir views/user_positions.sql

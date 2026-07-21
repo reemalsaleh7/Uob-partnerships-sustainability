@@ -8,6 +8,13 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('Vary: Cookie');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+
+$requestId = bin2hex(random_bytes(12));
+header('X-Request-Id: ' . $requestId);
 
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $requestPath = parse_url($requestUri, PHP_URL_PATH) ?: '/';
@@ -40,6 +47,21 @@ $requestPath = '/' . ltrim($requestPath, '/');
 $_SERVER['REQUEST_URI'] = $requestPath;
 
 try {
+    $requestMethod = strtoupper((string) (
+        $_SERVER['REQUEST_METHOD'] ?? 'GET'
+    ));
+    if (
+        in_array($requestMethod, ['POST', 'PUT', 'PATCH', 'DELETE'], true)
+        && trim((string) ($_SERVER['HTTP_X_UOB_TAB_SESSION'] ?? '')) === ''
+    ) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'The workspace tab session header is required.',
+        ]);
+        exit;
+    }
+
     if ($requestPath === '/') {
         http_response_code(200);
 
@@ -114,12 +136,17 @@ try {
         'error' => 'API route not found',
     ]);
 } catch (Throwable $exception) {
-    error_log($exception->__toString());
+    error_log(sprintf(
+        '[UOB API %s] %s',
+        $requestId,
+        $exception->__toString()
+    ));
 
     http_response_code(500);
 
     echo json_encode([
         'success' => false,
         'error' => 'Internal server error',
+        'request_id' => $requestId,
     ]);
 }

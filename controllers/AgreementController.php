@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/AgreementService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
+require_once __DIR__ . '/../helpers/ApiRequest.php';
 require_once __DIR__ . '/../helpers/Response.php';
 
 class AgreementController {
@@ -39,7 +40,7 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('CREATE_AGREEMENT');
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = ApiRequest::json();
         $data = $this->agreementInput($input);
         $data['created_by'] = (int) ($_SESSION['user_id'] ?? 0);
 
@@ -55,7 +56,7 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('EDIT_AGREEMENT');
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = ApiRequest::json();
         $data = $this->agreementInput($input);
         $data['change_summary'] = $input['change_summary'] ?? null;
         $data['updated_by'] = (int) ($_SESSION['user_id'] ?? 0);
@@ -98,10 +99,7 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('SUBMIT_AGREEMENT');
 
-        $input = json_decode(
-            file_get_contents('php://input'),
-            true
-        ) ?? [];
+        $input = ApiRequest::json();
 
         $comments = isset($input['comments'])
             ? trim((string) $input['comments'])

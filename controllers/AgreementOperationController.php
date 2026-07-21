@@ -6,6 +6,7 @@ require_once __DIR__ . '/../services/AgreementOperationService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../helpers/ApiRequest.php';
 
 class AgreementOperationController
 {
@@ -31,7 +32,7 @@ class AgreementOperationController
     {
         AuthMiddleware::handle();
         PermissionMiddleware::require('MANAGE_AGREEMENT_OPERATIONS');
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = ApiRequest::json();
         try {
             Response::success($this->service->finalizeSigning(
                 $agreementId,

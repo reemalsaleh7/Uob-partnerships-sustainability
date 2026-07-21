@@ -22,18 +22,34 @@ class AuthService {
             return ['success' => false, 'error' => 'Invalid credentials'];
         }
 
-        $userId = (int) ($user['user_id'] ?? 0);
-        $failedAttempts = (int) ($user['failed_login_attempts'] ?? 0);
-
-        if ($failedAttempts >= 5) {
-            return ['success' => false, 'error' => 'Account temporarily locked.'];
-        }
-
         $this->userRepo->beginTransaction();
 
         try {
+            $user = $this->userRepo->findByEmailForUpdate($email);
+            if (!$user) {
+                $this->userRepo->rollBack();
+                return ['success' => false, 'error' => 'Invalid credentials'];
+            }
+
+            $userId = (int) ($user['user_id'] ?? 0);
+            $lockedUntil = $user['locked_until'] ?? null;
+            if (
+                is_string($lockedUntil)
+                && strtotime($lockedUntil) > time()
+            ) {
+                $this->userRepo->rollBack();
+                return [
+                    'success' => false,
+                    'error' => 'Account temporarily locked. Try again later.',
+                ];
+            }
+
+            if ($lockedUntil !== null) {
+                $this->userRepo->resetFailedAttempts($userId);
+            }
+
             if (!password_verify($password, $user['password_hash'])) {
-                $this->userRepo->incrementFailedAttempts($userId);
+                $this->userRepo->recordFailedLogin($userId);
                 $this->userRepo->commit();
                 return ['success' => false, 'error' => 'Invalid credentials'];
             }
@@ -59,6 +75,7 @@ class AuthService {
                 $user['first_name'] ?? '',
                 $user['last_name'] ?? '',
             ])));
+            ApiSession::markAuthenticated();
 
             $this->userRepo->commit();
 

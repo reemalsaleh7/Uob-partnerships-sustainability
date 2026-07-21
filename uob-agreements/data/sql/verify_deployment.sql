@@ -39,3 +39,12 @@ SELECT
     (SELECT COUNT(*) FROM permissions) AS permissions,
     (SELECT COUNT(*) FROM organizational_units) AS organizational_units,
     (SELECT COUNT(*) FROM users WHERE is_active) AS active_users;
+
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'users'
+  AND column_name IN (
+      'failed_login_attempts', 'locked_until', 'last_login'
+  )
+ORDER BY ordinal_position;

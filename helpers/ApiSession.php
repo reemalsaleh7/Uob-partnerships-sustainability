@@ -6,12 +6,22 @@ final class ApiSession
 {
     private const REQUEST_HEADER = 'HTTP_X_UOB_TAB_SESSION';
     private const RESPONSE_HEADER = 'X-UOB-Tab-Session';
+    private const IDLE_TIMEOUT_SECONDS = 1800;
+    private const ABSOLUTE_TIMEOUT_SECONDS = 43200;
 
     public static function start(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
+            self::enforceLifetime();
             self::exposeCurrentId();
             return;
+        }
+
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_samesite', 'Lax');
+        if (self::isHttps()) {
+            ini_set('session.cookie_secure', '1');
         }
 
         $tabSessionId = trim(
@@ -29,6 +39,7 @@ final class ApiSession
         }
 
         session_start();
+        self::enforceLifetime();
         self::exposeCurrentId();
     }
 
@@ -36,6 +47,13 @@ final class ApiSession
     {
         session_regenerate_id(true);
         self::exposeCurrentId();
+    }
+
+    public static function markAuthenticated(): void
+    {
+        $now = time();
+        $_SESSION['authenticated_at'] = $now;
+        $_SESSION['last_activity_at'] = $now;
     }
 
     public static function exposeCurrentId(): void
@@ -68,5 +86,38 @@ final class ApiSession
         ]);
 
         exit;
+    }
+
+    private static function enforceLifetime(): void
+    {
+        if (!isset($_SESSION['user_id'])) {
+            return;
+        }
+
+        $now = time();
+        $authenticatedAt = (int) (
+            $_SESSION['authenticated_at'] ?? $now
+        );
+        $lastActivityAt = (int) (
+            $_SESSION['last_activity_at'] ?? $now
+        );
+
+        if (
+            $now - $lastActivityAt > self::IDLE_TIMEOUT_SECONDS
+            || $now - $authenticatedAt > self::ABSOLUTE_TIMEOUT_SECONDS
+        ) {
+            $_SESSION = [];
+            session_regenerate_id(true);
+            return;
+        }
+
+        $_SESSION['authenticated_at'] = $authenticatedAt;
+        $_SESSION['last_activity_at'] = $now;
+    }
+
+    private static function isHttps(): bool
+    {
+        return !empty($_SERVER['HTTPS'])
+            && strtolower((string) $_SERVER['HTTPS']) !== 'off';
     }
 }

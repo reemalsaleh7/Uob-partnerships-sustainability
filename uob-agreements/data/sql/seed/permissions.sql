@@ -15,6 +15,14 @@ VALUES
 'Submit Agreement'),
 
 
+('VIEW_AGREEMENT',
+'View Agreement'),
+
+
+('DELETE_AGREEMENT',
+'Delete Agreement'),
+
+
 ('APPROVE_AGREEMENT',
 'Approve Agreement'),
 

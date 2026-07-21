@@ -37,6 +37,19 @@ submissionAssert(
     'Development Dean was not found'
 );
 
+$partnerId = $db->query(
+    'SELECT partner_id
+     FROM partners
+     WHERE is_active = TRUE
+     ORDER BY partner_id
+     LIMIT 1'
+)->fetchColumn();
+
+submissionAssert(
+    $partnerId !== false,
+    'At least one active partner is required'
+);
+
 $db->beginTransaction();
 
 try {
@@ -47,10 +60,30 @@ try {
             'agreement_type' => 'MOU',
             'description' =>
                 'Rolled back after verification',
+            'geographic_scope' => 'LOCAL',
+            'start_date' =>
+                date('Y-m-d', strtotime('+30 days')),
+            'end_date' =>
+                date('Y-m-d', strtotime('+395 days')),
+            'need_justification' =>
+                'Required for submission workflow verification',
+            'expected_value' =>
+                'Verifies the complete submission transaction',
+            'objectives' =>
+                'Confirm workflow creation and initial VP routing',
+            'collaboration_areas' =>
+                'Academic and institutional cooperation',
+            'implementation_methods' =>
+                'Joint coordination and periodic review',
             'created_by' =>
                 (int) $dean['user_id'],
             'status' => 'DRAFT',
         ]);
+
+    $agreementRepository->replacePartners(
+        $agreementId,
+        [(int) $partnerId]
+    );
 
     $result =
         $agreementService->submitAgreement(
@@ -60,7 +93,12 @@ try {
 
     submissionAssert(
         $result['success'] === true,
-        'Agreement submission failed'
+        'Agreement submission failed: '
+            . implode(
+                '; ',
+                $result['errors']
+                    ?? ['Unknown error']
+            )
     );
 
     $agreement =

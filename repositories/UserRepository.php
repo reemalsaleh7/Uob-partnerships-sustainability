@@ -28,7 +28,16 @@ class UserRepository {
 
     public function findByEmail(string $email): ?array {
         $stmt = $this->db->prepare(
-            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, last_login, is_active FROM users WHERE email = :email LIMIT 1"
+            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, locked_until, last_login, is_active FROM users WHERE email = :email LIMIT 1"
+        );
+        $stmt->execute(['email' => $email]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
+    public function findByEmailForUpdate(string $email): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, locked_until, last_login, is_active FROM users WHERE email = :email LIMIT 1 FOR UPDATE"
         );
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
@@ -51,18 +60,40 @@ class UserRepository {
         $stmt->execute(['user_id' => $userId]);
     }
 
-    public function incrementFailedAttempts(int $userId): void {
+    public function recordFailedLogin(int $userId): void {
         $stmt = $this->db->prepare(
-            "UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE user_id = :user_id"
+            "UPDATE users
+             SET failed_login_attempts = failed_login_attempts + 1,
+                 locked_until = CASE
+                     WHEN failed_login_attempts + 1 >= 5
+                     THEN NOW() + INTERVAL '15 minutes'
+                     ELSE locked_until
+                 END
+             WHERE user_id = :user_id"
         );
         $stmt->execute(['user_id' => $userId]);
     }
 
     public function resetFailedAttempts(int $userId): void {
         $stmt = $this->db->prepare(
-            "UPDATE users SET failed_login_attempts = 0 WHERE user_id = :user_id"
+            "UPDATE users
+             SET failed_login_attempts = 0,
+                 locked_until = NULL
+             WHERE user_id = :user_id"
         );
         $stmt->execute(['user_id' => $userId]);
+    }
+
+    public function isActive(int $userId): bool {
+        $stmt = $this->db->prepare(
+            'SELECT is_active FROM users WHERE user_id = :user_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return in_array(
+            $stmt->fetchColumn(),
+            [true, 1, '1', 't', 'true'],
+            true
+        );
     }
 
     public function getRoles(int $userId): array {

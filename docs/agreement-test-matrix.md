@@ -197,6 +197,25 @@ Development-only password: `UobDev2026!`.
 | H-06 | Use a valid session without the required permission | `403 Forbidden`.                                                                                          |
 | H-07 | Run the complete HTTP approval workflow             | Agreement ends`APPROVED`; workflow ends `COMPLETED`; all six steps and ordered history records persist. |
 | H-08 | Send malformed JSON                                 | `422` or controlled validation response; no data changes.                                                 |
+| H-09 | Omit `X-UOB-Tab-Session` on a state-changing request | `400`; no controller action or data change occurs.                                                        |
+| H-10 | Send JSON with `text/plain`                         | `415`; the request is rejected at the shared API boundary.                                                |
+| H-11 | Send a JSON array instead of an object                | `422`; the request is rejected consistently.                                                              |
+| H-12 | Send a JSON body larger than 1 MB                     | `413`; no controller action or data change occurs.                                                        |
+| H-13 | Leave an authenticated tab idle for over 30 minutes   | Session is invalidated and the workspace returns to login.                                                |
+| H-14 | Use an authenticated tab for over 12 hours            | Absolute session expiry requires a new login.                                                             |
+| H-15 | Deactivate a currently signed-in user                 | Their next protected API request returns `401`.                                                           |
+| H-16 | Submit five consecutive invalid passwords             | Account is locked for 15 minutes, then becomes eligible to authenticate again.                            |
+
+## Integration and release acceptance
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| REL-01 | Run `ApiBoundarySmokeTest.php` | Valid JSON succeeds; malformed, array, wrong media type, and oversized payloads receive the expected controlled status; Agreement controllers do not bypass the shared decoder. |
+| REL-02 | Run `AuthenticationHardeningSmokeTest.php` | Lock starts on failure five, has a future expiry, resets cleanly, and the transaction rolls back. |
+| REL-03 | Run `AgreementReleaseReadinessSmokeTest.php` | Required PHP extensions, schema objects, role grants, eligible workflow-office reviewers, storage, and cross-table invariants pass. |
+| REL-04 | Run acceptance runner with `--quick` | Critical cross-phase regression tests all pass. |
+| REL-05 | Run acceptance runner without flags | Every Agreement smoke test passes, including the read-only 41-row import verification. |
+| REL-06 | Inspect staged files | Local database configuration and private documents are absent. |
 
 ## Final VP and mediation frontend checks
 

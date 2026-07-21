@@ -7,6 +7,7 @@ require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../helpers/ApiRequest.php';
 
 class ApprovalController
 {
@@ -304,16 +305,7 @@ class ApprovalController
 
     private function input(): array
     {
-        $input = json_decode(
-            file_get_contents('php://input'),
-            true
-        );
-
-        if (!is_array($input)) {
-            return [];
-        }
-
-        return $input;
+        return ApiRequest::json();
     }
 
     private function userId(): int
