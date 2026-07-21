@@ -6,41 +6,14 @@ function workspaceHeader(
     string $title,
     string $activePage = ''
 ): void {
-    $safeTitle = htmlspecialchars(
-        $title,
-        ENT_QUOTES,
-        'UTF-8'
-    );
-
-    $agreementsActive =
-        $activePage === 'agreements'
-            ? ' active'
-            : '';
-
-    $workflowActive =
-        $activePage === 'workflow'
-            ? ' active'
-            : '';
-
-    $lifecycleActive =
-        $activePage === 'lifecycle'
-            ? ' active'
-            : '';
-
-    $performanceActive =
-        $activePage === 'performance'
-            ? ' active'
-            : '';
-
-    $dashboardActive =
-        $activePage === 'performance-dashboard'
-            ? ' active'
-            : '';
-
+    $GLOBALS['workspace_is_login_page'] = $activePage === '';
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $active = static fn (string $page): string =>
+        $activePage === $page ? ' active' : '';
     $isLoginPage = $activePage === '';
-    $navigationClass = $isLoginPage
-        ? ' workspace-navigation-guest'
-        : '';
+    $bodyClass = $isLoginPage
+        ? 'workspace-body workspace-login-body'
+        : 'workspace-body';
 
     echo <<<HTML
 <!doctype html>
@@ -48,7 +21,7 @@ function workspaceHeader(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{$safeTitle} | UOB Agreement Workspace</title>
+    <title>{$safeTitle} | UOB Partnerships Workspace</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
@@ -56,137 +29,157 @@ function workspaceHeader(
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-    <link href="assets/css/workspace.css?v=20260721" rel="stylesheet">
+    <link href="assets/css/workspace.css?v=20260721-functional-redesign" rel="stylesheet">
 </head>
-<body class="workspace-body">
+<body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
+HTML;
 
-    <div class="workspace-utility-bar">
-        <div class="container-xl workspace-utility-content">
-            <span class="workspace-context-label">
-                Partnerships &amp; Sustainable Impact
+    if ($isLoginPage) {
+        echo <<<HTML
+    <header class="login-brandbar">
+        <a class="workspace-brand" href="../index.php">
+            <img src="../assets/image/THEM/uob_logo.png" alt="University of Bahrain">
+            <span>
+                <strong>University of Bahrain</strong>
+                <small>Partnerships &amp; Sustainable Impact</small>
             </span>
-            <div class="workspace-portal-links" aria-label="Portal links">
-                <a href="../index.php">Public portal</a>
-                <a href="../initiatives.php">Initiatives</a>
-                <a href="../agreements.php">Public Agreements</a>
-            </div>
-        </div>
-    </div>
+        </a>
+        <a class="login-public-link" href="../index.php">Public portal</a>
+    </header>
+    <main id="main-content" class="workspace-login-main">
+HTML;
+        return;
+    }
 
-    <nav class="navbar navbar-expand-lg workspace-navbar">
-        <div class="container-xl">
-            <a class="navbar-brand d-flex align-items-center gap-3" href="agreements.php">
-                <img
-                    src="../assets/image/THEM/uob_logo.png"
-                    alt="University of Bahrain"
-                    class="workspace-logo"
-                >
+    $dashboardActive = $active('dashboard');
+    $agreementsActive = $active('agreements');
+    $workflowActive = $active('workflow');
+    $lifecycleActive = $active('lifecycle');
+    $performanceActive = $active('performance');
+    $performanceDashboardActive = $active('performance-dashboard');
+    $initiativesActive = $active('initiatives');
+    $profileActive = $active('profile');
+
+    echo <<<HTML
+    <div class="workspace-app">
+        <aside class="workspace-sidebar" id="workspaceSidebar" aria-label="Workspace navigation">
+            <a class="workspace-brand workspace-sidebar-brand" href="index.php">
+                <img src="../assets/image/THEM/uob_logo.png" alt="University of Bahrain">
                 <span>
-                    <span class="d-block workspace-brand-title">University of Bahrain</span>
-                    <span class="d-block workspace-brand-subtitle">Agreement Workspace</span>
+                    <strong>UOB Partnerships</strong>
+                    <small>Operations workspace</small>
                 </span>
             </a>
 
-            <button
-                class="navbar-toggler{$navigationClass}"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#workspaceNavigation"
-                aria-controls="workspaceNavigation"
-                aria-expanded="false"
-                aria-label="Toggle navigation"
-            >
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse{$navigationClass}" id="workspaceNavigation">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link{$agreementsActive}" href="agreements.php">
-                            Agreements
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link{$lifecycleActive}" href="lifecycle-requests.php">
-                            Lifecycle requests
-                        </a>
-                    </li>
-                    <li class="nav-item d-none" data-workflow-nav>
-                        <a class="nav-link{$workflowActive}" href="workflow-inbox.php">
-                            Workflow inbox
-                        </a>
-                    </li>
-                    <li class="nav-item d-none" data-performance-nav>
-                        <a class="nav-link{$performanceActive}" href="performance-reports.php">
-                            Performance reports
-                        </a>
-                    </li>
-                    <li class="nav-item d-none" data-performance-dashboard-nav>
-                        <a class="nav-link{$dashboardActive}" href="performance-dashboard.php">
-                            Performance dashboard
-                        </a>
-                    </li>
-                </ul>
-
-                <div class="workspace-user d-none" data-session-panel>
-                    <span class="workspace-user-avatar" aria-hidden="true">U</span>
-                    <span class="workspace-user-name" data-user-name></span>
-                    <button class="btn btn-sm btn-outline-primary" type="button" data-logout>
-                        Sign out
-                    </button>
+            <div class="workspace-sidebar-context">
+                <span class="workspace-user-avatar" data-user-initials aria-hidden="true">U</span>
+                <div>
+                    <strong data-user-name>Loading account…</strong>
+                    <small data-user-context>Secure workspace</small>
                 </div>
             </div>
-        </div>
-    </nav>
 
-    <main id="main-content" class="container-xl workspace-main py-4 py-lg-5">
+            <nav class="workspace-side-nav">
+                <p class="workspace-nav-label">Workspace</p>
+                <a class="workspace-nav-link{$dashboardActive}" href="index.php">
+                    <span>Overview</span><small>Your work today</small>
+                </a>
+                <a class="workspace-nav-link{$agreementsActive}" href="agreements.php" data-agreement-nav>
+                    <span>Agreements</span><small>Portfolio and records</small>
+                </a>
+                <a class="workspace-nav-link{$workflowActive} d-none" href="workflow-inbox.php" data-workflow-nav>
+                    <span>Review inbox</span><small>Assigned decisions</small>
+                    <b class="workspace-nav-count d-none" data-workflow-nav-count></b>
+                </a>
+                <a class="workspace-nav-link{$lifecycleActive} d-none" href="lifecycle-requests.php" data-lifecycle-nav>
+                    <span>Lifecycle requests</span><small>Renew, amend, terminate</small>
+                </a>
+
+                <p class="workspace-nav-label mt-4">Performance</p>
+                <a class="workspace-nav-link{$performanceActive} d-none" href="performance-reports.php" data-performance-nav>
+                    <span>Annual reports</span><small>Evidence and outcomes</small>
+                </a>
+                <a class="workspace-nav-link{$performanceDashboardActive} d-none" href="performance-dashboard.php" data-performance-dashboard-nav>
+                    <span>Performance dashboard</span><small>Progress and compliance</small>
+                </a>
+
+                <p class="workspace-nav-label mt-4">Initiatives</p>
+                <a class="workspace-nav-link{$initiativesActive}" href="initiative-hub.php">
+                    <span>Initiative hub</span><small>Start and follow initiatives</small>
+                </a>
+
+                <p class="workspace-nav-label mt-4">Account</p>
+                <a class="workspace-nav-link{$profileActive}" href="profile.php">
+                    <span>My profile</span><small>Role and access</small>
+                </a>
+            </nav>
+
+            <div class="workspace-sidebar-footer">
+                <a href="../index.php">Public portal</a>
+                <button type="button" data-logout>Sign out</button>
+            </div>
+        </aside>
+
+        <div class="workspace-stage">
+            <header class="workspace-topbar">
+                <button
+                    class="workspace-menu-button"
+                    type="button"
+                    aria-label="Open navigation"
+                    aria-controls="workspaceSidebar"
+                    aria-expanded="false"
+                    data-sidebar-toggle
+                >
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="workspace-topbar-title">
+                    <small>Partnerships &amp; Sustainable Impact</small>
+                    <strong>{$safeTitle}</strong>
+                </div>
+                <div class="workspace-topbar-actions" data-session-panel>
+                    <a class="workspace-profile-link" href="profile.php">
+                        <span class="workspace-user-avatar" data-user-initials aria-hidden="true">U</span>
+                        <span><strong data-user-name></strong><small>View profile</small></span>
+                    </a>
+                </div>
+            </header>
+
+            <main id="main-content" class="workspace-main">
 HTML;
 }
 
 function workspaceFooter(array $scripts = []): void
 {
-    $year = date('Y');
+    echo "    </main>\n";
+
+    if (!empty($GLOBALS['workspace_is_login_page'])) {
+        echo <<<HTML
+    <footer class="login-footer">
+        University of Bahrain · Partnerships &amp; Sustainable Impact
+    </footer>
+HTML;
+    } else {
+        echo <<<HTML
+            <footer class="workspace-footer">
+                <span>University of Bahrain · Partnerships &amp; Sustainable Impact</span>
+                <a href="../index.php">Open public portal</a>
+            </footer>
+        </div>
+    </div>
+HTML;
+    }
 
     echo <<<HTML
-    </main>
-
-    <footer class="workspace-footer">
-        <div class="container-xl workspace-footer-content py-4">
-            <div class="workspace-footer-brand">
-                <img
-                    src="../assets/image/THEM/uob_logo.png"
-                    alt=""
-                    aria-hidden="true"
-                >
-                <span>
-                    <strong>University of Bahrain</strong>
-                    <small>Partnerships &amp; Sustainable Impact</small>
-                </span>
-            </div>
-            <nav class="workspace-footer-links" aria-label="Footer links">
-                <a href="../index.php">Public portal</a>
-                <a href="../agreements.php">Published Agreements</a>
-                <a href="../initiatives.php">Initiatives</a>
-            </nav>
-            <span class="workspace-footer-copy">&copy; {$year} University of Bahrain</span>
-        </div>
-    </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js"></script>
+    <script src="assets/js/api-client.js?v=20260721-functional-redesign"></script>
 HTML;
 
     foreach ($scripts as $script) {
-        $safeScript = htmlspecialchars(
-            (string) $script,
-            ENT_QUOTES,
-            'UTF-8'
-        );
-
+        $safeScript = htmlspecialchars((string) $script, ENT_QUOTES, 'UTF-8');
         echo "    <script src=\"{$safeScript}\"></script>\n";
     }
 

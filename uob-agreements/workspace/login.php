@@ -11,9 +11,9 @@ workspaceHeader('Sign in');
     <div class="login-card">
         <div class="login-card-header">
             <p class="eyebrow mb-2">Internal workspace</p>
-            <h1 id="login-title" class="h3 mb-2">Sign in to manage Agreements</h1>
+            <h1 id="login-title" class="h3 mb-2">Sign in to your partnerships workspace</h1>
             <p class="text-secondary mb-0">
-                Use your authorized University of Bahrain account.
+                Your dashboard adapts to your University role, assignments, and reporting responsibilities.
             </p>
         </div>
 
@@ -65,4 +65,3 @@ workspaceHeader('Sign in');
 </section>
 
 <?php workspaceFooter(['assets/js/login.js']); ?>
-

@@ -73,7 +73,11 @@ try {
         exit;
     }
 
-    if (in_array($requestPath, ['/login', '/logout', '/me'], true)) {
+    if (in_array(
+        $requestPath,
+        ['/login', '/logout', '/me', '/legacy-initiative-handoff'],
+        true
+    )) {
         require dirname(__DIR__) . '/routes/auth.php';
         exit;
     }

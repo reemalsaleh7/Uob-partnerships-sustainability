@@ -71,6 +71,33 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </section>
 
+    <section class="workspace-card mt-4" aria-labelledby="workflow-timeline-title" data-workflow-timeline-section>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="workflow-timeline-title" class="h5 mb-1">Review workflow</h2>
+                <p class="small text-secondary mb-0">
+                    See every approval stage, who has acted, and who is reviewing now.
+                </p>
+            </div>
+            <span class="status-badge status-default" data-workflow-state>Loading</span>
+        </div>
+        <div class="loading-state compact" data-workflow-timeline-loading>
+            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <span>Loading workflow…</span>
+        </div>
+        <div class="d-none" data-workflow-timeline-content>
+            <div class="workflow-timeline" data-workflow-timeline></div>
+            <div class="timeline-current-banner d-none" data-workflow-current></div>
+            <details class="mx-3 mb-3 d-none" data-workflow-history-wrap>
+                <summary class="small fw-bold text-primary">View workflow activity history</summary>
+                <ul class="dashboard-list mt-2 border rounded-3" data-workflow-history></ul>
+            </details>
+        </div>
+        <div class="empty-state compact d-none" data-workflow-timeline-empty>
+            <p class="text-secondary mb-0">This Agreement has not been submitted for formal review yet.</p>
+        </div>
+    </section>
+
     <div class="row g-4 mt-1">
         <div class="col-lg-8">
             <section class="workspace-card h-100" aria-labelledby="overview-title">

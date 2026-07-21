@@ -10,7 +10,8 @@
         reportKpis: document.querySelector('[data-report-kpis]'),
         deadlines: document.querySelector('[data-dashboard-deadlines]'),
         metrics: document.querySelector('[data-dashboard-metrics]'),
-        programs: document.querySelector('[data-program-health]')
+        programs: document.querySelector('[data-program-health]'),
+        scope: document.querySelector('[data-dashboard-scope]')
     };
 
     function number(value) {
@@ -34,6 +35,9 @@
     }
 
     function render(payload) {
+        elements.scope.textContent = payload.scope === 'OWN_PORTFOLIO'
+            ? 'Your portfolio · Agreements you created and manage'
+            : 'Institutional view · All University Agreements';
         const agreements = payload.agreements || {};
         elements.agreementKpis.replaceChildren(
             card('Active Agreements', agreements.active_agreements, 'kpi-active'),
@@ -84,12 +88,31 @@
             const planned = Number(metric.planned_value || 0);
             const actual = Number(metric.actual_value || 0);
             const row = document.createElement('tr');
-            [metric.metric_label, `${number(planned)} ${metric.unit || ''}`, `${number(actual)} ${metric.unit || ''}`, planned > 0 ? `${number(actual / planned * 100)}%` : '—']
+            [metric.metric_label, `${number(planned)} ${metric.unit || ''}`, `${number(actual)} ${metric.unit || ''}`]
                 .forEach((value) => {
                     const cell = document.createElement('td');
                     cell.textContent = value;
                     row.append(cell);
                 });
+            const achievement = document.createElement('td');
+            if (planned > 0) {
+                const percentage = actual / planned * 100;
+                const progress = document.createElement('div');
+                progress.className = 'metric-progress';
+                const track = document.createElement('div');
+                track.className = 'metric-progress-track';
+                const fill = document.createElement('div');
+                fill.className = 'metric-progress-fill';
+                fill.style.width = `${Math.min(Math.max(percentage, 0), 100)}%`;
+                track.append(fill);
+                const label = document.createElement('small');
+                label.textContent = `${number(percentage)}% of target`;
+                progress.append(track, label);
+                achievement.append(progress);
+            } else {
+                achievement.textContent = 'No target set';
+            }
+            row.append(achievement);
             elements.metrics.append(row);
         });
         if (!elements.metrics.children.length) {
@@ -103,14 +126,29 @@
         }
 
         elements.programs.replaceChildren();
+        const programTotal = (payload.programs || []).reduce(
+            (sum, item) => sum + Number(item.program_count || 0),
+            0
+        );
         (payload.programs || []).forEach((item) => {
             const line = document.createElement('div');
-            line.className = 'd-flex justify-content-between align-items-center border-bottom py-2';
+            line.className = 'mb-3';
+            const header = document.createElement('div');
+            header.className = 'd-flex justify-content-between align-items-center small mb-1';
             const label = document.createElement('span');
             label.textContent = String(item.progress_status).replaceAll('_', ' ');
             const count = document.createElement('strong');
             count.textContent = number(item.program_count);
-            line.append(label, count);
+            header.append(label, count);
+            const progress = document.createElement('div');
+            progress.className = 'metric-progress-track';
+            const fill = document.createElement('div');
+            fill.className = 'metric-progress-fill';
+            fill.style.width = programTotal > 0
+                ? `${Number(item.program_count || 0) / programTotal * 100}%`
+                : '0%';
+            progress.append(fill);
+            line.append(header, progress);
             elements.programs.append(line);
         });
         if (!elements.programs.children.length) {
@@ -137,7 +175,17 @@
 
     (async function initialize() {
         try {
-            await AgreementApi.requireSession('VIEW_AGREEMENT_DASHBOARD');
+            const user = await AgreementApi.requireSession();
+            if (
+                !AgreementApi.hasPermission(user, 'VIEW_AGREEMENT_DASHBOARD')
+                && !AgreementApi.hasPermission(user, 'MANAGE_AGREEMENT_REPORTS')
+            ) {
+                throw new AgreementApi.ApiError(
+                    'You do not have permission to view this dashboard.',
+                    403,
+                    null
+                );
+            }
             const current = new Date().getFullYear();
             for (let year = current + 1; year >= current - 5; year -= 1) {
                 const option = document.createElement('option');

@@ -108,7 +108,10 @@ class AgreementPerformanceController
     public function dashboard(): void
     {
         AuthMiddleware::handle();
-        PermissionMiddleware::require('VIEW_AGREEMENT_DASHBOARD');
+        PermissionMiddleware::requireAny([
+            'VIEW_AGREEMENT_DASHBOARD',
+            'MANAGE_AGREEMENT_REPORTS',
+        ]);
         $year = isset($_GET['year'])
             ? (int) $_GET['year']
             : (int) date('Y');

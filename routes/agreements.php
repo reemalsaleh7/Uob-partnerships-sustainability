@@ -28,6 +28,8 @@ $uri = '/' . ltrim($uri, '/');
 
 if ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/workflow-timeline$#', $uri, $matches)) {
+    $controller->workflowTimeline((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/operations$#', $uri, $matches)) {
     $operationController->summary((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/signing-record$#', $uri, $matches)) {

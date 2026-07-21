@@ -16,7 +16,15 @@
         edit: document.querySelector('[data-edit-agreement]'),
         submit: document.querySelector('[data-submit-agreement]'),
         submitLabel: document.querySelector('[data-submit-label]'),
-        submitSpinner: document.querySelector('[data-submit-spinner]')
+        submitSpinner: document.querySelector('[data-submit-spinner]'),
+        workflowState: document.querySelector('[data-workflow-state]'),
+        workflowLoading: document.querySelector('[data-workflow-timeline-loading]'),
+        workflowContent: document.querySelector('[data-workflow-timeline-content]'),
+        workflowEmpty: document.querySelector('[data-workflow-timeline-empty]'),
+        workflowTimeline: document.querySelector('[data-workflow-timeline]'),
+        workflowCurrent: document.querySelector('[data-workflow-current]'),
+        workflowHistoryWrap: document.querySelector('[data-workflow-history-wrap]'),
+        workflowHistory: document.querySelector('[data-workflow-history]')
     };
 
     const state = {
@@ -198,6 +206,117 @@
         });
     }
 
+    const workflowLabels = Object.freeze({
+        CREATOR: 'Creator submission',
+        VP_INITIAL: 'Initial VP review',
+        LEGAL_REVIEW: 'Legal review',
+        FINANCE_REVIEW: 'Finance review',
+        VP_FINAL: 'Final VP review',
+        PRESIDENT_APPROVAL: 'President approval'
+    });
+
+    function workflowStepClass(status) {
+        const classes = {
+            APPROVED: 'is-complete',
+            COMPLETED: 'is-complete',
+            IN_PROGRESS: 'is-current',
+            CHANGES_REQUESTED: 'is-blocked',
+            REJECTED: 'is-blocked',
+            SKIPPED: 'is-skipped'
+        };
+        return classes[String(status || '').toUpperCase()] || '';
+    }
+
+    function renderWorkflow(timeline) {
+        elements.workflowLoading.classList.add('d-none');
+        const steps = Array.isArray(timeline?.steps) ? timeline.steps : [];
+        const workflow = timeline?.workflow || null;
+
+        if (!workflow || !steps.length) {
+            elements.workflowState.textContent = 'Not submitted';
+            elements.workflowEmpty.classList.remove('d-none');
+            return;
+        }
+
+        elements.workflowState.replaceChildren(
+            AgreementApi.createStatusBadge(workflow.status || 'IN_PROGRESS')
+        );
+        elements.workflowTimeline.replaceChildren();
+
+        steps.forEach((step, index) => {
+            const item = document.createElement('div');
+            item.className = `timeline-step ${workflowStepClass(step.status)}`.trim();
+            const marker = document.createElement('span');
+            marker.className = 'timeline-marker';
+            marker.textContent = ['APPROVED', 'COMPLETED'].includes(step.status)
+                ? '✓'
+                : String(index + 1);
+            const title = document.createElement('strong');
+            title.textContent = workflowLabels[step.step_key]
+                || String(step.step_key || 'Workflow step').replaceAll('_', ' ');
+            const office = document.createElement('small');
+            office.textContent = step.step_key === 'CREATOR'
+                ? (step.acted_by_name || step.acted_by_email || 'Agreement creator')
+                : (step.assigned_unit_name || step.assigned_unit_code || 'University reviewer');
+            item.append(marker, title, office);
+
+            if (step.status === 'IN_PROGRESS') {
+                const reviewer = document.createElement('span');
+                reviewer.textContent = step.assigned_reviewer_names
+                    || step.assigned_reviewer_emails
+                    || 'Reviewer assignment active';
+                item.append(reviewer);
+            } else if (step.acted_by_name || step.acted_by_email) {
+                const actor = document.createElement('span');
+                actor.textContent = `Completed by ${step.acted_by_name || step.acted_by_email}`;
+                item.append(actor);
+            } else if (step.status === 'SKIPPED') {
+                const skipped = document.createElement('span');
+                skipped.textContent = 'Not required';
+                item.append(skipped);
+            }
+
+            elements.workflowTimeline.append(item);
+        });
+
+        const current = steps.find((step) => step.status === 'IN_PROGRESS');
+        if (current) {
+            const copy = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = `Currently under review: ${workflowLabels[current.step_key] || current.step_key}`;
+            const detail = document.createElement('small');
+            const reviewer = current.assigned_reviewer_names
+                || current.assigned_reviewer_emails
+                || 'Assigned reviewer';
+            detail.textContent = `${current.assigned_unit_name || current.assigned_unit_code || 'Reviewing office'} · ${reviewer} · Started ${AgreementApi.formatDate(current.started_at)}`;
+            copy.append(title, detail);
+            elements.workflowCurrent.replaceChildren(copy);
+            elements.workflowCurrent.classList.remove('d-none');
+        }
+
+        const history = Array.isArray(timeline?.history) ? timeline.history : [];
+        elements.workflowHistory.replaceChildren();
+        history.forEach((event) => {
+            const item = document.createElement('li');
+            item.className = 'dashboard-list-item';
+            const copy = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = String(event.action || 'Workflow action').replaceAll('_', ' ');
+            const detail = document.createElement('small');
+            detail.textContent = [
+                workflowLabels[event.step_key] || event.step_key,
+                event.performed_by_name || event.performed_by_email,
+                AgreementApi.formatDate(event.created_at),
+                event.comments
+            ].filter(Boolean).join(' · ');
+            copy.append(title, detail);
+            item.append(copy);
+            elements.workflowHistory.append(item);
+        });
+        elements.workflowHistoryWrap.classList.toggle('d-none', history.length === 0);
+        elements.workflowContent.classList.remove('d-none');
+    }
+
     function showError(error) {
         elements.loading.classList.add('d-none');
         elements.content.classList.add('d-none');
@@ -275,9 +394,10 @@
             state.agreementId = id;
             const user = await AgreementApi.requireSession('VIEW_AGREEMENT');
 
-            const [agreement, versions] = await Promise.all([
+            const [agreement, versions, timeline] = await Promise.all([
                 AgreementApi.agreement(id),
-                AgreementApi.versions(id)
+                AgreementApi.versions(id),
+                AgreementApi.agreementTimeline(id)
             ]);
 
             if (!agreement) {
@@ -287,6 +407,7 @@
             state.agreement = agreement;
             renderAgreement(agreement);
             renderVersions(versions);
+            renderWorkflow(timeline);
             configureActions(user, agreement);
             showFeedbackFromQuery();
             elements.loading.classList.add('d-none');

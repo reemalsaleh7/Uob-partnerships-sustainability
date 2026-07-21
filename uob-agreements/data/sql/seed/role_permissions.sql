@@ -80,3 +80,34 @@ JOIN permissions p
   )
 WHERE r.role_name = 'System Administrator'
 ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM roles r
+JOIN permissions p
+  ON p.permission_code IN (
+      'CREATE_INITIATIVE', 'EDIT_INITIATIVE', 'VIEW_REPORTS'
+  )
+WHERE r.role_name = 'Initiative Creator'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM roles r
+JOIN permissions p
+  ON p.permission_code IN (
+      'APPROVE_INITIATIVE', 'REJECT_INITIATIVE', 'VIEW_REPORTS'
+  )
+WHERE r.role_name = 'Initiative Approver'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM roles r
+JOIN permissions p
+  ON p.permission_code IN (
+      'CREATE_INITIATIVE', 'EDIT_INITIATIVE',
+      'APPROVE_INITIATIVE', 'REJECT_INITIATIVE', 'VIEW_REPORTS'
+  )
+WHERE r.role_name = 'System Administrator'
+ON CONFLICT DO NOTHING;

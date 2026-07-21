@@ -36,6 +36,21 @@ class AgreementController {
         Response::success($agreement);
     }
 
+    public function workflowTimeline(int $agreementId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $timeline = $this->agreementService->workflowTimelineForUser(
+            $agreementId,
+            (int) ($_SESSION['user_id'] ?? 0)
+        );
+        if ($timeline === null) {
+            Response::error('Agreement not found', 404);
+        }
+
+        Response::success($timeline);
+    }
+
     public function create(): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('CREATE_AGREEMENT');

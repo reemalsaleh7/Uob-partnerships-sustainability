@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 
 class AuthController {
     private AuthService $authService;
@@ -39,5 +40,17 @@ class AuthController {
             Response::error('Not authenticated', 401);
         }
         Response::success($this->authService->currentUser());
+    }
+
+    public function legacyInitiativeHandoff(): void {
+        AuthMiddleware::handle();
+
+        try {
+            Response::success(
+                $this->authService->createLegacyInitiativeHandoff()
+            );
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        }
     }
 }

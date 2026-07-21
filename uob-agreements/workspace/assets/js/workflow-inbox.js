@@ -131,10 +131,13 @@
                 link.textContent = 'Review';
                 actionCell.appendChild(link);
             } else {
-                const note = document.createElement('span');
-                note.className = 'small text-secondary';
-                note.textContent = 'Review screen coming next';
-                actionCell.appendChild(note);
+                const link = document.createElement('a');
+                link.className = 'btn btn-sm btn-outline-primary';
+                link.href = `agreement.php?id=${encodeURIComponent(
+                    assignment.subject_agreement_id || assignment.entity_id
+                )}`;
+                link.textContent = 'Open Agreement';
+                actionCell.appendChild(link);
             }
 
             tr.appendChild(actionCell);

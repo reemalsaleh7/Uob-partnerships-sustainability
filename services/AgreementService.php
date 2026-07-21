@@ -686,6 +686,37 @@ class AgreementService {
         );
     }
 
+    public function workflowTimelineForUser(
+        int $agreementId,
+        int $userId
+    ): ?array {
+        if ($this->findByIdForUser($agreementId, $userId) === null) {
+            return null;
+        }
+
+        $instance = $this->workflowRepo->findLatestByEntity(
+            'AGREEMENT',
+            $agreementId
+        );
+
+        if ($instance === null) {
+            return [
+                'agreement_id' => $agreementId,
+                'workflow' => null,
+                'steps' => [],
+                'history' => [],
+            ];
+        }
+
+        $instanceId = (int) $instance['workflow_instance_id'];
+        return [
+            'agreement_id' => $agreementId,
+            'workflow' => $instance,
+            'steps' => $this->workflowRepo->findTimelineSteps($instanceId),
+            'history' => $this->workflowRepo->findTimelineHistory($instanceId),
+        ];
+    }
+
     public function findByStatus(string $status): array {
         return $this->agreementRepo->findByStatus($status);
     }

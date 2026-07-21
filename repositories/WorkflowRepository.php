@@ -78,6 +78,95 @@ class WorkflowRepository
         return $instance ?: null;
     }
 
+    public function findLatestByEntity(
+        string $entityType,
+        int $entityId
+    ): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT wi.*
+             FROM workflow_instances wi
+             WHERE wi.entity_type = :entity_type
+               AND wi.entity_id = :entity_id
+             ORDER BY wi.started_at DESC, wi.workflow_instance_id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'entity_type' => strtoupper($entityType),
+            'entity_id' => $entityId,
+        ]);
+        $instance = $stmt->fetch();
+        return $instance ?: null;
+    }
+
+    public function findTimelineSteps(int $instanceId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT
+                wis.instance_step_id,
+                wis.step_order,
+                wis.step_key,
+                wis.status,
+                wis.is_optional,
+                wis.comments,
+                wis.started_at,
+                wis.completed_at,
+                wis.approved_at,
+                ou.code AS assigned_unit_code,
+                ou.name AS assigned_unit_name,
+                NULLIF(TRIM(CONCAT(actor.first_name, \' \', actor.last_name)), \'\')
+                    AS acted_by_name,
+                actor.email AS acted_by_email,
+                STRING_AGG(
+                    DISTINCT NULLIF(TRIM(CONCAT(reviewer.first_name, \' \', reviewer.last_name)), \'\'),
+                    \', \' ORDER BY NULLIF(TRIM(CONCAT(reviewer.first_name, \' \', reviewer.last_name)), \'\')
+                ) FILTER (WHERE reviewer.user_id IS NOT NULL)
+                    AS assigned_reviewer_names,
+                STRING_AGG(
+                    DISTINCT reviewer.email,
+                    \', \' ORDER BY reviewer.email
+                ) FILTER (WHERE reviewer.user_id IS NOT NULL)
+                    AS assigned_reviewer_emails
+             FROM workflow_instance_steps wis
+             LEFT JOIN organizational_units ou
+               ON ou.unit_id = wis.assigned_unit_id
+             LEFT JOIN users actor
+               ON actor.user_id = wis.approved_by
+             LEFT JOIN workflow_step_assignments wsa
+               ON wsa.workflow_instance_step_id = wis.instance_step_id
+              AND wsa.is_active = TRUE
+             LEFT JOIN users reviewer
+               ON reviewer.user_id = wsa.user_id
+             WHERE wis.workflow_instance_id = :instance_id
+             GROUP BY
+                wis.instance_step_id, wis.step_order, wis.step_key,
+                wis.status, wis.is_optional, wis.comments, wis.started_at,
+                wis.completed_at, wis.approved_at,
+                ou.code, ou.name, actor.first_name, actor.last_name, actor.email
+             ORDER BY wis.step_order, wis.instance_step_id'
+        );
+        $stmt->execute(['instance_id' => $instanceId]);
+        return $stmt->fetchAll();
+    }
+
+    public function findTimelineHistory(int $instanceId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT wh.history_id, wh.action, wh.comments, wh.created_at,
+                    wis.step_key,
+                    NULLIF(TRIM(CONCAT(u.first_name, \' \', u.last_name)), \'\')
+                        AS performed_by_name,
+                    u.email AS performed_by_email
+             FROM workflow_history wh
+             LEFT JOIN workflow_instance_steps wis
+               ON wis.instance_step_id = wh.workflow_step_id
+             LEFT JOIN users u ON u.user_id = wh.performed_by
+             WHERE wh.workflow_instance_id = :instance_id
+             ORDER BY wh.created_at, wh.history_id'
+        );
+        $stmt->execute(['instance_id' => $instanceId]);
+        return $stmt->fetchAll();
+    }
+
     public function findInstanceById(
         int $instanceId,
         bool $forUpdate = false

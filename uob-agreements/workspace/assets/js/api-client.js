@@ -201,14 +201,14 @@
         return JSON.stringify(value);
     }
 
-    function safeReturnPath(defaultPath = 'agreements.php') {
+    function safeReturnPath(defaultPath = 'index.php') {
         const value = new URLSearchParams(global.location.search).get('to');
 
         if (!value) {
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review|performance-reports|performance-report|performance-dashboard)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(index|profile|initiative-hub|agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review|performance-reports|performance-report|performance-dashboard)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -227,6 +227,33 @@
 
     function displayName(user) {
         return user?.full_name || user?.email || 'Signed-in user';
+    }
+
+    function initials(user) {
+        const name = String(displayName(user)).trim();
+        const words = name.split(/\s+/).filter(Boolean);
+
+        if (words.length === 0) {
+            return 'U';
+        }
+
+        return words.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+    }
+
+    function primaryContext(user) {
+        const position = Array.isArray(user?.positions)
+            ? user.positions[0]
+            : null;
+
+        if (position?.position && position?.organizational_unit) {
+            return `${position.position} · ${position.organizational_unit}`;
+        }
+
+        if (Array.isArray(user?.roles) && user.roles.length > 0) {
+            return user.roles[0];
+        }
+
+        return 'University account';
     }
 
     async function requireSession(permission = null) {
@@ -263,11 +290,33 @@
             element.textContent = displayName(user);
         });
 
+        document.querySelectorAll('[data-user-initials]').forEach((element) => {
+            element.textContent = initials(user);
+        });
+
+        document.querySelectorAll('[data-user-context]').forEach((element) => {
+            element.textContent = primaryContext(user);
+        });
+
+        document.querySelectorAll('[data-agreement-nav]').forEach((element) => {
+            element.classList.toggle(
+                'd-none',
+                !hasPermission(user, 'VIEW_AGREEMENT')
+            );
+        });
+
         const canReview = hasPermission(user, 'APPROVE_AGREEMENT')
             || hasPermission(user, 'REJECT_AGREEMENT');
 
         document.querySelectorAll('[data-workflow-nav]').forEach((element) => {
             element.classList.toggle('d-none', !canReview);
+        });
+
+        document.querySelectorAll('[data-lifecycle-nav]').forEach((element) => {
+            element.classList.toggle(
+                'd-none',
+                !hasPermission(user, 'CREATE_AGREEMENT')
+            );
         });
 
         const canUseReports = hasPermission(user, 'MANAGE_AGREEMENT_REPORTS')
@@ -279,8 +328,65 @@
             element.classList.toggle(
                 'd-none',
                 !hasPermission(user, 'VIEW_AGREEMENT_DASHBOARD')
+                    && !hasPermission(user, 'MANAGE_AGREEMENT_REPORTS')
             );
         });
+
+        const sidebar = document.getElementById('workspaceSidebar');
+        const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+
+        if (sidebar && sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
+            sidebarToggle.dataset.bound = 'true';
+            sidebarToggle.addEventListener('click', () => {
+                const isOpen = sidebar.classList.toggle('is-open');
+                sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            document.addEventListener('click', (event) => {
+                if (
+                    window.innerWidth < 992
+                    && sidebar.classList.contains('is-open')
+                    && !sidebar.contains(event.target)
+                    && !sidebarToggle.contains(event.target)
+                ) {
+                    sidebar.classList.remove('is-open');
+                    sidebarToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        if (document.body.dataset.legacyHandoffBound !== 'true') {
+            document.body.dataset.legacyHandoffBound = 'true';
+            document.addEventListener('click', async (event) => {
+                const link = event.target.closest('[data-legacy-initiative]');
+                if (!link) return;
+
+                event.preventDefault();
+                if (link.dataset.handoffBusy === 'true') return;
+                link.dataset.handoffBusy = 'true';
+                link.setAttribute('aria-busy', 'true');
+
+                try {
+                    const handoff = await request(
+                        '/legacy-initiative-handoff',
+                        { method: 'POST' }
+                    );
+                    const target = link.dataset.legacyInitiative
+                        || 'request-initiative.php?lang=en';
+                    const destination = new URL('../workspace-handoff.php', global.location.href);
+                    destination.searchParams.set('token', handoff.token);
+                    destination.searchParams.set('to', target);
+                    global.location.assign(destination.toString());
+                } catch (error) {
+                    link.dataset.handoffBusy = 'false';
+                    link.removeAttribute('aria-busy');
+                    global.alert(
+                        error.message
+                        || 'The Initiative portal could not be opened.'
+                    );
+                }
+            });
+        }
 
         document.querySelectorAll('[data-logout]').forEach((button) => {
             if (button.dataset.bound === 'true') {
@@ -355,6 +461,8 @@
         safeReturnPath,
         hasPermission,
         displayName,
+        initials,
+        primaryContext,
         requireSession,
         formatDate,
         createStatusBadge,
@@ -375,6 +483,9 @@
         },
         agreement(id) {
             return request(`/agreements/${encodeURIComponent(id)}`);
+        },
+        agreementTimeline(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/workflow-timeline`);
         },
         createAgreement(data) {
             return request('/agreements', {

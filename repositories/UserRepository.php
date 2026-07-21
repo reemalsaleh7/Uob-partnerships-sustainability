@@ -53,6 +53,20 @@ class UserRepository {
         return $user ?: null;
     }
 
+    public function findProfileById(int $userId): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT user_id, university_id, first_name, last_name,
+                    email, phone, last_login, password_changed_at,
+                    is_active, created_at
+             FROM users
+             WHERE user_id = :user_id
+             LIMIT 1'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
     public function updateLastLogin(int $userId): void {
         $stmt = $this->db->prepare(
             "UPDATE users SET last_login = NOW() WHERE user_id = :user_id"
@@ -133,5 +147,31 @@ class UserRepository {
         ");
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll();
+    }
+
+    public function createLegacyHandoff(
+        int $userId,
+        string $tokenHash,
+        DateTimeImmutable $expiresAt
+    ): void {
+        $delete = $this->db->prepare(
+            'DELETE FROM workspace_legacy_handoffs
+             WHERE user_id = :user_id
+               AND (used_at IS NOT NULL OR expires_at < NOW())'
+        );
+        $delete->execute(['user_id' => $userId]);
+
+        $insert = $this->db->prepare(
+            'INSERT INTO workspace_legacy_handoffs (
+                user_id, token_hash, expires_at
+             ) VALUES (
+                :user_id, :token_hash, :expires_at
+             )'
+        );
+        $insert->execute([
+            'user_id' => $userId,
+            'token_hash' => $tokenHash,
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+        ]);
     }
 }

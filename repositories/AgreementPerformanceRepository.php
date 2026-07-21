@@ -431,20 +431,29 @@ class AgreementPerformanceRepository
         return $row ?: null;
     }
 
-    public function dashboard(int $year): array
+    public function dashboard(int $year, ?int $ownerUserId = null): array
     {
+        $ownerFilter = $ownerUserId === null
+            ? ''
+            : ' AND a.created_by = :owner_user_id';
+        $yearParameters = ['report_year' => $year];
+        $ownerParameters = $ownerUserId === null
+            ? []
+            : ['owner_user_id' => $ownerUserId];
+
         $summary = $this->db->prepare(
             'SELECT
-                COUNT(*) FILTER (WHERE status = \'ACTIVE\') AS active_agreements,
-                COUNT(*) FILTER (WHERE status = \'APPROVED\') AS scheduled_agreements,
-                COUNT(*) FILTER (WHERE status = \'EXPIRED\') AS expired_agreements,
+                COUNT(*) FILTER (WHERE a.status = \'ACTIVE\') AS active_agreements,
+                COUNT(*) FILTER (WHERE a.status = \'APPROVED\') AS scheduled_agreements,
+                COUNT(*) FILTER (WHERE a.status = \'EXPIRED\') AS expired_agreements,
                 COUNT(*) FILTER (
-                    WHERE annual_report_required = TRUE
-                      AND status IN (\'ACTIVE\', \'EXPIRED\')
+                    WHERE a.annual_report_required = TRUE
+                      AND a.status IN (\'ACTIVE\', \'EXPIRED\')
                 ) AS reportable_agreements
-             FROM agreements'
+             FROM agreements a
+             WHERE TRUE' . $ownerFilter
         );
-        $summary->execute();
+        $summary->execute($ownerParameters);
         $agreementSummary = $summary->fetch() ?: [];
 
         $reportStatement = $this->db->prepare(
@@ -459,9 +468,11 @@ class AgreementPerformanceRepository
                       AND pr.due_date < CURRENT_DATE
                 ) AS overdue
              FROM agreement_performance_reports pr
+             JOIN agreements a ON a.agreement_id = pr.agreement_id
              WHERE EXTRACT(YEAR FROM pr.period_end) = :report_year'
+                . $ownerFilter
         );
-        $reportStatement->execute(['report_year' => $year]);
+        $reportStatement->execute(array_merge($yearParameters, $ownerParameters));
 
         $deadlines = $this->db->prepare(
             'SELECT pr.performance_report_id, pr.agreement_id,
@@ -477,10 +488,11 @@ class AgreementPerformanceRepository
              WHERE pr.status IN (\'DRAFT\', \'RETURNED\', \'SUBMITTED\')
                   AND pr.due_date <= CURRENT_DATE + INTERVAL \'30 days\'
                   AND EXTRACT(YEAR FROM pr.period_end) = :report_year
+                ' . $ownerFilter . '
                 ORDER BY pr.due_date, pr.performance_report_id
                 LIMIT 25'
         );
-        $deadlines->execute(['report_year' => $year]);
+        $deadlines->execute(array_merge($yearParameters, $ownerParameters));
 
         $metrics = $this->db->prepare(
             'SELECT mr.metric_code, mr.metric_label, mr.unit,
@@ -489,24 +501,28 @@ class AgreementPerformanceRepository
              FROM agreement_performance_metric_results mr
              JOIN agreement_performance_reports pr
                ON pr.performance_report_id = mr.performance_report_id
+             JOIN agreements a ON a.agreement_id = pr.agreement_id
              WHERE pr.status = \'ACCEPTED\'
                AND EXTRACT(YEAR FROM pr.period_end) = :report_year
+               ' . $ownerFilter . '
              GROUP BY mr.metric_code, mr.metric_label, mr.unit
              ORDER BY mr.metric_label'
         );
-        $metrics->execute(['report_year' => $year]);
+        $metrics->execute(array_merge($yearParameters, $ownerParameters));
 
         $programs = $this->db->prepare(
             'SELECT pu.progress_status, COUNT(*) AS program_count
              FROM agreement_executive_program_updates pu
              JOIN agreement_performance_reports pr
                ON pr.performance_report_id = pu.performance_report_id
+             JOIN agreements a ON a.agreement_id = pr.agreement_id
              WHERE pr.status = \'ACCEPTED\'
                AND EXTRACT(YEAR FROM pr.period_end) = :report_year
+               ' . $ownerFilter . '
              GROUP BY pu.progress_status
              ORDER BY pu.progress_status'
         );
-        $programs->execute(['report_year' => $year]);
+        $programs->execute(array_merge($yearParameters, $ownerParameters));
 
         return [
             'year' => $year,

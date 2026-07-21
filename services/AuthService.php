@@ -107,13 +107,62 @@ class AuthService {
 
         $userId = (int) ($_SESSION['user_id'] ?? 0);
 
+        $profile = $this->userRepo->findProfileById($userId) ?? [];
+
         return [
             'user_id' => $userId,
-            'email' => $_SESSION['email'] ?? null,
-            'full_name' => $_SESSION['full_name'] ?? null,
+            'university_id' => $profile['university_id'] ?? null,
+            'first_name' => $profile['first_name'] ?? null,
+            'last_name' => $profile['last_name'] ?? null,
+            'email' => $profile['email'] ?? ($_SESSION['email'] ?? null),
+            'phone' => $profile['phone'] ?? null,
+            'full_name' => trim(implode(' ', array_filter([
+                $profile['first_name'] ?? null,
+                $profile['last_name'] ?? null,
+            ]))) ?: ($_SESSION['full_name'] ?? null),
+            'last_login' => $profile['last_login'] ?? null,
+            'password_changed_at' => $profile['password_changed_at'] ?? null,
+            'account_created_at' => $profile['created_at'] ?? null,
+            'is_active' => (bool) ($profile['is_active'] ?? true),
             'roles' => $this->permissionService->getRoleNames($userId),
             'permissions' => $this->permissionService->getPermissionCodes($userId),
             'positions' => $this->userRepo->getActivePositions($userId),
+        ];
+    }
+
+    public function createLegacyInitiativeHandoff(): array {
+        if (!$this->isAuthenticated()) {
+            throw new DomainException('Not authenticated');
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if (
+            !$this->permissionService->hasPermission(
+                $userId,
+                'CREATE_INITIATIVE'
+            )
+            && !in_array(
+                'Initiative Creator',
+                $this->permissionService->getRoleNames($userId),
+                true
+            )
+        ) {
+            throw new DomainException(
+                'Your role cannot create Initiative requests'
+            );
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = new DateTimeImmutable('+2 minutes');
+        $this->userRepo->createLegacyHandoff(
+            $userId,
+            hash('sha256', $token),
+            $expiresAt
+        );
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->format(DATE_ATOM),
         ];
     }
 }

@@ -356,10 +356,15 @@ class AgreementPerformanceService
 
     public function dashboard(int $year, int $userId): array
     {
-        if (!$this->permissions->hasPermission(
+        $canViewInstitutional = $this->permissions->hasPermission(
             $userId,
             'VIEW_AGREEMENT_DASHBOARD'
-        )) {
+        );
+        $canManageOwn = $this->permissions->hasPermission(
+            $userId,
+            'MANAGE_AGREEMENT_REPORTS'
+        );
+        if (!$canViewInstitutional && !$canManageOwn) {
             throw new DomainException(
                 'You do not have permission to view the performance dashboard'
             );
@@ -367,7 +372,14 @@ class AgreementPerformanceService
         if ($year < 2000 || $year > 2200) {
             throw new InvalidArgumentException('Choose a valid reporting year');
         }
-        return $this->reports->dashboard($year);
+        $dashboard = $this->reports->dashboard(
+            $year,
+            $canViewInstitutional ? null : $userId
+        );
+        $dashboard['scope'] = $canViewInstitutional
+            ? 'INSTITUTIONAL'
+            : 'OWN_PORTFOLIO';
+        return $dashboard;
     }
 
     private function validateInput(array $input, array $current): array
