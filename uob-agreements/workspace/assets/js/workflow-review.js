@@ -14,7 +14,11 @@
         spinner: document.querySelector('[data-review-spinner]'),
         returnButton: document.querySelector('[data-return-review]'),
         rejectButton: document.querySelector('[data-reject-review]'),
-        openAgreement: document.querySelector('[data-open-agreement]')
+        openAgreement: document.querySelector('[data-open-agreement]'),
+        documentsLoading: document.getElementById('review-documents-loading'),
+        documentsEmpty: document.getElementById('review-documents-empty'),
+        documentsWrap: document.getElementById('review-documents-wrap'),
+        documentsBody: document.getElementById('review-documents-body')
     };
 
     const state = {
@@ -73,6 +77,31 @@
         const status = document.querySelector('[data-agreement-status]');
         status.replaceChildren(AgreementApi.createStatusBadge(agreement.status));
         elements.openAgreement.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+    }
+
+    function renderDocuments(documents) {
+        const rows = Array.isArray(documents) ? documents : [];
+        elements.documentsLoading.classList.add('d-none');
+        elements.documentsEmpty.classList.toggle('d-none', rows.length !== 0);
+        elements.documentsWrap.classList.toggle('d-none', rows.length === 0);
+        elements.documentsBody.replaceChildren();
+
+        rows.forEach((documentRecord) => {
+            const tr = document.createElement('tr');
+
+            [
+                documentRecord.file_name,
+                String(documentRecord.document_type || 'GENERAL').replaceAll('_', ' '),
+                documentRecord.uploaded_by,
+                AgreementApi.formatDate(documentRecord.uploaded_at)
+            ].forEach((value) => {
+                const td = document.createElement('td');
+                td.textContent = value ?? '—';
+                tr.appendChild(td);
+            });
+
+            elements.documentsBody.appendChild(tr);
+        });
     }
 
     function setBusy(isBusy, label = '') {
@@ -145,12 +174,14 @@
                 );
             }
 
-            const [agreement, versions] = await Promise.all([
+            const [agreement, versions, documents] = await Promise.all([
                 AgreementApi.agreement(state.agreementId),
-                AgreementApi.versions(state.agreementId)
+                AgreementApi.versions(state.agreementId),
+                AgreementApi.documents(state.agreementId)
             ]);
 
             render(agreement, versions, state.assignment);
+            renderDocuments(documents);
             elements.loading.classList.add('d-none');
             elements.content.classList.remove('d-none');
         } catch (error) {

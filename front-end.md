@@ -15,17 +15,20 @@ This package adds a protected internal Agreement workspace without changing the 
 - Version history loaded from `GET /api/index.php/agreements/{id}/versions`.
 - Active partner selection loaded from `GET /api/index.php/partners`.
 - Create Agreement draft using `POST /api/index.php/agreements`.
-- Edit a draft using `PUT /api/index.php/agreements/{id}`.
+- Edit a draft or returned Agreement using `PUT /api/index.php/agreements/{id}`.
 - Submit a draft into the approval workflow using `POST /api/index.php/agreements/{id}/submit`.
+- Save a returned Agreement as a new version and resubmit it using `POST /api/index.php/agreements/{id}/resubmit`.
 - Workflow inbox loaded from `GET /api/index.php/workflow-inbox`.
 - Initial VP review with required Legal routing and an optional Finance review.
 - Initial VP return-to-creator and terminal rejection decisions.
+- Legal review approval and documented change requests routed back to the VP.
+- Finance review approval and documented change requests routed back to the VP when Finance is required.
 - Logout using `POST /api/index.php/logout`.
 - Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-The Legal, Finance, Final VP, President, creator redraft, and physical document upload screens remain deferred to the next slices. Create, edit, submit, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
+The Final VP, President, and physical document upload screens remain deferred to the next slices. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
 
 ## Install
 
@@ -90,6 +93,13 @@ Then open the workspace and verify:
 15. The creator can still see the draft, and an assigned reviewer can see an `UNDER_REVIEW` Agreement while their task is active.
 16. After the Dean loads a draft and signs out, the VP cannot see or directly open that draft from a cached response.
 17. Sign in as the Dean and VP in two separate tabs, refresh both tabs, and confirm each tab retains its own user.
+18. Return an Agreement from Initial VP, sign in as its creator, and confirm `REVISION_REQUIRED` shows **Revise Agreement**.
+19. Save the revision and confirm the version history gains a new immutable snapshot.
+20. Resubmit the revision and confirm its status returns to `UNDER_REVIEW` and Initial VP receives the new-cycle task.
+21. Sign in as `dev.legal@uob.test`, open the Legal task, and approve it or send a reasoned change request to the VP.
+22. Route a new Agreement through Initial VP with Finance required, sign in as `dev.finance@uob.test`, and confirm the Finance task opens its dedicated review screen.
+23. Approve Finance before Legal and confirm no Final VP task appears until Legal also approves.
+24. Repeat with a Finance change request and confirm the active specialist work pauses while VP mediation receives the task.
 
 The frontend files are under:
 

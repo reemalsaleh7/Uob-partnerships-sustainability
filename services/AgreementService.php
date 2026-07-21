@@ -10,6 +10,7 @@ require_once __DIR__ . '/../helpers/AgreementStatus.php';
 require_once __DIR__ . '/../helpers/AuditAction.php';
 require_once __DIR__ . '/../services/ApprovalService.php';
 require_once __DIR__ . '/../services/PermissionService.php';
+require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
     private ApprovalService $approvalService;
@@ -18,6 +19,7 @@ class AgreementService {
     private AuditRepository $auditRepo;
     private AuditService $auditService;
     private PermissionService $permissionService;
+    private WorkflowRepository $workflowRepo;
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
@@ -27,6 +29,7 @@ class AgreementService {
         $this->auditService = new AuditService();
         $this->approvalService = new ApprovalService();
         $this->permissionService = new PermissionService();
+        $this->workflowRepo = new WorkflowRepository();
     }
 
     public function createAgreement(array $data): array {
@@ -87,6 +90,17 @@ class AgreementService {
                     'success' => false,
                     'errors' => [
                         'Only the original Agreement creator may edit this Agreement',
+                    ],
+                ];
+            }
+
+            if (!AgreementStatus::isEditable((string) $existing['status'])) {
+                $db->rollBack();
+
+                return [
+                    'success' => false,
+                    'errors' => [
+                        'Only a DRAFT or REVISION_REQUIRED Agreement may be edited',
                     ],
                 ];
             }
@@ -255,6 +269,64 @@ class AgreementService {
         throw $exception;
     }
 }
+
+    public function resubmitAgreement(
+        int $agreementId,
+        int $userId,
+        ?string $comments = null
+    ): array {
+        $existing = $this->agreementRepo->findById($agreementId);
+
+        if (!$existing) {
+            return [
+                'success' => false,
+                'errors' => ['Agreement not found'],
+            ];
+        }
+
+        if ((int) $existing['created_by'] !== $userId) {
+            return [
+                'success' => false,
+                'errors' => [
+                    'Only the original Agreement creator may resubmit this Agreement',
+                ],
+            ];
+        }
+
+        if ($existing['status'] !== AgreementStatus::REVISION_REQUIRED) {
+            return [
+                'success' => false,
+                'errors' => [
+                    'Only a REVISION_REQUIRED Agreement may be resubmitted',
+                ],
+            ];
+        }
+
+        $workflow = $this->workflowRepo->findActiveByEntity(
+            'AGREEMENT',
+            $agreementId
+        );
+
+        if (!$workflow) {
+            return [
+                'success' => false,
+                'errors' => ['Active Agreement workflow not found'],
+            ];
+        }
+
+        try {
+            return $this->approvalService->resubmitAgreementAfterRedraft(
+                (int) $workflow['workflow_instance_id'],
+                $userId,
+                $comments
+            );
+        } catch (DomainException|InvalidArgumentException $exception) {
+            return [
+                'success' => false,
+                'errors' => [$exception->getMessage()],
+            ];
+        }
+    }
 
     public function deleteAgreement(int $agreementId, int $userId): void {
         $db = Database::connect();

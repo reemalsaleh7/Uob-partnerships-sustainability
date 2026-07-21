@@ -76,8 +76,9 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/agreements`                         | `VIEW_AGREEMENT`   | List Agreements visible to the authenticated user.                     |
 | `GET`    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get one Agreement when the authenticated user may view it.             |
 | `POST`   | `/agreements`                         | `CREATE_AGREEMENT` | Create a draft Agreement and version 1.                                |
-| `PUT`    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update an Agreement and create a snapshot version.                     |
+| `PUT`    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update a draft/returned Agreement and create a snapshot version.       |
 | `POST`   | `/agreements/{id}/submit`             | `SUBMIT_AGREEMENT` | Start the approval workflow and move the Agreement to`UNDER_REVIEW`. |
+| `POST`   | `/agreements/{id}/resubmit`           | `SUBMIT_AGREEMENT` | Resubmit a newly versioned returned Agreement to Initial VP.           |
 | `DELETE` | `/agreements/{id}`                    | `DELETE_AGREEMENT` | Delete the Agreement.                                                  |
 | `GET`    | `/agreements/{id}/versions`           | `VIEW_AGREEMENT`   | List immutable versions newest first.                                  |
 | `GET`    | `/agreements/{id}/versions/{version}` | `VIEW_AGREEMENT`   | Get one immutable Agreement snapshot.                                  |
@@ -105,13 +106,13 @@ Returns active partners ordered by organization name. The response contains `par
 }
 ```
 
-The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement.
+The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement. The update controller accepts only Agreement content fields; clients cannot change workflow status through the general update endpoint.
 
 ### Agreement visibility
 
 `VIEW_AGREEMENT` grants access to the Agreement workspace, but record visibility is also enforced by the backend:
 
-- A `DRAFT`, including a draft returned for redrafting, is visible only to its creator.
+- A `DRAFT` or `REVISION_REQUIRED` Agreement is visible only to its creator.
 - An `UNDER_REVIEW` Agreement is visible to its creator and users with an active assignment on its current workflow step.
 - An `APPROVED` or `ACTIVE` Agreement is visible to every user with `VIEW_AGREEMENT`.
 - A user with the `System Administrator` role can view every Agreement.
@@ -133,7 +134,7 @@ All API responses send `Cache-Control: no-store` and related compatibility heade
 }
 ```
 
-Each update creates an immutable row in `agreement_versions` containing a JSON snapshot.
+Each update creates an immutable row in `agreement_versions` containing a JSON snapshot. Updates are accepted only while the Agreement is `DRAFT` or `REVISION_REQUIRED`; the creator cannot edit it while review is active or after a terminal/published decision.
 
 ### Submit Agreement
 
@@ -153,6 +154,20 @@ Example response:
   }
 }
 ```
+
+### Resubmit a revised Agreement by Agreement ID
+
+`POST /agreements/{id}/resubmit`
+
+Permission: `SUBMIT_AGREEMENT`.
+
+```json
+{
+  "comments": "Requested legal clauses were revised"
+}
+```
+
+This creator-facing endpoint resolves the active workflow internally. The Agreement must be `REVISION_REQUIRED`, belong to the authenticated creator, and contain a version newer than the recorded redraft baseline. Success returns it to `UNDER_REVIEW` at `VP_INITIAL` for a new review cycle.
 
 ## Approval workflow
 
@@ -367,6 +382,8 @@ Successful resubmission:
 - Changes the Agreement to `UNDER_REVIEW`.
 - Reactivates Initial VP review so the VP can select which reviews repeat.
 - Records `RESUBMITTED` in workflow history.
+
+The workspace calls `POST /agreements/{id}/resubmit` so the creator does not need the internal workflow instance ID. The instance-based route above remains available for workflow clients and applies the same workflow rules.
 
 ## Direct VP decisions
 

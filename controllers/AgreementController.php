@@ -61,8 +61,14 @@ class AgreementController {
         PermissionMiddleware::require('EDIT_AGREEMENT');
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        $data = $input;
-        $data['updated_by'] = (int) ($_SESSION['user_id'] ?? 0);
+        $data = [
+            'title' => $input['title'] ?? null,
+            'agreement_type' => $input['agreement_type'] ?? null,
+            'description' => $input['description'] ?? null,
+            'partner_id' => $input['partner_id'] ?? null,
+            'change_summary' => $input['change_summary'] ?? null,
+            'updated_by' => (int) ($_SESSION['user_id'] ?? 0),
+        ];
 
         $result = $this->agreementService->updateAgreement($agreementId, $data);
         if (!$result['success']) {
@@ -96,6 +102,33 @@ class AgreementController {
 
     Response::success($result);
 }
+
+    public function resubmit(int $agreementId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('SUBMIT_AGREEMENT');
+
+        $input = json_decode(
+            file_get_contents('php://input'),
+            true
+        ) ?? [];
+
+        $comments = isset($input['comments'])
+            ? trim((string) $input['comments'])
+            : null;
+
+        $result = $this->agreementService->resubmitAgreement(
+            $agreementId,
+            (int) ($_SESSION['user_id'] ?? 0),
+            $comments === '' ? null : $comments
+        );
+
+        if (!$result['success']) {
+            Response::error(implode(', ', $result['errors']), 422);
+        }
+
+        Response::success($result);
+    }
 
     public function delete(int $agreementId): void {
         AuthMiddleware::handle();

@@ -151,7 +151,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -321,6 +321,12 @@
                 method: 'POST'
             });
         },
+        resubmitAgreement(id, data = {}) {
+            return request(`/agreements/${encodeURIComponent(id)}/resubmit`, {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
         versions(id) {
             return request(`/agreements/${encodeURIComponent(id)}/versions`);
         },
@@ -330,6 +336,24 @@
         approveInitialVp(instanceId, data) {
             return request(
                 `/workflow-instances/${encodeURIComponent(instanceId)}/initial-vp/approve`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
+        },
+        approveSpecialist(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/specialist/approve`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
+        },
+        requestChanges(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/changes/request`,
                 {
                     method: 'POST',
                     body: jsonBody(data)

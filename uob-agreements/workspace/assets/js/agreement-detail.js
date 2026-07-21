@@ -103,6 +103,10 @@
             message = 'Agreement draft updated successfully.';
         } else if (query.get('submitted') === '1') {
             message = 'Agreement submitted for review successfully.';
+        } else if (query.get('revised') === '1') {
+            message = 'Revised Agreement version saved. Review it, then resubmit it.';
+        } else if (query.get('resubmitted') === '1') {
+            message = 'Revised Agreement resubmitted to Initial VP review successfully.';
         }
 
         if (message) {
@@ -113,20 +117,35 @@
 
     function configureActions(user, agreement) {
         const isDraft = agreement.status === 'DRAFT';
+        const isRevision = agreement.status === 'REVISION_REQUIRED';
         const isCreator = Number(agreement.created_by) === Number(user.user_id);
         const canEdit = AgreementApi.hasPermission(user, 'EDIT_AGREEMENT');
         const canSubmit = AgreementApi.hasPermission(user, 'SUBMIT_AGREEMENT');
 
-        elements.edit.classList.toggle('d-none', !isDraft || !isCreator || !canEdit);
+        elements.edit.classList.toggle(
+            'd-none',
+            (!isDraft && !isRevision) || !isCreator || !canEdit
+        );
         elements.edit.href = `agreement-form.php?id=${encodeURIComponent(agreement.agreement_id)}`;
-        elements.submit.classList.toggle('d-none', !isDraft || !isCreator || !canSubmit);
+        elements.edit.textContent = isRevision ? 'Revise Agreement' : 'Edit Agreement';
+        elements.submit.classList.toggle(
+            'd-none',
+            (!isDraft && !isRevision) || !isCreator || !canSubmit
+        );
+        elements.submitLabel.textContent = isRevision
+            ? 'Resubmit revised Agreement'
+            : 'Submit for review';
     }
 
     function setSubmitBusy(isBusy) {
         elements.submit.disabled = isBusy;
         elements.submitLabel.textContent = isBusy
             ? 'Submitting…'
-            : 'Submit for review';
+            : (
+                state.agreement?.status === 'REVISION_REQUIRED'
+                    ? 'Resubmit revised Agreement'
+                    : 'Submit for review'
+            );
         elements.submitSpinner.classList.toggle('d-none', !isBusy);
     }
 
@@ -158,12 +177,19 @@
     }
 
     elements.submit.addEventListener('click', async () => {
-        if (!state.agreement || state.agreement.status !== 'DRAFT') {
+        if (
+            !state.agreement
+            || !['DRAFT', 'REVISION_REQUIRED'].includes(state.agreement.status)
+        ) {
             return;
         }
 
+        const isRevision = state.agreement.status === 'REVISION_REQUIRED';
+
         const confirmed = window.confirm(
-            'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.'
+            isRevision
+                ? 'Resubmit this revised Agreement? It will return to Initial VP review.'
+                : 'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.'
         );
 
         if (!confirmed) {
@@ -175,9 +201,15 @@
         setSubmitBusy(true);
 
         try {
-            await AgreementApi.submitAgreement(state.agreementId);
+            if (isRevision) {
+                await AgreementApi.resubmitAgreement(state.agreementId, {
+                    comments: 'Revised Agreement resubmitted through the workspace'
+                });
+            } else {
+                await AgreementApi.submitAgreement(state.agreementId);
+            }
             window.location.replace(
-                `agreement.php?id=${encodeURIComponent(state.agreementId)}&submitted=1`
+                `agreement.php?id=${encodeURIComponent(state.agreementId)}&${isRevision ? 'resubmitted=1' : 'submitted=1'}`
             );
         } catch (error) {
             elements.alert.textContent = error.message || 'The Agreement could not be submitted.';

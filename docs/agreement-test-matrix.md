@@ -68,6 +68,9 @@ Development-only password: `UobDev2026!`.
 | W-13 | Legal approves when Finance was skipped         | Legal          | Final VP activates immediately.                                                                              |
 | W-14 | Complete Finance when Finance was not requested | Finance        | Rejected; Finance remains`SKIPPED`.                                                                        |
 | W-15 | Repeat a completed specialist approval          | Specialist     | Rejected; duplicate history and assignments are not created.                                                 |
+| W-15A | Open an assigned Finance task in the workspace  | Finance        | Dedicated Finance review page loads the Agreement, assignment, and latest version.                           |
+| W-15B | Approve Finance through the workspace           | Finance        | Finance task leaves the inbox; Final VP waits for Legal or activates when every required specialist is done. |
+| W-15C | Request Finance changes through the workspace   | Finance        | A nonblank reason is required and the workflow routes to VP mediation.                                       |
 
 ## Final approval
 
@@ -114,6 +117,9 @@ Development-only password: `UobDev2026!`.
 | R-19 | Inspect instance after resubmission         | System           | `finance_review_required` and `redraft_base_version` are `NULL`; current step is 2.                            |
 | R-20 | Non-creator attempts resubmission           | Other user       | Rejected even if the user has`SUBMIT_AGREEMENT`.                                                                   |
 | R-21 | Inspect resubmission history                | System           | `RESUBMITTED` contains the new version and review-cycle number.                                                    |
+| R-21A | Open returned Agreement in workspace       | Original creator | `REVISION_REQUIRED` record shows Revise and Resubmit actions; edit form loads existing content.                   |
+| R-21B | Try to edit an Agreement under review      | Original creator | UI hides Edit and backend rejects a direct `PUT`; no new version is created.                                       |
+| R-21C | Resubmit through Agreement endpoint        | Original creator | Active workflow is resolved by Agreement ID and the same protected new-cycle transition is applied.                |
 
 ## Direct VP decisions
 

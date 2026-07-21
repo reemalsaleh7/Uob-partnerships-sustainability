@@ -85,14 +85,22 @@
             const actionCell = document.createElement('td');
             actionCell.className = 'text-end';
 
-            if (assignment.step_key === 'VP_INITIAL') {
+            if (
+                ['VP_INITIAL', 'LEGAL_REVIEW', 'FINANCE_REVIEW']
+                    .includes(assignment.step_key)
+            ) {
                 const link = document.createElement('a');
                 link.className = 'btn btn-sm btn-primary';
                 const query = new URLSearchParams({
                     instance_id: assignment.workflow_instance_id,
                     agreement_id: assignment.entity_id
                 });
-                link.href = `workflow-review.php?${query.toString()}`;
+                const reviewPages = {
+                    VP_INITIAL: 'workflow-review.php',
+                    LEGAL_REVIEW: 'legal-review.php',
+                    FINANCE_REVIEW: 'finance-review.php'
+                };
+                link.href = `${reviewPages[assignment.step_key]}?${query.toString()}`;
                 link.textContent = 'Review';
                 actionCell.appendChild(link);
             } else {

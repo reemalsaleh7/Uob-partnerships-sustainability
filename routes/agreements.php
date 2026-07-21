@@ -36,6 +36,8 @@ if ($method === 'GET' && $uri === '/agreements') {
     $controller->delete((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/submit$#', $uri, $matches)) {
     $controller->submit((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/resubmit$#', $uri, $matches)) {
+    $controller->resubmit((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/versions/([0-9]+)$#', $uri, $matches)) {
     $controller->version((int) $matches[1], (int) $matches[2]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/versions$#', $uri, $matches)) {

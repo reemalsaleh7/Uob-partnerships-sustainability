@@ -17,7 +17,8 @@
 
     const state = {
         agreementId: null,
-        isEdit: false
+        isEdit: false,
+        isRevision: false
     };
 
     function readAgreementId() {
@@ -38,7 +39,11 @@
         elements.save.disabled = isBusy;
         elements.saveLabel.textContent = isBusy
             ? 'Saving…'
-            : (state.isEdit ? 'Save changes' : 'Save draft');
+            : (
+                state.isRevision
+                    ? 'Save revised version'
+                    : (state.isEdit ? 'Save changes' : 'Save draft')
+            );
         elements.saveSpinner.classList.toggle('d-none', !isBusy);
     }
 
@@ -82,22 +87,34 @@
     }
 
     function configureEditMode(agreement) {
-        if (agreement.status !== 'DRAFT') {
+        const editableStatuses = ['DRAFT', 'REVISION_REQUIRED'];
+
+        if (!editableStatuses.includes(agreement.status)) {
             throw new AgreementApi.ApiError(
-                'Only draft Agreements can be edited from this screen.',
+                'Only draft or returned Agreements can be edited from this screen.',
                 409,
                 null
             );
         }
 
+        state.isRevision = agreement.status === 'REVISION_REQUIRED';
+
         elements.eyebrow.textContent = `Agreement #${agreement.agreement_id}`;
-        elements.title.textContent = 'Edit Agreement';
-        elements.description.textContent = 'Update the draft information. Saving creates a new immutable version snapshot.';
-        document.title = 'Edit Agreement | UOB Agreement Workspace';
+        elements.title.textContent = state.isRevision
+            ? 'Revise returned Agreement'
+            : 'Edit Agreement';
+        elements.description.textContent = state.isRevision
+            ? 'Apply the requested changes. Saving creates a new immutable version before resubmission.'
+            : 'Update the draft information. Saving creates a new immutable version snapshot.';
+        document.title = state.isRevision
+            ? 'Revise Agreement | UOB Agreement Workspace'
+            : 'Edit Agreement | UOB Agreement Workspace';
         document.querySelectorAll('[data-cancel-link]').forEach((link) => {
             link.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
         });
-        elements.saveLabel.textContent = 'Save changes';
+        elements.saveLabel.textContent = state.isRevision
+            ? 'Save revised version'
+            : 'Save changes';
     }
 
     function payload() {
@@ -107,7 +124,11 @@
             partner_id: Number(form.elements.partner_id.value),
             description: form.elements.description.value.trim(),
             change_summary: state.isEdit
-                ? 'Agreement draft updated through the workspace'
+                ? (
+                    state.isRevision
+                        ? 'Agreement revised after reviewer feedback'
+                        : 'Agreement draft updated through the workspace'
+                )
                 : undefined
         };
     }
@@ -172,7 +193,8 @@
         try {
             if (state.isEdit) {
                 await AgreementApi.updateAgreement(state.agreementId, payload());
-                window.location.assign(`agreement.php?id=${encodeURIComponent(state.agreementId)}&updated=1`);
+                const resultFlag = state.isRevision ? 'revised=1' : 'updated=1';
+                window.location.assign(`agreement.php?id=${encodeURIComponent(state.agreementId)}&${resultFlag}`);
                 return;
             }
 
