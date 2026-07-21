@@ -1,6 +1,6 @@
-# Agreement frontend — Phase 2
+# Agreement frontend — complete workflow and controlled legacy replacement
 
-This package adds a protected internal Agreement workspace without changing the existing public CSV-driven `uob-agreements/agreements.php` page.
+This package provides the protected internal Agreement workspace and makes it the canonical Agreement administration interface. The existing public CSV-driven `uob-agreements/agreements.php` catalogue remains available until a separate publication model is implemented.
 
 ## Included
 
@@ -35,20 +35,28 @@ This package adds a protected internal Agreement workspace without changing the 
 - Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
+- Controlled replacement of legacy Agreement add/review routes with non-cacheable redirects to the authenticated workspace.
+- A reversible rollout switch that keeps Initiative administration and public Agreement pages unchanged.
 
 Create, edit, submit, redraft, workflow, and document controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission. Physical files are served only through the authenticated API; private storage paths are never exposed to the browser.
 
 ## Install
 
-Copy the included `uob-agreements/workspace` directory into the repository at the same path:
+Copy the supplied project files into the repository root while preserving their paths. The controlled replacement phase updates shared public-site navigation, legacy administrator routes, configuration, and documentation in addition to the existing workspace:
 
 ```text
 Uob-partnerships-sustainability/
+├── docs/
+├── front-end.md
 └── uob-agreements/
-    └── workspace/
+    ├── admin/
+    ├── includes/
+    ├── agreements.php
+    ├── header.php
+    └── login.php
 ```
 
-No existing file is replaced in this phase.
+Replace matching files. Do not delete the public Agreement catalogue, public detail page, or any Initiative files.
 
 ## Open locally
 
@@ -135,6 +143,12 @@ Then open the workspace and verify:
 40. Open the active reviewer screen and confirm only the assigned reviewer can upload a review document.
 41. Complete the reviewer task and confirm the former reviewer can no longer reuse the document URL while the Agreement remains under review.
 42. Approve the Agreement and confirm permitted viewers can download documents while upload/delete remain locked.
+43. Open `admin/add-agreement.php` and confirm it redirects to `workspace/agreement-form.php`.
+44. Open `admin/review-agreements.php`, `admin/agreements.php`, and `admin/edit-agreement.php`; confirm each reaches the protected Agreement register.
+45. Repeat the legacy-route checks while signed out and confirm workspace login returns to the requested canonical page after authentication.
+46. Open Agreement actions from the legacy administrator dashboard and header; confirm they use the workspace.
+47. Confirm the public `uob-agreements/agreements.php` catalogue and `agreement-details.php` still render.
+48. Confirm Initiative administration routes remain unchanged.
 
 The frontend files are under:
 
@@ -143,3 +157,5 @@ uob-agreements/workspace/
 ```
 
 The partner lookup also adds the corresponding controller, service, repository, and route in the existing backend layers.
+
+The controlled replacement design and rollback boundary are documented in `docs/agreement-legacy-replacement.md`.

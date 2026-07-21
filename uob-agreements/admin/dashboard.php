@@ -17,6 +17,14 @@ require_once __DIR__ . '/../header.php';
 
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isArabic = ($lang === 'ar');
+$agreementWorkspaceEnabled = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN;
+$agreementManageUrl = $agreementWorkspaceEnabled
+  ? '../workspace/agreements.php'
+  : 'review-agreements.php?tab=all&lang=' . urlencode($lang);
+$agreementTasksUrl = $agreementWorkspaceEnabled
+  ? '../workspace/workflow-inbox.php'
+  : 'review-agreements.php?tab=no_initiatives&lang=' . urlencode($lang);
 
 $agreements = array_values(readAgreements(false));
 $initiatives = array_values(loadAllInitiatives(false));
@@ -636,7 +644,7 @@ $totalPending = $reqPending + $initPending;
       </div>
 
       <div class="admin-card-actions">
-        <a class="admin-action-btn" href="review-agreements.php?tab=all&lang=<?= h($lang) ?>">
+        <a class="admin-action-btn" href="<?= h($agreementManageUrl) ?>">
           <?= $isArabic ? 'فتح الصفحة' : 'Open Page' ?>
         </a>
       </div>
@@ -854,8 +862,8 @@ $totalPending = $reqPending + $initPending;
         📊 <?= $isArabic ? 'المبادرات قيد المراجعة' : 'Pending Initiatives' ?>
       </a>
 
-      <a class="admin-quick-link" href="review-agreements.php?tab=no_initiatives&lang=<?= h($lang) ?>">
-        ⚠️ <?= $isArabic ? 'اتفاقيات بدون مبادرات' : 'Agreements Without Initiatives' ?>
+      <a class="admin-quick-link" href="<?= h($agreementTasksUrl) ?>">
+        ⚠️ <?= $isArabic ? 'مهام مراجعة الاتفاقيات' : 'Agreement Review Tasks' ?>
       </a>
     </div>
   </div>

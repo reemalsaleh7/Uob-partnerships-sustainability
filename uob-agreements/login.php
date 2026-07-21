@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // redirect
     $defaultTo = ($_SESSION['role'] === 'admin')
-      ? 'admin/review-agreements.php'
+      ? 'admin/dashboard.php'
       : 'index.php';
 
     $to = safe_to($_GET['to'] ?? '', $defaultTo);
@@ -116,4 +116,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>
-

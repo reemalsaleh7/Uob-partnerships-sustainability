@@ -259,6 +259,14 @@ $isAdmin = str_contains($currentFilePath, '/admin/');
 $isPartnership = str_contains($currentFilePath, '/partnership/');
 
 $base = ($isAdmin || $isPartnership) ? '../' : '';
+$agreementWorkspaceEnabled = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN;
+$agreementCreatePath = $agreementWorkspaceEnabled
+  ? 'workspace/agreement-form.php'
+  : 'admin/add-agreement.php?lang=' . urlencode($lang);
+$agreementReviewPath = $agreementWorkspaceEnabled
+  ? 'workspace/agreements.php'
+  : 'admin/review-agreements.php?lang=' . urlencode($lang);
 
 $logoPath = $base . 'assets/image/THEM/uob_logo.png';
 $isLoggedIn = !empty($_SESSION['user_email']);
@@ -441,7 +449,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
       <li><hr class="dropdown-divider"></li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/add-agreement.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementCreatePath) ?>">
           <?= $isRtl ? 'إضافة اتفاقية' : 'Add Agreement' ?>
         </a>
       </li>
@@ -459,7 +467,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
       </li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-agreements.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementReviewPath) ?>">
           <?= $isRtl ? 'مراجعة الاتفاقيات' : 'Review Agreements' ?>
         </a>
       </li>

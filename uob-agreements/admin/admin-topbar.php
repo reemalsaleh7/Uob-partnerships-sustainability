@@ -2,6 +2,10 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $currentAdminPage = basename($_SERVER['PHP_SELF']);
+$agreementAdminUrl = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN
+    ? '../workspace/agreements.php'
+    : 'agreements.php';
 
 $adminLinks = [
   [
@@ -16,7 +20,7 @@ $adminLinks = [
   ],
   [
     'title' => 'إدارة الاتفاقيات',
-    'href'  => 'agreements.php',
+    'href'  => $agreementAdminUrl,
     'match' => ['agreements.php', 'add-agreement.php', 'edit-agreement.php']
   ],
   [

@@ -209,6 +209,18 @@ Development-only password: `UobDev2026!`.
 | UI-20 | Complete that reviewer task                          | Former reviewer can no longer reopen or download the still-private in-review Agreement documents.    |
 | UI-21 | Open an approved Agreement                           | Authorized viewers can download documents; upload/delete controls remain locked.                     |
 
+## Controlled legacy replacement checks
+
+| ID    | Scenario                                             | Expected result                                                                                  |
+| ----- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| UI-22 | Open legacy add route with rollout enabled           | `302` to `workspace/agreement-form.php` with no-cache headers.                                  |
+| UI-23 | Open legacy review/list/edit routes                  | `302` to `workspace/agreements.php`; no CSV management page renders.                            |
+| UI-24 | Follow a legacy redirect without a workspace session | Workspace login appears and safely returns to the intended canonical page after authentication. |
+| UI-25 | Use legacy administrator Agreement navigation       | Create, register, and workflow actions open the authenticated workspace.                         |
+| UI-26 | Open public Agreement catalogue and details          | Public pages continue to render; Initiative and SDG links are not changed.                       |
+| UI-27 | Use Initiative administration                       | Initiative pages retain their existing routes and behavior.                                     |
+| UI-28 | Temporarily disable the rollout switch locally       | Legacy add/review pages render again for rollback verification; re-enable immediately afterward. |
+
 ## Verified automated tests
 
 | Test file                                           | Coverage                                                                        |

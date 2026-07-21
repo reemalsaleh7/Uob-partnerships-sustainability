@@ -134,7 +134,10 @@ if ($q !== '') {
 
 /* ======= urls ======= */
 $listUrl = 'agreements.php?lang=' . urlencode($lang);
-$addUrl  = 'admin/add-agreement.php?lang=' . urlencode($lang);
+$addUrl  = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN
+    ? 'workspace/agreement-form.php'
+    : 'admin/add-agreement.php?lang=' . urlencode($lang);
 
 /* ======= stats ======= */
 $totalAgreements = count($agreements);
