@@ -82,6 +82,13 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List document metadata.                                                |
 | `POST`   | `/agreements/{id}/documents`          | `CREATE_AGREEMENT` | Create document metadata.                                              |
 | `DELETE` | `/documents/{id}`                     | `DELETE_AGREEMENT` | Remove document metadata.                                              |
+| `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
+
+### List active partners
+
+`GET /partners`
+
+Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, `partner_type`, and `country`; inactive partner records are excluded from new Agreement forms.
 
 ### Create Agreement
 
@@ -96,7 +103,7 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 }
 ```
 
-The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers.
+The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement.
 
 ### Update Agreement
 

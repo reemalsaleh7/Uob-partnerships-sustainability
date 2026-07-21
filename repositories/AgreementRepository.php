@@ -66,9 +66,13 @@ class AgreementRepository {
 
     public function findById(int $agreementId): ?array {
         $stmt = $this->db->prepare('
-            SELECT a.*, ap.partner_id
+            SELECT
+                a.*,
+                ap.partner_id,
+                p.organization_name AS partner_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            LEFT JOIN partners p ON p.partner_id = ap.partner_id
             WHERE a.agreement_id = :agreement_id
             ORDER BY ap.partner_id
             LIMIT 1
@@ -80,9 +84,13 @@ class AgreementRepository {
 
     public function findAll(): array {
         $stmt = $this->db->query('
-            SELECT a.*, ap.partner_id
+            SELECT
+                a.*,
+                ap.partner_id,
+                p.organization_name AS partner_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            LEFT JOIN partners p ON p.partner_id = ap.partner_id
             ORDER BY a.created_at DESC, ap.partner_id
         ');
         return $stmt->fetchAll();
@@ -90,9 +98,13 @@ class AgreementRepository {
 
     public function findByStatus(string $status): array {
         $stmt = $this->db->prepare('
-            SELECT a.*, ap.partner_id
+            SELECT
+                a.*,
+                ap.partner_id,
+                p.organization_name AS partner_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            LEFT JOIN partners p ON p.partner_id = ap.partner_id
             WHERE a.status = :status
             ORDER BY a.created_at DESC, ap.partner_id
         ');

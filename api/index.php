@@ -73,6 +73,11 @@ try {
         exit;
     }
 
+    if ($requestPath === '/partners') {
+        require dirname(__DIR__) . '/routes/partners.php';
+        exit;
+    }
+
     http_response_code(404);
 
     echo json_encode([

@@ -73,6 +73,21 @@ class AgreementService {
                 $db->rollBack();
                 return ['success' => false, 'errors' => ['Agreement not found']];
             }
+
+            if (
+                (int) $existing['created_by']
+                !== (int) ($data['updated_by'] ?? 0)
+            ) {
+                $db->rollBack();
+
+                return [
+                    'success' => false,
+                    'errors' => [
+                        'Only the original Agreement creator may edit this Agreement',
+                    ],
+                ];
+            }
+
             $this->agreementRepo->update($agreementId, $data);
             if (array_key_exists('partner_id', $data)) {
                 $this->agreementRepo->replacePartners($agreementId, [(int) $data['partner_id']]);
@@ -139,6 +154,22 @@ class AgreementService {
                 'success' => false,
                 'errors' => [
                     'Only a DRAFT Agreement may be submitted',
+                ],
+            ];
+        }
+
+        if ((int) $existing['created_by'] !== $userId) {
+            if (
+                $ownsTransaction
+                && $db->inTransaction()
+            ) {
+                $db->rollBack();
+            }
+
+            return [
+                'success' => false,
+                'errors' => [
+                    'Only the original Agreement creator may submit this Agreement',
                 ],
             ];
         }

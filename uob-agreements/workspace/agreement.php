@@ -16,6 +16,15 @@ workspaceHeader('Agreement details', 'agreements');
     class="alert alert-danger d-none"
     role="alert"
     aria-live="polite"
+    tabindex="-1"
+></div>
+
+<div
+    id="detail-feedback"
+    class="alert alert-success d-none"
+    role="status"
+    aria-live="polite"
+    tabindex="-1"
 ></div>
 
 <div id="detail-loading" class="loading-state" aria-live="polite">
@@ -32,14 +41,24 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
 
         <div class="detail-actions align-self-lg-end">
-            <button
+            <a
+                href="#"
                 class="btn btn-outline-primary d-none"
-                type="button"
                 data-edit-agreement
-                disabled
-                title="Agreement editing is included in the next frontend slice"
             >
                 Edit Agreement
+            </a>
+            <button
+                class="btn btn-primary d-none"
+                type="button"
+                data-submit-agreement
+            >
+                <span data-submit-label>Submit for review</span>
+                <span
+                    class="spinner-border spinner-border-sm ms-2 d-none"
+                    data-submit-spinner
+                    aria-hidden="true"
+                ></span>
             </button>
         </div>
     </section>
@@ -56,8 +75,8 @@ workspaceHeader('Agreement details', 'agreements');
                         <dd data-agreement-type></dd>
                     </div>
                     <div>
-                        <dt>Partner ID</dt>
-                        <dd data-partner-id></dd>
+                        <dt>Partner organization</dt>
+                        <dd data-partner-name></dd>
                     </div>
                     <div class="detail-grid-wide">
                         <dt>Description</dt>
@@ -126,4 +145,3 @@ workspaceHeader('Agreement details', 'agreements');
 </div>
 
 <?php workspaceFooter(['assets/js/agreement-detail.js']); ?>
-

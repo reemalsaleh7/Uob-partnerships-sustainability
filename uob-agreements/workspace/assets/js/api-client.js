@@ -85,7 +85,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -224,8 +224,28 @@
         agreements() {
             return request('/agreements');
         },
+        partners() {
+            return request('/partners');
+        },
         agreement(id) {
             return request(`/agreements/${encodeURIComponent(id)}`);
+        },
+        createAgreement(data) {
+            return request('/agreements', {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
+        updateAgreement(id, data) {
+            return request(`/agreements/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                body: jsonBody(data)
+            });
+        },
+        submitAgreement(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/submit`, {
+                method: 'POST'
+            });
         },
         versions(id) {
             return request(`/agreements/${encodeURIComponent(id)}/versions`);

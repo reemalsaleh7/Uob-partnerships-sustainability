@@ -11,11 +11,15 @@ This package adds a protected internal Agreement workspace without changing the 
 - Client-side title/type/status/ID filtering.
 - Agreement detail loaded from `GET /api/index.php/agreements/{id}`.
 - Version history loaded from `GET /api/index.php/agreements/{id}/versions`.
+- Active partner selection loaded from `GET /api/index.php/partners`.
+- Create Agreement draft using `POST /api/index.php/agreements`.
+- Edit a draft using `PUT /api/index.php/agreements/{id}`.
+- Submit a draft into the approval workflow using `POST /api/index.php/agreements/{id}/submit`.
 - Logout using `POST /api/index.php/logout`.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-Create/edit, submit, and workflow inbox buttons are intentionally deferred to the next slices. Buttons are displayed only when the user has the related permission and remain disabled until those screens are implemented.
+The workflow inbox, role-specific approval screens, redraft UI, and physical document upload are intentionally deferred to the next slices. Create, edit, and submit controls are displayed only when the user has the related permission. Edit and submit controls are limited to `DRAFT` Agreements in this phase.
 
 ## Install
 
@@ -70,10 +74,14 @@ Then open the workspace and verify:
 5. Opening Agreement 69 shows its details and versions.
 6. Signing out returns to the workspace login page.
 7. Opening `agreements.php` after logout redirects to the workspace login page.
+8. A Dean can create a draft using an active partner and is redirected to its detail page.
+9. A draft can be edited and the version history gains a snapshot.
+10. Submitting a draft changes its status to `UNDER_REVIEW` and hides the edit/submit actions.
 
-Expected new files appear only under:
+The frontend files are under:
 
 ```text
 uob-agreements/workspace/
 ```
 
+The partner lookup also adds the corresponding controller, service, repository, and route in the existing backend layers.

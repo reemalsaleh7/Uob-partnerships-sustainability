@@ -282,6 +282,28 @@ main {
     padding: 1.5rem;
 }
 
+.form-section {
+    padding: 1.5rem;
+}
+
+.form-section .form-label {
+    color: #34445a;
+    font-weight: 700;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
 .record-list > div + div {
     margin-top: 1.25rem;
     padding-top: 1.25rem;
@@ -332,6 +354,15 @@ main {
         padding-right: 1rem;
     }
 
+    .form-section {
+        padding: 1rem;
+    }
+
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
     .login-card-header,
     .login-form {
         padding-left: 1.25rem;
@@ -349,4 +380,3 @@ main {
         animation-iteration-count: 1 !important;
     }
 }
-

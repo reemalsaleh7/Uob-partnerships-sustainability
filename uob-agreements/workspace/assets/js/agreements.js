@@ -28,7 +28,8 @@
             if (!byId.has(id)) {
                 byId.set(id, {
                     ...row,
-                    partner_ids: []
+                    partner_ids: [],
+                    partner_names: []
                 });
             }
 
@@ -38,6 +39,10 @@
 
                 if (!target.partner_ids.includes(partnerId)) {
                     target.partner_ids.push(partnerId);
+                }
+
+                if (row.partner_name && !target.partner_names.includes(row.partner_name)) {
+                    target.partner_names.push(row.partner_name);
                 }
             }
         });
@@ -57,7 +62,8 @@
                 agreement.title,
                 agreement.agreement_type,
                 agreement.status,
-                ...agreement.partner_ids
+                ...agreement.partner_ids,
+                ...agreement.partner_names
             ].join(' ').toLowerCase();
 
             return statusMatches && (!query || searchValue.includes(query));
@@ -93,8 +99,8 @@
             tr.appendChild(statusCell);
 
             tr.appendChild(cell(
-                agreement.partner_ids.length > 0
-                    ? agreement.partner_ids.join(', ')
+                agreement.partner_names.length > 0
+                    ? agreement.partner_names.join(', ')
                     : '—'
             ));
             tr.appendChild(cell(AgreementApi.formatDate(agreement.updated_at)));
@@ -167,4 +173,3 @@
 
     initialize();
 })();
-

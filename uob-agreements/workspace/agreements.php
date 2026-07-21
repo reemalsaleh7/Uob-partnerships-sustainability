@@ -17,15 +17,13 @@ workspaceHeader('Agreements', 'agreements');
     </div>
 
     <div class="align-self-lg-end">
-        <button
-            type="button"
+        <a
+            href="agreement-form.php"
             class="btn btn-primary d-none"
             data-create-agreement
-            disabled
-            title="Agreement creation is included in the next frontend slice"
         >
             Create Agreement
-        </button>
+        </a>
     </div>
 </section>
 
@@ -96,4 +94,3 @@ workspaceHeader('Agreements', 'agreements');
 </section>
 
 <?php workspaceFooter(['assets/js/agreements.js']); ?>
-
