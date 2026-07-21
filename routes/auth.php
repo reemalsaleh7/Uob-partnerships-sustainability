@@ -1,5 +1,7 @@
 <?php
-session_start();
+require_once __DIR__ . '/../helpers/ApiSession.php';
+
+ApiSession::start();
 
 require_once __DIR__ . '/../controllers/AuthController.php';
 

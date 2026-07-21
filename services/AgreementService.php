@@ -9,6 +9,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/AgreementStatus.php';
 require_once __DIR__ . '/../helpers/AuditAction.php';
 require_once __DIR__ . '/../services/ApprovalService.php';
+require_once __DIR__ . '/../services/PermissionService.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
     private ApprovalService $approvalService;
@@ -16,6 +17,7 @@ class AgreementService {
     private AgreementDocumentRepository $agreementDocumentRepo;
     private AuditRepository $auditRepo;
     private AuditService $auditService;
+    private PermissionService $permissionService;
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
@@ -24,6 +26,7 @@ class AgreementService {
         $this->auditRepo = new AuditRepository();
         $this->auditService = new AuditService();
         $this->approvalService = new ApprovalService();
+        $this->permissionService = new PermissionService();
     }
 
     public function createAgreement(array $data): array {
@@ -325,11 +328,30 @@ class AgreementService {
         return $this->agreementRepo->findById($agreementId);
     }
 
-    public function findAll(): array {
-        return $this->agreementRepo->findAll();
+    public function findByIdForUser(int $agreementId, int $userId): ?array {
+        return $this->agreementRepo->findByIdVisibleToUser(
+            $agreementId,
+            $userId,
+            $this->isSystemAdministrator($userId)
+        );
+    }
+
+    public function findAll(int $userId): array {
+        return $this->agreementRepo->findVisibleToUser(
+            $userId,
+            $this->isSystemAdministrator($userId)
+        );
     }
 
     public function findByStatus(string $status): array {
         return $this->agreementRepo->findByStatus($status);
+    }
+
+    private function isSystemAdministrator(int $userId): bool {
+        return in_array(
+            'System Administrator',
+            $this->permissionService->getRoleNames($userId),
+            true
+        );
     }
 }

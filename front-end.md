@@ -6,8 +6,10 @@ This package adds a protected internal Agreement workspace without changing the 
 
 - Real API login using `POST /api/index.php/login`.
 - Session verification through `GET /api/index.php/me`.
+- Tab-isolated workspace sessions that remain stable when each tab refreshes.
 - Permission check for `VIEW_AGREEMENT`.
 - Agreement register loaded from `GET /api/index.php/agreements`.
+- Backend-scoped Agreement visibility for creators, current reviewers, published Agreements, and system administrators.
 - Client-side title/type/status/ID filtering.
 - Agreement detail loaded from `GET /api/index.php/agreements/{id}`.
 - Version history loaded from `GET /api/index.php/agreements/{id}/versions`.
@@ -19,6 +21,7 @@ This package adds a protected internal Agreement workspace without changing the 
 - Initial VP review with required Legal routing and an optional Finance review.
 - Initial VP return-to-creator and terminal rejection decisions.
 - Logout using `POST /api/index.php/logout`.
+- Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
@@ -83,6 +86,10 @@ Then open the workspace and verify:
 11. The submitted Agreement appears in the VP user's Workflow inbox.
 12. The Initial VP can open the review and send it to Legal with or without Finance review.
 13. After a successful decision, the completed task is removed from the VP inbox.
+14. A VP cannot see another user's unsubmitted draft in the Agreement register or by changing the Agreement ID in the detail URL.
+15. The creator can still see the draft, and an assigned reviewer can see an `UNDER_REVIEW` Agreement while their task is active.
+16. After the Dean loads a draft and signs out, the VP cannot see or directly open that draft from a cached response.
+17. Sign in as the Dean and VP in two separate tabs, refresh both tabs, and confirm each tab retains its own user.
 
 The frontend files are under:
 

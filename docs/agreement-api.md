@@ -10,7 +10,9 @@ Local XAMPP base URL:
 http://localhost/Uob-partnerships-sustainability/api/index.php
 ```
 
-All endpoints require a PHP session unless stated otherwise. Log in through `POST /login`, retain the `PHPSESSID` cookie, and send it with later requests.
+All endpoints require a PHP session unless stated otherwise. Traditional API clients may log in through `POST /login`, retain the `PHPSESSID` cookie, and send it with later requests.
+
+The Agreement workspace instead sends a cryptographically random tab identifier in the `X-UOB-Tab-Session` request header. The API returns the active identifier in the response header with the same name. The workspace stores it in browser `sessionStorage`, so separate tabs can sign in as different users and retain their own identities after refresh. A client using this header must replace its stored identifier when login returns a regenerated value.
 
 Successful responses use:
 
@@ -71,8 +73,8 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 
 | Method     | Endpoint                                | Permission           | Purpose                                                                |
 | ---------- | --------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
-| `GET`    | `/agreements`                         | `VIEW_AGREEMENT`   | List Agreements.                                                       |
-| `GET`    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get one Agreement.                                                     |
+| `GET`    | `/agreements`                         | `VIEW_AGREEMENT`   | List Agreements visible to the authenticated user.                     |
+| `GET`    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get one Agreement when the authenticated user may view it.             |
 | `POST`   | `/agreements`                         | `CREATE_AGREEMENT` | Create a draft Agreement and version 1.                                |
 | `PUT`    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update an Agreement and create a snapshot version.                     |
 | `POST`   | `/agreements/{id}/submit`             | `SUBMIT_AGREEMENT` | Start the approval workflow and move the Agreement to`UNDER_REVIEW`. |
@@ -104,6 +106,19 @@ Returns active partners ordered by organization name. The response contains `par
 ```
 
 The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement.
+
+### Agreement visibility
+
+`VIEW_AGREEMENT` grants access to the Agreement workspace, but record visibility is also enforced by the backend:
+
+- A `DRAFT`, including a draft returned for redrafting, is visible only to its creator.
+- An `UNDER_REVIEW` Agreement is visible to its creator and users with an active assignment on its current workflow step.
+- An `APPROVED` or `ACTIVE` Agreement is visible to every user with `VIEW_AGREEMENT`.
+- A user with the `System Administrator` role can view every Agreement.
+
+The same record-level check protects Agreement details, version lists, individual version snapshots, and document metadata. An inaccessible Agreement returns `404` so direct URL or ID changes do not disclose the record.
+
+All API responses send `Cache-Control: no-store` and related compatibility headers. The workspace client also uses the Fetch API's `no-store` mode. This prevents authenticated Agreement data loaded for one user from being reused after another user signs in through the same browser.
 
 ### Update Agreement
 

@@ -96,6 +96,102 @@ class AgreementRepository {
         return $stmt->fetchAll();
     }
 
+    public function findVisibleToUser(int $userId, bool $isSystemAdministrator = false): array {
+        if ($isSystemAdministrator) {
+            return $this->findAll();
+        }
+
+        $stmt = $this->db->prepare('
+            SELECT
+                a.*,
+                ap.partner_id,
+                p.organization_name AS partner_name
+            FROM agreements a
+            LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            WHERE
+                a.created_by = :creator_user_id
+                OR a.status IN (\'APPROVED\', \'ACTIVE\')
+                OR (
+                    a.status = \'UNDER_REVIEW\'
+                    AND EXISTS (
+                        SELECT 1
+                        FROM workflow_instances wi
+                        JOIN workflow_instance_steps wis
+                            ON wis.workflow_instance_id = wi.workflow_instance_id
+                        JOIN workflow_step_assignments wsa
+                            ON wsa.workflow_instance_step_id = wis.instance_step_id
+                        WHERE wi.entity_type = \'AGREEMENT\'
+                          AND wi.entity_id = a.agreement_id
+                          AND wi.status = \'IN_PROGRESS\'
+                          AND wis.status = \'IN_PROGRESS\'
+                          AND wsa.user_id = :reviewer_user_id
+                          AND wsa.is_active = TRUE
+                    )
+                )
+            ORDER BY a.created_at DESC, ap.partner_id
+        ');
+        $stmt->execute([
+            'creator_user_id' => $userId,
+            'reviewer_user_id' => $userId,
+        ]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function findByIdVisibleToUser(
+        int $agreementId,
+        int $userId,
+        bool $isSystemAdministrator = false
+    ): ?array {
+        if ($isSystemAdministrator) {
+            return $this->findById($agreementId);
+        }
+
+        $stmt = $this->db->prepare('
+            SELECT
+                a.*,
+                ap.partner_id,
+                p.organization_name AS partner_name
+            FROM agreements a
+            LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+            LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            WHERE a.agreement_id = :agreement_id
+              AND (
+                  a.created_by = :creator_user_id
+                  OR a.status IN (\'APPROVED\', \'ACTIVE\')
+                  OR (
+                      a.status = \'UNDER_REVIEW\'
+                      AND EXISTS (
+                          SELECT 1
+                          FROM workflow_instances wi
+                          JOIN workflow_instance_steps wis
+                              ON wis.workflow_instance_id = wi.workflow_instance_id
+                          JOIN workflow_step_assignments wsa
+                              ON wsa.workflow_instance_step_id = wis.instance_step_id
+                          WHERE wi.entity_type = \'AGREEMENT\'
+                            AND wi.entity_id = a.agreement_id
+                            AND wi.status = \'IN_PROGRESS\'
+                            AND wis.status = \'IN_PROGRESS\'
+                            AND wsa.user_id = :reviewer_user_id
+                            AND wsa.is_active = TRUE
+                      )
+                  )
+              )
+            ORDER BY ap.partner_id
+            LIMIT 1
+        ');
+        $stmt->execute([
+            'agreement_id' => $agreementId,
+            'creator_user_id' => $userId,
+            'reviewer_user_id' => $userId,
+        ]);
+
+        $agreement = $stmt->fetch();
+
+        return $agreement ?: null;
+    }
+
     public function findByStatus(string $status): array {
         $stmt = $this->db->prepare('
             SELECT

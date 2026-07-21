@@ -14,6 +14,62 @@
     }
 
     const apiBase = `${applicationRoot()}/api/index.php`;
+    const tabSessionStorageKey = 'uob-agreement-tab-session';
+    let volatileTabSessionId = null;
+
+    function newTabSessionId() {
+        const bytes = new Uint8Array(32);
+        global.crypto.getRandomValues(bytes);
+
+        return Array.from(
+            bytes,
+            (byte) => byte.toString(16).padStart(2, '0')
+        ).join('');
+    }
+
+    function tabSessionId() {
+        if (volatileTabSessionId) {
+            return volatileTabSessionId;
+        }
+
+        try {
+            volatileTabSessionId = global.sessionStorage.getItem(
+                tabSessionStorageKey
+            );
+        } catch (error) {
+            // The in-memory fallback still supports the current page load.
+        }
+
+        if (!volatileTabSessionId) {
+            volatileTabSessionId = newTabSessionId();
+            saveTabSessionId(volatileTabSessionId);
+        }
+
+        return volatileTabSessionId;
+    }
+
+    function saveTabSessionId(sessionId) {
+        volatileTabSessionId = sessionId;
+
+        try {
+            global.sessionStorage.setItem(
+                tabSessionStorageKey,
+                sessionId
+            );
+        } catch (error) {
+            // Some privacy modes disable storage; retain an in-memory session.
+        }
+    }
+
+    function clearTabSession() {
+        volatileTabSessionId = null;
+
+        try {
+            global.sessionStorage.removeItem(tabSessionStorageKey);
+        } catch (error) {
+            // There is nothing else to clear when storage is unavailable.
+        }
+    }
 
     class ApiError extends Error {
         constructor(message, status, payload) {
@@ -27,6 +83,7 @@
     async function request(path, options = {}) {
         const headers = new Headers(options.headers || {});
         headers.set('Accept', 'application/json');
+        headers.set('X-UOB-Tab-Session', tabSessionId());
 
         if (options.body !== undefined && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
@@ -38,6 +95,7 @@
             response = await fetch(`${apiBase}${path}`, {
                 ...options,
                 headers,
+                cache: 'no-store',
                 credentials: 'same-origin'
             });
         } catch (error) {
@@ -46,6 +104,14 @@
                 0,
                 null
             );
+        }
+
+        const responseTabSessionId = response.headers.get(
+            'X-UOB-Tab-Session'
+        );
+
+        if (responseTabSessionId) {
+            saveTabSessionId(responseTabSessionId);
         }
 
         const rawBody = await response.text();
@@ -159,6 +225,7 @@
                 try {
                     await request('/logout', { method: 'POST' });
                 } finally {
+                    clearTabSession();
                     global.location.replace('login.php');
                 }
             });

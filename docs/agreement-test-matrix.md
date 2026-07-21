@@ -30,6 +30,20 @@ Development-only password: `UobDev2026!`.
 | A-09 | Delete a permitted Agreement                     | Authorized user    | Agreement and dependent partner/version/document rows are removed; deletion audit remains.                       |
 | A-10 | Attempt deletion without permission              | Approver           | `403`; no rows change.                                                                                         |
 
+## Agreement record visibility
+
+| ID   | Scenario                                                   | Actor                | Expected result                                                                                 |
+| ---- | ---------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------- |
+| V-01 | Open the Agreement register while another user owns a draft | VP                   | The other user's `DRAFT` Agreement is absent.                                                   |
+| V-02 | Change the detail URL to another user's draft ID             | VP                   | `404 Agreement not found`; details and versions are not disclosed.                              |
+| V-03 | Open the creator's own draft                                 | Dean                 | The draft, version history, and document metadata remain visible.                               |
+| V-04 | Open an Agreement assigned for Initial VP review             | Assigned VP          | The `UNDER_REVIEW` Agreement is visible while the VP assignment is active.                       |
+| V-05 | Route to parallel Legal and Finance reviews                  | Legal and Finance    | Both assigned specialists can view the Agreement while their respective steps are active.       |
+| V-06 | Complete an assigned review                                  | Former reviewer      | The still-`UNDER_REVIEW` Agreement is no longer visible unless a new active assignment exists.   |
+| V-07 | Complete final President approval                            | Any permitted viewer | The `APPROVED` Agreement is visible in the register and by direct URL.                            |
+| V-08 | Inspect all Agreement states                                 | System administrator | Every Agreement remains visible for administration and support.                                 |
+| V-09 | Load a Dean draft, sign out, then sign in as VP in the same browser | VP              | A fresh authorized response is fetched; the Dean's cached register, details, versions, and documents are not reused. |
+
 ## Workflow creation and hierarchy
 
 | ID   | Scenario                                                    | Actor              | Expected result                                                                                                                 |

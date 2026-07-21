@@ -15,14 +15,19 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
 
-        Response::success($this->agreementService->findAll());
+        Response::success(
+            $this->agreementService->findAll((int) $_SESSION['user_id'])
+        );
     }
 
     public function show(int $agreementId): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
 
-        $agreement = $this->agreementService->findById($agreementId);
+        $agreement = $this->agreementService->findByIdForUser(
+            $agreementId,
+            (int) $_SESSION['user_id']
+        );
         if (!$agreement) {
             Response::error('Agreement not found', 404);
         }
@@ -104,12 +109,26 @@ class AgreementController {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
 
+        if (!$this->agreementService->findByIdForUser(
+            $agreementId,
+            (int) $_SESSION['user_id']
+        )) {
+            Response::error('Agreement not found', 404);
+        }
+
         Response::success($this->agreementService->findVersions($agreementId));
     }
 
     public function version(int $agreementId, int $versionNumber): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        if (!$this->agreementService->findByIdForUser(
+            $agreementId,
+            (int) $_SESSION['user_id']
+        )) {
+            Response::error('Agreement not found', 404);
+        }
 
         $version = $this->agreementService->findVersion($agreementId, $versionNumber);
         if (!$version) {
@@ -137,6 +156,13 @@ class AgreementController {
     public function documents(int $agreementId): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        if (!$this->agreementService->findByIdForUser(
+            $agreementId,
+            (int) $_SESSION['user_id']
+        )) {
+            Response::error('Agreement not found', 404);
+        }
 
         Response::success($this->agreementService->listDocuments($agreementId));
     }
