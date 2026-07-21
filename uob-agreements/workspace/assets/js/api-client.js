@@ -151,7 +151,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -363,6 +363,24 @@
         approveFinalVp(instanceId, data) {
             return request(
                 `/workflow-instances/${encodeURIComponent(instanceId)}/final-vp/approve`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
+        },
+        approvePresident(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/president/approve`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
+        },
+        rejectPresident(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/president/reject`,
                 {
                     method: 'POST',
                     body: jsonBody(data)

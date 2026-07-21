@@ -732,6 +732,10 @@ public function clearRedraftBaseVersion(
                     AS finance_review_status,
                 finance_step.comments
                     AS finance_review_comments,
+                final_vp_step.status
+                    AS final_vp_review_status,
+                final_vp_step.comments
+                    AS final_vp_review_comments,
                 president_step.status
                     AS president_review_status,
                 president_step.comments
@@ -753,6 +757,10 @@ public function clearRedraftBaseVersion(
                 ON finance_step.workflow_instance_id =
                    wi.workflow_instance_id
                AND finance_step.step_key = \'FINANCE_REVIEW\'
+             LEFT JOIN workflow_instance_steps final_vp_step
+                ON final_vp_step.workflow_instance_id =
+                   wi.workflow_instance_id
+               AND final_vp_step.step_key = \'VP_FINAL\'
              LEFT JOIN workflow_instance_steps president_step
                 ON president_step.workflow_instance_id =
                    wi.workflow_instance_id

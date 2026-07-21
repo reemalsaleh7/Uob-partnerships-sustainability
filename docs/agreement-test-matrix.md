@@ -152,6 +152,7 @@ Development-only password: `UobDev2026!`.
 | I-06 | Query inbox                                     | Only active assignments on active workflow steps are returned.                  |
 | I-07 | Query ordinary Final VP inbox task              | `task_mode` is `REVIEW`; Legal/Finance results are included.                 |
 | I-08 | Query VP task after a specialist change request | `task_mode` is `VP_MEDIATION`; source step and recorded reason are included. |
+| I-09 | Query President inbox task                      | Legal, Finance, and approved Final VP status/comments are included.          |
 
 ## HTTP routing, sessions, and permissions
 
@@ -178,6 +179,17 @@ Development-only password: `UobDev2026!`.
 | UI-06 | Mediate to creator, Legal, or Finance          | Selected destination receives the next controlled task and the VP task leaves the inbox.        |
 | UI-07 | Reject during mediation                       | Workflow ends and no active assignment remains.                                                  |
 | UI-08 | Open another user's VP task by changing IDs   | Page refuses the action because no matching active inbox assignment belongs to the signed-in VP. |
+
+## President frontend checks
+
+| ID    | Scenario                                      | Expected result                                                                                         |
+| ----- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| UI-09 | Open an assigned President task               | Agreement, latest version, Legal, Finance, and Final VP outcomes appear.                                |
+| UI-10 | Approve as President                          | Confirmation is required; workflow becomes `COMPLETED`, Agreement becomes `APPROVED`, and task closes. |
+| UI-11 | Request changes as President                  | Reason is required; President task closes and VP receives mediation with the recorded reason.           |
+| UI-12 | Reject as President                           | Confirmation and reason are required; Agreement and workflow become terminally `REJECTED`.             |
+| UI-13 | Open another user's President task by IDs     | Page refuses access because the signed-in user does not own that active assignment.                     |
+| UI-14 | Repeat a completed President decision         | No active assignment remains; direct page access and duplicate backend decision are rejected.           |
 
 ## Verified automated tests
 

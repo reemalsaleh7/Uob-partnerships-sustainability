@@ -196,7 +196,9 @@ Each inbox row also carries the context needed by the assigned review screen:
 
 - `task_mode` is `REVIEW` for an ordinary approval or `VP_MEDIATION` when `VP_FINAL` was reactivated by a change request.
 - `change_request_step_key` and `change_request_reason` identify the active Legal, Finance, or President request awaiting VP routing.
-- Legal, Finance, and President status/comment fields summarize the decisions already recorded in the workflow.
+- Legal, Finance, Final VP, and President status/comment fields summarize the decisions already recorded in the workflow.
+
+The President review uses `final_vp_review_status` and `final_vp_review_comments` to display the VP recommendation that activated the President task.
 
 This context does not broaden access. It is returned only with an active assignment owned by the authenticated user.
 
@@ -278,6 +280,8 @@ Effects:
 - Completes the workflow and records `completed_at`.
 - Changes the Agreement to `APPROVED`.
 - Removes the completed assignment from the President inbox.
+
+The President frontend also exposes the existing change-request and rejection endpoints below. A change request is used when correction is possible; rejection is terminal.
 
 ## Change requests and VP mediation
 

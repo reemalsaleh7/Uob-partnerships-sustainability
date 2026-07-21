@@ -88,7 +88,13 @@
             actionCell.className = 'text-end';
 
             if (
-                ['VP_INITIAL', 'LEGAL_REVIEW', 'FINANCE_REVIEW', 'VP_FINAL']
+                [
+                    'VP_INITIAL',
+                    'LEGAL_REVIEW',
+                    'FINANCE_REVIEW',
+                    'VP_FINAL',
+                    'PRESIDENT_APPROVAL'
+                ]
                     .includes(assignment.step_key)
             ) {
                 const link = document.createElement('a');
@@ -101,7 +107,8 @@
                     VP_INITIAL: 'workflow-review.php',
                     LEGAL_REVIEW: 'legal-review.php',
                     FINANCE_REVIEW: 'finance-review.php',
-                    VP_FINAL: 'vp-review.php'
+                    VP_FINAL: 'vp-review.php',
+                    PRESIDENT_APPROVAL: 'president-review.php'
                 };
                 link.href = `${reviewPages[assignment.step_key]}?${query.toString()}`;
                 link.textContent = 'Review';

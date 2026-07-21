@@ -226,7 +226,7 @@ try {
             (int) $president['user_id']
         );
 
-    $presidentHasAssignment = false;
+    $presidentInboxAssignment = null;
 
     foreach ($presidentInbox as $inboxItem) {
         if (
@@ -236,14 +236,30 @@ try {
             && $inboxItem['step_key']
                 === 'PRESIDENT_APPROVAL'
         ) {
-            $presidentHasAssignment = true;
+            $presidentInboxAssignment = $inboxItem;
             break;
         }
     }
 
     finalVpAssert(
-        $presidentHasAssignment,
+        $presidentInboxAssignment !== null,
         'President approval was not added to the President inbox'
+    );
+
+    finalVpAssert(
+        $presidentInboxAssignment[
+            'legal_review_status'
+        ] === 'APPROVED'
+        && $presidentInboxAssignment[
+            'finance_review_status'
+        ] === 'SKIPPED'
+        && $presidentInboxAssignment[
+            'final_vp_review_status'
+        ] === 'APPROVED'
+        && $presidentInboxAssignment[
+            'final_vp_review_comments'
+        ] === 'Final VP review approved',
+        'President inbox did not expose prior review context'
     );
 
     echo json_encode(

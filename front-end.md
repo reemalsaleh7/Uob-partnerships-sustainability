@@ -26,12 +26,15 @@ This package adds a protected internal Agreement workspace without changing the 
 - Final VP review with Legal/Finance outcome summary and routing to President.
 - Final VP return-to-creator and terminal rejection decisions.
 - VP mediation that displays the requesting stage and recorded reason, then routes to the creator, Legal, Finance, or rejection.
+- President review with Legal, Finance, and Final VP outcome summaries.
+- President approval that completes the workflow and publishes the Agreement as `APPROVED`.
+- President change requests routed to VP mediation and terminal President rejection with a required reason.
 - Logout using `POST /api/index.php/logout`.
 - Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-The President and physical document upload screens remain deferred to the next slices. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
+The physical document upload screen remains deferred to the next slice. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
 
 ## Install
 
@@ -109,6 +112,12 @@ Then open the workspace and verify:
 28. In a separate test workflow, request Legal or Finance changes and confirm the VP inbox labels the task **VP mediation**.
 29. Open mediation and confirm the requesting stage and recorded reason appear.
 30. Route the request to the creator, Legal, or Finance and confirm only the selected destination receives the next task.
+31. Complete Final VP review, sign in as `dev.president@uob.test`, and open the President approval from the Workflow inbox.
+32. Confirm the President screen shows the Agreement, latest version, Legal result, Finance result or “Not required,” and Final VP comments.
+33. Approve the Agreement and confirm the President task disappears, the workflow completes, and the Agreement status becomes `APPROVED`.
+34. In a separate workflow, submit a required President change reason and confirm a **VP mediation** task appears with the President reason.
+35. In another workflow, reject from President with a required reason and confirm the Agreement becomes terminally `REJECTED`.
+36. Change the President review URL IDs or sign in as another approver and confirm the page refuses access without that exact active assignment.
 
 The frontend files are under:
 
