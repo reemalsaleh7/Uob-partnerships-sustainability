@@ -70,6 +70,18 @@ try {
 }
 
     if (
+        str_starts_with($requestPath, '/agreement-performance-reports')
+        || $requestPath === '/agreement-performance-dashboard'
+        || preg_match(
+            '#^/agreements/[0-9]+/performance-reports$#',
+            $requestPath
+        )
+    ) {
+        require dirname(__DIR__) . '/routes/agreement-performance.php';
+        exit;
+    }
+
+    if (
         str_starts_with($requestPath, '/agreements')
         || str_starts_with($requestPath, '/documents')
     ) {

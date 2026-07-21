@@ -201,3 +201,17 @@ creator uploads the executed file as **Final signed Agreement**, selects it,
 records actual dates and final UOB/partner signatories, and confirms permanent
 finalization. The panel then becomes read-only and displays the signing record,
 signatories, scheduled/active/expired state, and status-event history.
+
+## Agreement performance monitoring
+
+`performance-reports.php` is the owner/reviewer queue. It highlights overdue
+periods and links to `performance-report.php`, whose controls are returned by
+the API rather than inferred from the visible role label. The report screen
+supports annual narrative, actual KPI values, executive-program progress,
+secure evidence selection, return/resubmission, acceptance, and status history.
+
+`performance-dashboard.php` is limited to users with
+`VIEW_AGREEMENT_DASHBOARD`. It presents operational Agreement counts, reporting
+compliance, deadlines, accepted metric totals, and accepted executive-program
+health. Agreement details include a small reporting-period panel for authorized
+owners and reviewers. Initiative navigation and pages are unchanged.

@@ -34,6 +34,7 @@
         LEGAL_REVIEW: 'Legal review document',
         FINANCE_REVIEW: 'Finance review document',
         SIGNED_AGREEMENT: 'Final signed Agreement',
+        ANNUAL_REPORT: 'Annual performance report',
         OTHER: 'Other'
     };
 
@@ -116,6 +117,16 @@
             : [];
         state.constraints = payload?.constraints || null;
         elements.form.classList.toggle('d-none', payload?.can_upload !== true);
+        if (
+            payload?.can_upload === true
+            && ['ACTIVE', 'EXPIRED'].includes(payload?.agreement_status)
+        ) {
+            [...elements.type.options].forEach((option) => {
+                option.disabled = option.value !== 'ANNUAL_REPORT';
+                option.hidden = option.value !== 'ANNUAL_REPORT';
+            });
+            elements.type.value = 'ANNUAL_REPORT';
+        }
         elements.loading.classList.add('d-none');
         elements.empty.classList.toggle('d-none', documents.length !== 0);
         elements.tableWrap.classList.toggle('d-none', documents.length === 0);

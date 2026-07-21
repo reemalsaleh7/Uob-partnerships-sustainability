@@ -398,6 +398,7 @@ class AgreementService {
             'LEGAL_REVIEW',
             'FINANCE_REVIEW',
             'SIGNED_AGREEMENT',
+            'ANNUAL_REPORT',
             'OTHER',
         ];
 
@@ -425,6 +426,15 @@ class AgreementService {
         ) {
             throw new DomainException(
                 'Only the Agreement creator or a system administrator may upload the final signed Agreement after approval'
+            );
+        }
+
+        if (
+            in_array($agreement['status'], ['ACTIVE', 'EXPIRED'], true)
+            && $normalizedType !== 'ANNUAL_REPORT'
+        ) {
+            throw new DomainException(
+                'Operational Agreements accept only annual-report documents through this upload panel'
             );
         }
 
@@ -534,6 +544,7 @@ class AgreementService {
         return [
             'documents' => $documents,
             'can_upload' => $canUpload,
+            'agreement_status' => $agreement['status'],
             'constraints' => [
                 'max_file_size_bytes' =>
                     DocumentStorageService::MAX_FILE_SIZE_BYTES,
@@ -630,6 +641,12 @@ class AgreementService {
             );
         }
 
+        if ($this->agreementDocumentRepo->isPerformanceReportDocument($documentId)) {
+            throw new DomainException(
+                'A document linked to a performance report cannot be deleted'
+            );
+        }
+
         $db = Database::connect();
         $db->beginTransaction();
         try {
@@ -698,6 +715,17 @@ class AgreementService {
             && $this->permissionService->hasPermission(
                 $userId,
                 'MANAGE_AGREEMENT_OPERATIONS'
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            $isCreator
+            && in_array($agreement['status'], ['ACTIVE', 'EXPIRED'], true)
+            && $this->permissionService->hasPermission(
+                $userId,
+                'MANAGE_AGREEMENT_REPORTS'
             )
         ) {
             return true;

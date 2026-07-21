@@ -172,6 +172,21 @@ The former four-field payload remains valid for saving a draft. The workspace no
 
 The server snapshots scalar fields, partners, SDGs, rankings, contacts, executive programs, and metrics in one transaction. See `docs/agreement-comprehensive-field-model.md` for the source mapping and ownership rules.
 
+## Agreement performance monitoring
+
+| Method | Endpoint | Permission | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/agreement-performance-reports` | Manage or review reports | Owner/reviewer reporting queue. |
+| `GET` | `/agreements/{id}/performance-reports` | Manage or review reports | Reporting periods for one authorized Agreement. |
+| `GET` | `/agreement-performance-reports/{id}` | Manage or review reports | Report content, metrics, programs, history, and allowed actions. |
+| `PUT` | `/agreement-performance-reports/{id}` | `MANAGE_AGREEMENT_REPORTS` | Save a draft or returned report transactionally. |
+| `POST` | `/agreement-performance-reports/{id}/submit` | `MANAGE_AGREEMENT_REPORTS` | Validate evidence and submit for review. |
+| `POST` | `/agreement-performance-reports/{id}/review` | `REVIEW_AGREEMENT_REPORTS` | `ACCEPT` or `RETURN`; return comments are mandatory. |
+| `GET` | `/agreement-performance-dashboard?year=YYYY` | `VIEW_AGREEMENT_DASHBOARD` | Aggregate compliance, deadlines, accepted metrics, and program health. |
+
+The annual period generator is CLI-only and is documented in
+`docs/agreement-performance-monitoring.md`.
+
 The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement. The update controller accepts only Agreement content fields; clients cannot change workflow status through the general update endpoint.
 
 ### Agreement visibility

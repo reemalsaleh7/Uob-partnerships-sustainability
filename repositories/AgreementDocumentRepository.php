@@ -127,4 +127,16 @@ class AgreementDocumentRepository {
         $stmt->execute(['document_id' => $documentId]);
         return (bool) $stmt->fetchColumn();
     }
+
+    public function isPerformanceReportDocument(int $documentId): bool
+    {
+        $stmt = $this->db->prepare(
+            'SELECT 1
+             FROM agreement_performance_reports
+             WHERE report_document_id = :document_id
+             LIMIT 1'
+        );
+        $stmt->execute(['document_id' => $documentId]);
+        return (bool) $stmt->fetchColumn();
+    }
 }

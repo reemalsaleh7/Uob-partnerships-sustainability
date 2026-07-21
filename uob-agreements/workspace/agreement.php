@@ -294,6 +294,19 @@ workspaceHeader('Agreement details', 'agreements');
         </form>
     </section>
 
+    <section class="workspace-card mt-4 d-none" aria-labelledby="performance-summary-title" data-performance-summary>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="performance-summary-title" class="h5 mb-1">Performance monitoring</h2>
+                <p class="small text-secondary mb-0">Annual reporting periods, deadlines, review state, and accepted evidence.</p>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="performance-reports.php">Open reporting queue</a>
+        </div>
+        <div class="loading-state compact" data-performance-summary-loading><div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div><span>Loading reporting periods…</span></div>
+        <div class="empty-state compact d-none" data-performance-summary-empty><p class="text-secondary mb-0">No reporting period has been generated for this Agreement.</p></div>
+        <div class="table-responsive d-none" data-performance-summary-table><table class="table workspace-table align-middle mb-0"><thead><tr><th>Period</th><th>Due date</th><th>Status</th><th></th></tr></thead><tbody data-performance-summary-body></tbody></table></div>
+    </section>
+
     <section class="workspace-card mt-4" aria-labelledby="versions-title">
         <div class="workspace-card-header">
             <div>
@@ -333,4 +346,5 @@ workspaceHeader('Agreement details', 'agreements');
     'assets/js/agreement-detail.js',
     'assets/js/agreement-documents.js',
     'assets/js/agreement-operations.js',
+    'assets/js/agreement-performance-summary.js',
 ]); ?>

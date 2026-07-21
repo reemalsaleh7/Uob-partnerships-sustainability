@@ -208,7 +208,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review|performance-reports|performance-report|performance-dashboard)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -270,6 +270,18 @@
             element.classList.toggle('d-none', !canReview);
         });
 
+        const canUseReports = hasPermission(user, 'MANAGE_AGREEMENT_REPORTS')
+            || hasPermission(user, 'REVIEW_AGREEMENT_REPORTS');
+        document.querySelectorAll('[data-performance-nav]').forEach((element) => {
+            element.classList.toggle('d-none', !canUseReports);
+        });
+        document.querySelectorAll('[data-performance-dashboard-nav]').forEach((element) => {
+            element.classList.toggle(
+                'd-none',
+                !hasPermission(user, 'VIEW_AGREEMENT_DASHBOARD')
+            );
+        });
+
         document.querySelectorAll('[data-logout]').forEach((button) => {
             if (button.dataset.bound === 'true') {
                 return;
@@ -314,8 +326,11 @@
         const classes = {
             DRAFT: 'status-draft',
             UNDER_REVIEW: 'status-review',
+            SUBMITTED: 'status-review',
             REVISION_REQUIRED: 'status-revision',
+            RETURNED: 'status-revision',
             APPROVED: 'status-approved',
+            ACCEPTED: 'status-approved',
             ACTIVE: 'status-active',
             REJECTED: 'status-rejected',
             EXPIRED: 'status-expired',
@@ -421,6 +436,35 @@
                 method: 'POST',
                 body: jsonBody(data)
             });
+        },
+        performanceReports() {
+            return request('/agreement-performance-reports');
+        },
+        agreementPerformanceReports(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/performance-reports`);
+        },
+        performanceReport(id) {
+            return request(`/agreement-performance-reports/${encodeURIComponent(id)}`);
+        },
+        updatePerformanceReport(id, data) {
+            return request(`/agreement-performance-reports/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                body: jsonBody(data)
+            });
+        },
+        submitPerformanceReport(id) {
+            return request(`/agreement-performance-reports/${encodeURIComponent(id)}/submit`, {
+                method: 'POST'
+            });
+        },
+        reviewPerformanceReport(id, data) {
+            return request(`/agreement-performance-reports/${encodeURIComponent(id)}/review`, {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
+        performanceDashboard(year) {
+            return request(`/agreement-performance-dashboard?year=${encodeURIComponent(year)}`);
         },
         lifecycleRequests() {
             return request('/agreement-lifecycle-requests');

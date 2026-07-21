@@ -27,6 +27,18 @@ VALUES
 'Manage Agreement operations'),
 
 
+('MANAGE_AGREEMENT_REPORTS',
+'Manage Agreement performance reports'),
+
+
+('REVIEW_AGREEMENT_REPORTS',
+'Review Agreement performance reports'),
+
+
+('VIEW_AGREEMENT_DASHBOARD',
+'View Agreement performance dashboard'),
+
+
 ('CREATE_INITIATIVE',
 'Create Initiative'),
 

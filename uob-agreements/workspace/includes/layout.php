@@ -27,6 +27,16 @@ function workspaceHeader(
             ? ' active'
             : '';
 
+    $performanceActive =
+        $activePage === 'performance'
+            ? ' active'
+            : '';
+
+    $dashboardActive =
+        $activePage === 'performance-dashboard'
+            ? ' active'
+            : '';
+
     echo <<<HTML
 <!doctype html>
 <html lang="en">
@@ -84,6 +94,16 @@ function workspaceHeader(
                     <li class="nav-item d-none" data-workflow-nav>
                         <a class="nav-link{$workflowActive}" href="workflow-inbox.php">
                             Workflow inbox
+                        </a>
+                    </li>
+                    <li class="nav-item d-none" data-performance-nav>
+                        <a class="nav-link{$performanceActive}" href="performance-reports.php">
+                            Performance reports
+                        </a>
+                    </li>
+                    <li class="nav-item d-none" data-performance-dashboard-nav>
+                        <a class="nav-link{$dashboardActive}" href="performance-dashboard.php">
+                            Performance dashboard
                         </a>
                     </li>
                 </ul>

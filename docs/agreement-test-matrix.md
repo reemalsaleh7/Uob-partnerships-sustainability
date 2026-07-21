@@ -351,6 +351,28 @@ Operations requiring rollback verification include:
 | OS-10 | Delete the referenced signed document | Deletion is rejected, including for an administrator. |
 | OS-11 | Alter the stored signed file before finalization | SHA-256 verification rejects finalization. |
 | OS-12 | Run `AgreementOperationalStatusSmokeTest.php` | Activation, scheduling, expiry, idempotency, signatories, and document protection pass; transaction rolls back. |
+
+## Agreement performance monitoring
+
+| ID | Test | Expected result |
+| --- | --- | --- |
+| PM-01 | Run generator without `--commit` | Current due periods are reported and all writes roll back. |
+| PM-02 | Run generator with `--commit` twice | First run creates current periods; second run creates no duplicates. |
+| PM-03 | Inspect a generated period | Agreement metrics and executive programs are copied as reporting baselines; the approved Agreement remains unchanged. |
+| PM-04 | Unrelated creator opens another user's draft report | Report detail is returned as not found. |
+| PM-05 | Save narrative, metrics, programs, and document | All child rows replace in one transaction and an audit update is recorded. |
+| PM-06 | Submit without summary, achievements, actual values, or evidence | Submission is rejected with a field-specific validation message. |
+| PM-07 | Alter or remove the selected evidence file | SHA-256/integrity validation blocks submission. |
+| PM-08 | Submit a complete report | Status becomes `SUBMITTED`, event and audit history are written, and owner editing closes. |
+| PM-09 | Return without comments | Decision is rejected; report remains submitted. |
+| PM-09A | Preparer also has reviewer permission and reviews own report | Decision is rejected to preserve separation of duties. |
+| PM-10 | Return with comments | Status becomes `RETURNED`; owner editing/resubmission reopens. |
+| PM-11 | Accept a resubmitted report | Status becomes `ACCEPTED` and the report is immutable through the API. |
+| PM-12 | Delete report evidence after linking | Deletion is rejected, including while the report is returned. |
+| PM-13 | Open dashboard as creator without dashboard permission | Request is forbidden. |
+| PM-14 | Open dashboard as approver | Counts, deadlines, accepted metrics, and accepted program statuses load for the selected year. |
+| PM-15 | Inspect dashboard totals | Draft, returned, and submitted outcomes are excluded from accepted KPI totals. |
+| PM-16 | Run `AgreementPerformanceMonitoringSmokeTest.php` | Generation, idempotency, save, submit, return, resubmit, accept, aggregates, document protection, and rollback pass. |
 | LS-04 | Inspect successor collections | Partners, SDGs, rankings, contacts, programs, and metrics match the source. |
 | LS-05 | Inspect successor version 1 | Lifecycle request, source Agreement, approver, and approved request details exist in immutable provenance. |
 | LS-06 | Inspect lineage | Source and successor detail screens link to one another with `RENEWAL` or `AMENDMENT`. |

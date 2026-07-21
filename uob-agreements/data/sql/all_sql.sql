@@ -718,3 +718,6 @@ WHERE is_active = TRUE;
 
 -- Finalized signing and date-controlled operational statuses.
 \ir migrations/20260721_agreement_operational_status.sql
+
+-- Annual reports, executive-program progress, KPI results, and dashboards.
+\ir migrations/20260721_agreement_performance_monitoring.sql

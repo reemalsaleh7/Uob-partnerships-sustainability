@@ -6,7 +6,11 @@ WITH expected(table_name) AS (
         ('users'), ('roles'), ('permissions'), ('role_permissions'), ('user_roles'),
         ('organizational_units'), ('position_types'), ('positions'), ('user_positions'),
         ('partners'), ('agreements'), ('agreement_partners'), ('agreement_versions'),
-        ('agreement_documents'), ('audit_logs')
+        ('agreement_documents'), ('audit_logs'),
+        ('agreement_performance_reports'),
+        ('agreement_performance_metric_results'),
+        ('agreement_executive_program_updates'),
+        ('agreement_performance_report_events')
 )
 SELECT table_name, to_regclass('public.' || table_name) IS NULL AS missing
 FROM expected

@@ -428,6 +428,35 @@ main {
     border-color: var(--uob-navy);
 }
 
+.report-status-filter {
+    max-width: 14rem;
+}
+
+.dashboard-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1.25rem;
+}
+
+.dashboard-kpi-value {
+    color: var(--uob-navy);
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
+    line-height: 1;
+}
+
+.dashboard-kpi.kpi-active {
+    border-left: 0.3rem solid #198754;
+}
+
+.dashboard-kpi.kpi-danger {
+    border-left: 0.3rem solid #dc3545;
+}
+
+.program-progress-editor textarea {
+    min-height: 6rem;
+}
+
 @media (max-width: 767.98px) {
     .workspace-brand-subtitle,
     .workspace-user-name {
@@ -465,6 +494,10 @@ main {
     .review-actions {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .report-status-filter {
+        max-width: none;
     }
 
     .form-actions {

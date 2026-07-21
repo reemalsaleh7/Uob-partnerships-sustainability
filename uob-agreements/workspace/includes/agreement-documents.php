@@ -82,6 +82,7 @@ function agreementDocumentsPanel(
                     <option value="LEGAL_REVIEW">Legal review document</option>
                     <option value="FINANCE_REVIEW">Finance review document</option>
                     <option value="SIGNED_AGREEMENT">Final signed Agreement</option>
+                    <option value="ANNUAL_REPORT">Annual performance report</option>
                     <option value="OTHER">Other</option>
                 </select>
             </div>
