@@ -17,6 +17,11 @@ function workspaceHeader(
             ? ' active'
             : '';
 
+    $workflowActive =
+        $activePage === 'workflow'
+            ? ' active'
+            : '';
+
     echo <<<HTML
 <!doctype html>
 <html lang="en">
@@ -66,8 +71,8 @@ function workspaceHeader(
                             Agreements
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#" aria-disabled="true">
+                    <li class="nav-item d-none" data-workflow-nav>
+                        <a class="nav-link{$workflowActive}" href="workflow-inbox.php">
                             Workflow inbox
                         </a>
                     </li>
@@ -114,4 +119,3 @@ HTML;
 
     echo "</body>\n</html>\n";
 }
-

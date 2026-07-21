@@ -1,4 +1,4 @@
-# Agreement frontend — Phase 1
+# Agreement frontend — Phase 2
 
 This package adds a protected internal Agreement workspace without changing the existing public CSV-driven `uob-agreements/agreements.php` page.
 
@@ -15,11 +15,14 @@ This package adds a protected internal Agreement workspace without changing the 
 - Create Agreement draft using `POST /api/index.php/agreements`.
 - Edit a draft using `PUT /api/index.php/agreements/{id}`.
 - Submit a draft into the approval workflow using `POST /api/index.php/agreements/{id}/submit`.
+- Workflow inbox loaded from `GET /api/index.php/workflow-inbox`.
+- Initial VP review with required Legal routing and an optional Finance review.
+- Initial VP return-to-creator and terminal rejection decisions.
 - Logout using `POST /api/index.php/logout`.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-The workflow inbox, role-specific approval screens, redraft UI, and physical document upload are intentionally deferred to the next slices. Create, edit, and submit controls are displayed only when the user has the related permission. Edit and submit controls are limited to `DRAFT` Agreements in this phase.
+The Legal, Finance, Final VP, President, creator redraft, and physical document upload screens remain deferred to the next slices. Create, edit, submit, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
 
 ## Install
 
@@ -77,6 +80,9 @@ Then open the workspace and verify:
 8. A Dean can create a draft using an active partner and is redirected to its detail page.
 9. A draft can be edited and the version history gains a snapshot.
 10. Submitting a draft changes its status to `UNDER_REVIEW` and hides the edit/submit actions.
+11. The submitted Agreement appears in the VP user's Workflow inbox.
+12. The Initial VP can open the review and send it to Legal with or without Finance review.
+13. After a successful decision, the completed task is removed from the VP inbox.
 
 The frontend files are under:
 

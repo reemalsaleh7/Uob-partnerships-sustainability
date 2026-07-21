@@ -85,7 +85,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -138,6 +138,13 @@
 
         document.querySelectorAll('[data-user-name]').forEach((element) => {
             element.textContent = displayName(user);
+        });
+
+        const canReview = hasPermission(user, 'APPROVE_AGREEMENT')
+            || hasPermission(user, 'REJECT_AGREEMENT');
+
+        document.querySelectorAll('[data-workflow-nav]').forEach((element) => {
+            element.classList.toggle('d-none', !canReview);
         });
 
         document.querySelectorAll('[data-logout]').forEach((button) => {
@@ -249,6 +256,27 @@
         },
         versions(id) {
             return request(`/agreements/${encodeURIComponent(id)}/versions`);
+        },
+        workflowInbox() {
+            return request('/workflow-inbox');
+        },
+        approveInitialVp(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/initial-vp/approve`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
+        },
+        decideVp(instanceId, data) {
+            return request(
+                `/workflow-instances/${encodeURIComponent(instanceId)}/vp/decide`,
+                {
+                    method: 'POST',
+                    body: jsonBody(data)
+                }
+            );
         }
     });
 })(window);

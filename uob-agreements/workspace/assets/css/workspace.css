@@ -187,6 +187,23 @@ main {
     font-weight: 700;
 }
 
+.workflow-task-cell {
+    min-width: 13rem;
+}
+
+.workflow-task-label {
+    display: block;
+    color: var(--uob-text);
+    font-weight: 700;
+}
+
+.workflow-task-key {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--uob-muted);
+    font-size: 0.75rem;
+}
+
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -304,6 +321,42 @@ main {
     gap: 0.75rem;
 }
 
+.review-decision-panel {
+    padding: 1.5rem;
+}
+
+.review-decision-panel + .review-decision-panel {
+    border-top: 1px solid var(--uob-border);
+}
+
+.review-choice {
+    height: 100%;
+    padding: 1rem;
+    background: #fbfcfe;
+    border: 1px solid var(--uob-border);
+    border-radius: 0.75rem;
+}
+
+.review-choice .form-check-label {
+    cursor: pointer;
+}
+
+.review-help {
+    color: var(--uob-muted);
+    font-size: 0.875rem;
+}
+
+.review-danger-zone {
+    background: #fffafa;
+}
+
+.review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
 .record-list > div + div {
     margin-top: 1.25rem;
     padding-top: 1.25rem;
@@ -356,6 +409,15 @@ main {
 
     .form-section {
         padding: 1rem;
+    }
+
+    .review-decision-panel {
+        padding: 1rem;
+    }
+
+    .review-actions {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .form-actions {
