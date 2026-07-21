@@ -315,6 +315,60 @@ class AgreementLifecycleRepository
         ]);
     }
 
+    public function linkSuccessorAgreement(
+        int $requestId,
+        int $sourceAgreementId,
+        int $successorAgreementId,
+        string $relationshipType,
+        int $createdBy
+    ): int {
+        $statement = $this->db->prepare(
+            'UPDATE agreement_lifecycle_requests
+             SET successor_agreement_id = :successor_agreement_id,
+                 updated_at = NOW()
+             WHERE lifecycle_request_id = :request_id
+               AND agreement_id = :source_agreement_id
+               AND (
+                   successor_agreement_id IS NULL
+                   OR successor_agreement_id = :same_successor_agreement_id
+               )'
+        );
+        $statement->execute([
+            'request_id' => $requestId,
+            'source_agreement_id' => $sourceAgreementId,
+            'successor_agreement_id' => $successorAgreementId,
+            'same_successor_agreement_id' => $successorAgreementId,
+        ]);
+        if ($statement->rowCount() !== 1) {
+            throw new DomainException(
+                'The lifecycle request already has a different successor Agreement'
+            );
+        }
+
+        $statement = $this->db->prepare(
+            'INSERT INTO agreement_relationships (
+                parent_agreement_id, related_agreement_id,
+                relationship_type, created_by
+             ) VALUES (
+                :source_agreement_id, :successor_agreement_id,
+                :relationship_type,
+                :created_by
+             )
+             ON CONFLICT (
+                parent_agreement_id, related_agreement_id, relationship_type
+             ) DO UPDATE SET created_by = agreement_relationships.created_by
+             RETURNING relationship_id'
+        );
+        $statement->execute([
+            'source_agreement_id' => $sourceAgreementId,
+            'successor_agreement_id' => $successorAgreementId,
+            'relationship_type' => $relationshipType,
+            'created_by' => $createdBy,
+        ]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     private function databaseValue(string $field, mixed $value): mixed
     {
         if ($field === 'previous_initiatives') {
