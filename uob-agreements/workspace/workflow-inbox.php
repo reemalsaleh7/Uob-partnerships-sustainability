@@ -12,7 +12,7 @@ workspaceHeader('Workflow inbox', 'workflow');
         <p class="eyebrow mb-2">Assigned work</p>
         <h1 class="display-6 mb-2">Workflow inbox</h1>
         <p class="text-secondary mb-0">
-            Review Agreement tasks currently assigned to you.
+            Review Agreement and lifecycle-request tasks currently assigned to you.
         </p>
     </div>
 

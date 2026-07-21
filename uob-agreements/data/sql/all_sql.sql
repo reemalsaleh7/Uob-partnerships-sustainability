@@ -706,3 +706,6 @@ WHERE is_active = TRUE;
 
 -- Preserve provenance and idempotency for controlled historical imports.
 \ir migrations/20260721_legacy_agreement_import_tracking.sql
+
+-- Add the governed amendment, renewal, and termination request workflow.
+\ir migrations/20260721_agreement_lifecycle_workflow.sql

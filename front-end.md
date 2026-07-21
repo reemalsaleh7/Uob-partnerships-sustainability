@@ -4,6 +4,13 @@ This package provides the protected internal Agreement workspace, makes it the c
 
 The draft editor is now a comprehensive nine-section form combining the official cooperation request, MOU, executive-program, legacy form, and CSV reporting fields. It captures multiple partners; bilingual titles; duration and renewal; need, objectives, value, focus and cooperation fields; commitments; rankings and SDGs; monitoring and legal clauses; coordinators and signatories; an executive program; outcome metrics; and a public signing link. The Agreement detail screen renders the complete record, while applicant, organizational, submission, approval, and status data remain system-derived.
 
+The authenticated workspace also includes dedicated lifecycle-request pages.
+Approved and active Agreements can start a renewal, amendment, or termination
+draft. Conditional forms expose only the official fields for that request type,
+the request detail page shows immutable versions and resubmission actions, and a
+single assignment-protected review screen adapts to Initial VP, Legal, Finance,
+Final VP/mediation, and President stages.
+
 ## Included
 
 - Real API login using `POST /api/index.php/login`.

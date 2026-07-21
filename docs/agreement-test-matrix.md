@@ -15,6 +15,19 @@
 
 Run these scenarios against the development fixtures after applying all migrations and restarting Apache. Service smoke tests execute inside transactions and roll back temporary records. HTTP lifecycle tests persist only the explicitly created development record.
 
+## Amendment, renewal, and termination requests
+
+1. Confirm only `APPROVED` or `ACTIVE` Agreements show **Start lifecycle request**.
+2. Create one draft of each type and verify only its relevant official fields appear.
+3. Confirm another user cannot open or edit the request by changing its ID.
+4. Submit a complete renewal and confirm Initial VP receives the lifecycle task.
+5. Select Legal and Finance, approve Finance first, and confirm Final VP remains inactive until Legal also approves.
+6. Request changes as Legal and confirm the task goes to VP mediation before the requester.
+7. Return from VP mediation, save a new request version, and resubmit.
+8. Approve through President and confirm the request becomes `APPROVED`.
+9. Approve a termination and confirm only then the source Agreement becomes `TERMINATED`.
+10. Reject a request and confirm the source Agreement status and versions remain unchanged.
+
 ## Development actors
 
 | Actor            | Email                      | Primary responsibility                                                              |

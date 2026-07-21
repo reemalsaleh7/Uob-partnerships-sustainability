@@ -33,12 +33,14 @@
 
     async function addAgreementDetails(assignments) {
         return Promise.all(assignments.map(async (assignment) => {
-            if (assignment.entity_type !== 'AGREEMENT') {
+            if (!['AGREEMENT', 'AGREEMENT_LIFECYCLE'].includes(assignment.entity_type)) {
                 return { ...assignment, agreement: null };
             }
 
             try {
-                const agreement = await AgreementApi.agreement(assignment.entity_id);
+                const agreement = await AgreementApi.agreement(
+                    assignment.subject_agreement_id || assignment.entity_id
+                );
                 return { ...assignment, agreement };
             } catch (error) {
                 return { ...assignment, agreement: null };
@@ -72,8 +74,11 @@
             tr.appendChild(taskCell);
 
             const agreementTitle = assignment.agreement?.title
-                || `Agreement #${assignment.entity_id}`;
-            const agreementCell = cell(agreementTitle);
+                || `Agreement #${assignment.subject_agreement_id || assignment.entity_id}`;
+            const subjectTitle = assignment.entity_type === 'AGREEMENT_LIFECYCLE'
+                ? `${String(assignment.lifecycle_request_type || 'Lifecycle').replaceAll('_', ' ')} · ${agreementTitle}`
+                : agreementTitle;
+            const agreementCell = cell(subjectTitle);
             agreementCell.classList.add('agreement-title-cell');
             tr.appendChild(agreementCell);
 
@@ -99,6 +104,18 @@
             ) {
                 const link = document.createElement('a');
                 link.className = 'btn btn-sm btn-primary';
+                if (assignment.entity_type === 'AGREEMENT_LIFECYCLE') {
+                    const lifecycleQuery = new URLSearchParams({
+                        instance_id: assignment.workflow_instance_id,
+                        request_id: assignment.lifecycle_request_id
+                    });
+                    link.href = `lifecycle-review.php?${lifecycleQuery.toString()}`;
+                    link.textContent = 'Review';
+                    actionCell.appendChild(link);
+                    tr.appendChild(actionCell);
+                    elements.tableBody.appendChild(tr);
+                    return;
+                }
                 const query = new URLSearchParams({
                     instance_id: assignment.workflow_instance_id,
                     agreement_id: assignment.entity_id

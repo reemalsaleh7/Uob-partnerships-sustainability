@@ -73,7 +73,19 @@ try {
         str_starts_with($requestPath, '/agreements')
         || str_starts_with($requestPath, '/documents')
     ) {
+        if (str_contains($requestPath, '/lifecycle-requests')) {
+            require dirname(__DIR__) . '/routes/agreement-lifecycle.php';
+            exit;
+        }
         require dirname(__DIR__) . '/routes/agreements.php';
+        exit;
+    }
+
+    if (
+        str_starts_with($requestPath, '/agreement-lifecycle-requests')
+        || str_starts_with($requestPath, '/lifecycle-workflow-instances')
+    ) {
+        require dirname(__DIR__) . '/routes/agreement-lifecycle.php';
         exit;
     }
 

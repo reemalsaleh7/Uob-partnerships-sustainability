@@ -705,6 +705,14 @@ public function clearRedraftBaseVersion(
                 wi.workflow_instance_id,
                 wi.entity_type,
                 wi.entity_id,
+                CASE
+                    WHEN wi.entity_type = \'AGREEMENT_LIFECYCLE\'
+                        THEN lifecycle_request.agreement_id
+                    ELSE wi.entity_id
+                END AS subject_agreement_id,
+                lifecycle_request.lifecycle_request_id,
+                lifecycle_request.request_type AS lifecycle_request_type,
+                lifecycle_request.status AS lifecycle_request_status,
                 wi.finance_review_required,
                 wis.instance_step_id,
                 wis.step_order,
@@ -747,6 +755,9 @@ public function clearRedraftBaseVersion(
              JOIN workflow_instances wi
                 ON wi.workflow_instance_id =
                    wis.workflow_instance_id
+             LEFT JOIN agreement_lifecycle_requests lifecycle_request
+                ON wi.entity_type = \'AGREEMENT_LIFECYCLE\'
+               AND lifecycle_request.lifecycle_request_id = wi.entity_id
              LEFT JOIN organizational_units ou
                 ON ou.unit_id = wis.assigned_unit_id
              LEFT JOIN workflow_instance_steps legal_step

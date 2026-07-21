@@ -22,6 +22,11 @@ function workspaceHeader(
             ? ' active'
             : '';
 
+    $lifecycleActive =
+        $activePage === 'lifecycle'
+            ? ' active'
+            : '';
+
     echo <<<HTML
 <!doctype html>
 <html lang="en">
@@ -69,6 +74,11 @@ function workspaceHeader(
                     <li class="nav-item">
                         <a class="nav-link{$agreementsActive}" href="agreements.php">
                             Agreements
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{$lifecycleActive}" href="lifecycle-requests.php">
+                            Lifecycle requests
                         </a>
                     </li>
                     <li class="nav-item d-none" data-workflow-nav>

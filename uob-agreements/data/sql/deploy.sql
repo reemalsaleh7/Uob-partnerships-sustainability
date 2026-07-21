@@ -50,6 +50,9 @@
 -- Controlled historical CSV import provenance
 \ir migrations/20260721_legacy_agreement_import_tracking.sql
 
+-- Amendment, renewal, and termination request workflow
+\ir migrations/20260721_agreement_lifecycle_workflow.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 

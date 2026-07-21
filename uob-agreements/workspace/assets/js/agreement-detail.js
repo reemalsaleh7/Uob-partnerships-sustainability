@@ -10,6 +10,7 @@
         versionEmpty: document.getElementById('version-empty'),
         versionWrap: document.getElementById('version-table-wrap'),
         versionBody: document.getElementById('version-table-body'),
+        lifecycle: document.querySelector('[data-lifecycle-request]'),
         edit: document.querySelector('[data-edit-agreement]'),
         submit: document.querySelector('[data-submit-agreement]'),
         submitLabel: document.querySelector('[data-submit-label]'),
@@ -209,6 +210,13 @@
         const isCreator = Number(agreement.created_by) === Number(user.user_id);
         const canEdit = AgreementApi.hasPermission(user, 'EDIT_AGREEMENT');
         const canSubmit = AgreementApi.hasPermission(user, 'SUBMIT_AGREEMENT');
+        const canCreate = AgreementApi.hasPermission(user, 'CREATE_AGREEMENT');
+
+        elements.lifecycle.classList.toggle(
+            'd-none',
+            !['APPROVED', 'ACTIVE'].includes(agreement.status) || !canCreate
+        );
+        elements.lifecycle.href = `lifecycle-form.php?agreement_id=${encodeURIComponent(agreement.agreement_id)}`;
 
         elements.edit.classList.toggle(
             'd-none',

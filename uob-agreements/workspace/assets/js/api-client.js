@@ -208,7 +208,7 @@
             return defaultPath;
         }
 
-        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        const allowedPath = /^(agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
 
         return allowedPath.test(value)
             ? value
@@ -411,6 +411,38 @@
         deleteDocument(id) {
             return request(`/documents/${encodeURIComponent(id)}`, {
                 method: 'DELETE'
+            });
+        },
+        lifecycleRequests() {
+            return request('/agreement-lifecycle-requests');
+        },
+        lifecycleRequest(id) {
+            return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}`);
+        },
+        lifecycleVersions(id) {
+            return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}/versions`);
+        },
+        createLifecycleRequest(agreementId, data) {
+            return request(`/agreements/${encodeURIComponent(agreementId)}/lifecycle-requests`, {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
+        updateLifecycleRequest(id, data) {
+            return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                body: jsonBody(data)
+            });
+        },
+        submitLifecycleRequest(id) {
+            return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}/submit`, {
+                method: 'POST'
+            });
+        },
+        decideLifecycle(instanceId, data) {
+            return request(`/lifecycle-workflow-instances/${encodeURIComponent(instanceId)}/decide`, {
+                method: 'POST',
+                body: jsonBody(data)
             });
         },
         workflowInbox() {

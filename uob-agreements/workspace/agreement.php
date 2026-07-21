@@ -45,6 +45,13 @@ workspaceHeader('Agreement details', 'agreements');
             <a
                 href="#"
                 class="btn btn-outline-primary d-none"
+                data-lifecycle-request
+            >
+                Start lifecycle request
+            </a>
+            <a
+                href="#"
+                class="btn btn-outline-primary d-none"
                 data-edit-agreement
             >
                 Edit Agreement
