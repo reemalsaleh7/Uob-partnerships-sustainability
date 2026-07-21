@@ -4,7 +4,10 @@
     const state = {
         agreements: [],
         query: '',
-        status: ''
+        status: '',
+        scope: 'ACTIVE',
+        user: null,
+        canCreateInitiative: false
     };
 
     const elements = {
@@ -16,7 +19,10 @@
         search: document.getElementById('agreement-search'),
         status: document.getElementById('agreement-status'),
         summary: document.querySelector('[data-result-summary]'),
-        create: document.querySelector('[data-create-agreement]')
+        create: document.querySelector('[data-create-agreement]'),
+        description: document.querySelector('[data-agreement-page-description]'),
+        facultyNote: document.querySelector('[data-faculty-agreement-note]'),
+        scopeButtons: [...document.querySelectorAll('[data-agreement-scope]')]
     };
 
     function normalizeRows(rows) {
@@ -54,6 +60,11 @@
         const query = state.query.toLowerCase();
 
         return state.agreements.filter((agreement) => {
+            const isMine = Number(agreement.created_by) === Number(state.user?.user_id);
+            const scopeMatches = state.scope === 'ALL'
+                || (state.scope === 'ACTIVE' && agreement.status === 'ACTIVE')
+                || (state.scope === 'MY_ACTIVE' && isMine && agreement.status === 'ACTIVE')
+                || (state.scope === 'MINE' && isMine);
             const statusMatches = !state.status
                 || agreement.status === state.status;
 
@@ -66,8 +77,46 @@
                 ...agreement.partner_names
             ].join(' ').toLowerCase();
 
-            return statusMatches && (!query || searchValue.includes(query));
+            return scopeMatches
+                && statusMatches
+                && (!query || searchValue.includes(query));
         });
+    }
+
+    function scopeLabel() {
+        return {
+            ACTIVE: 'active University Agreements',
+            MY_ACTIVE: 'active Agreements created by you',
+            MINE: 'Agreements created by you',
+            ALL: 'visible Agreements'
+        }[state.scope] || 'Agreements';
+    }
+
+    function updateScopeCounts() {
+        const mine = state.agreements.filter(
+            (agreement) => Number(agreement.created_by) === Number(state.user?.user_id)
+        );
+        const counts = {
+            ACTIVE: state.agreements.filter((agreement) => agreement.status === 'ACTIVE').length,
+            MY_ACTIVE: mine.filter((agreement) => agreement.status === 'ACTIVE').length,
+            MINE: mine.length,
+            ALL: state.agreements.length
+        };
+
+        Object.entries(counts).forEach(([scope, value]) => {
+            const target = document.querySelector(`[data-scope-count="${scope}"]`);
+            if (target) target.textContent = String(value);
+        });
+    }
+
+    function selectScope(scope) {
+        state.scope = scope;
+        elements.scopeButtons.forEach((button) => {
+            const selected = button.dataset.agreementScope === scope;
+            button.classList.toggle('active', selected);
+            button.setAttribute('aria-pressed', String(selected));
+        });
+        render();
     }
 
     function cell(text) {
@@ -79,7 +128,7 @@
     function render() {
         const rows = filteredRows();
         elements.tableBody.replaceChildren();
-        elements.summary.textContent = `${rows.length} of ${state.agreements.length} Agreements`;
+        elements.summary.textContent = `${rows.length} ${scopeLabel()}`;
 
         elements.empty.classList.toggle('d-none', rows.length !== 0);
         elements.tableWrap.classList.toggle('d-none', rows.length === 0);
@@ -98,6 +147,14 @@
             statusCell.appendChild(AgreementApi.createStatusBadge(agreement.status));
             tr.appendChild(statusCell);
 
+            const ownerCell = document.createElement('td');
+            const isMine = Number(agreement.created_by) === Number(state.user?.user_id);
+            const ownerBadge = document.createElement('span');
+            ownerBadge.className = `agreement-owner-badge${isMine ? '' : ' is-institutional'}`;
+            ownerBadge.textContent = isMine ? 'Created by you' : 'University Agreement';
+            ownerCell.append(ownerBadge);
+            tr.appendChild(ownerCell);
+
             tr.appendChild(cell(
                 agreement.partner_names.length > 0
                     ? agreement.partner_names.join(', ')
@@ -107,11 +164,24 @@
 
             const actionCell = document.createElement('td');
             actionCell.className = 'text-end';
+            const actions = document.createElement('div');
+            actions.className = 'agreement-row-actions';
             const link = document.createElement('a');
             link.className = 'btn btn-sm btn-outline-primary';
             link.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
             link.textContent = 'View';
-            actionCell.appendChild(link);
+            actions.appendChild(link);
+
+            if (state.canCreateInitiative && agreement.status === 'ACTIVE') {
+                const initiative = document.createElement('a');
+                initiative.className = 'btn btn-sm btn-primary';
+                initiative.href = '#';
+                initiative.dataset.legacyInitiative = `request-initiative.php?lang=en&agreement_id=${encodeURIComponent(agreement.agreement_id)}&agreement_code=${encodeURIComponent(agreement.agreement_code || '')}`;
+                initiative.textContent = 'Use for Initiative';
+                actions.appendChild(initiative);
+            }
+
+            actionCell.appendChild(actions);
             tr.appendChild(actionCell);
 
             elements.tableBody.appendChild(tr);
@@ -143,19 +213,34 @@
     async function initialize() {
         try {
             const user = await AgreementApi.requireSession('VIEW_AGREEMENT');
+            state.user = user;
+            state.canCreateInitiative = AgreementApi.hasPermission(user, 'CREATE_INITIATIVE')
+                || (Array.isArray(user.roles) && user.roles.includes('Initiative Creator'));
+            const canCreateAgreement = AgreementApi.hasPermission(user, 'CREATE_AGREEMENT');
             elements.create.classList.toggle(
                 'd-none',
-                !AgreementApi.hasPermission(user, 'CREATE_AGREEMENT')
+                !canCreateAgreement
             );
+
+            elements.scopeButtons.forEach((button) => {
+                if (['MY_ACTIVE', 'MINE'].includes(button.dataset.agreementScope)) {
+                    button.classList.toggle('d-none', !canCreateAgreement);
+                }
+            });
+            elements.facultyNote.classList.toggle('d-none', !state.canCreateInitiative);
+            if (state.canCreateInitiative && !canCreateAgreement) {
+                elements.description.textContent = 'Explore active University partnerships, review their objectives, and choose one as the context for a new Initiative.';
+            }
 
             const rows = await AgreementApi.agreements();
             state.agreements = normalizeRows(rows);
 
+            updateScopeCounts();
             loadStatusOptions();
             elements.search.disabled = false;
             elements.status.disabled = false;
             elements.loading.classList.add('d-none');
-            render();
+            selectScope('ACTIVE');
         } catch (error) {
             showError(error);
         }
@@ -169,6 +254,12 @@
     elements.status.addEventListener('change', () => {
         state.status = elements.status.value;
         render();
+    });
+
+    elements.scopeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            selectScope(button.dataset.agreementScope || 'ACTIVE');
+        });
     });
 
     initialize();

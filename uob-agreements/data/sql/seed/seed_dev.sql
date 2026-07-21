@@ -178,6 +178,14 @@ SELECT r.role_id, p.permission_id FROM roles r JOIN permissions p
 WHERE r.role_name = 'Agreement Approver'
 ON CONFLICT DO NOTHING;
 
+-- Initiative creators may discover active University Agreements and select one
+-- as the partnership context for a proposed Initiative.
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.role_id, p.permission_id FROM roles r JOIN permissions p
+  ON p.permission_code = 'VIEW_AGREEMENT'
+WHERE r.role_name = 'Initiative Creator'
+ON CONFLICT DO NOTHING;
+
 DELETE FROM user_positions
 WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE 'dev.%@uob.test');
 

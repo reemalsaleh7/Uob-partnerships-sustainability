@@ -19,7 +19,10 @@ workspaceHeader('Performance report', 'performance');
             <h1 class="display-6 mb-3" data-report-agreement-title></h1>
             <div class="d-flex flex-wrap align-items-center gap-3"><span data-report-status></span><span class="text-secondary" data-report-period></span><span class="text-danger fw-semibold d-none" data-report-overdue>Overdue</span></div>
         </div>
-        <a class="btn btn-outline-primary align-self-lg-end" href="#" data-report-agreement-link>Open Agreement</a>
+        <div class="d-flex flex-wrap gap-2 align-self-lg-end">
+            <button class="btn btn-primary d-none" type="button" data-download-report-document>Download annual report</button>
+            <a class="btn btn-outline-primary" href="#" data-report-agreement-link>Open Agreement</a>
+        </div>
     </section>
 
     <section class="workspace-card mt-4" aria-labelledby="report-summary-title">
@@ -45,7 +48,7 @@ workspaceHeader('Performance report', 'performance');
 
     <section class="workspace-card mt-4" aria-labelledby="report-evidence-title">
         <div class="workspace-card-header"><div><h2 id="report-evidence-title" class="h5 mb-1">4. Final report evidence</h2><p class="small text-secondary mb-0">Upload an Annual performance report from the Agreement page, then select it here.</p></div></div>
-        <div class="form-section"><label class="form-label fw-semibold" for="report-document">Secure annual-report document</label><select id="report-document" class="form-select" data-report-document><option value="">Select the final annual report</option></select><div class="form-text"><a href="#" data-upload-report-document>Open the Agreement document panel</a> to upload PDF, DOC, or DOCX evidence.</div></div>
+        <div class="form-section"><label class="form-label fw-semibold" for="report-document">Secure annual-report document</label><select id="report-document" class="form-select" data-report-document><option value="">Select the final annual report</option></select><div class="form-text" data-report-document-help><a href="#" data-upload-report-document>Open the Agreement document panel</a> to upload PDF, DOC, or DOCX evidence.</div></div>
     </section>
 
     <section class="workspace-card mt-4 d-none" aria-labelledby="report-review-title" data-review-history>
@@ -69,4 +72,4 @@ workspaceHeader('Performance report', 'performance');
     </section>
 </div>
 
-<?php workspaceFooter(['assets/js/performance-report.js']); ?>
+<?php workspaceFooter(['assets/js/performance-report.js?v=20260722-showcase-data']); ?>

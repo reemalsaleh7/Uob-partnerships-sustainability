@@ -40,10 +40,10 @@ workspaceHeader('Initiative hub', 'initiatives');
         <small>Explore submitted and published University initiatives.</small>
         <span>Open catalogue →</span>
     </a>
-    <a class="dashboard-action" href="../agreements.php?lang=en">
+    <a class="dashboard-action" href="agreements.php">
         <strong>Find an active Agreement</strong>
-        <small>Identify an approved partnership that can support your initiative.</small>
-        <span>Browse Agreements →</span>
+        <small>Review live partnership objectives and start an Initiative from the selected Agreement.</small>
+        <span>Choose a partnership →</span>
     </a>
     <a class="dashboard-action" href="../sdg.php?lang=en">
         <strong>Choose SDG outcomes</strong>

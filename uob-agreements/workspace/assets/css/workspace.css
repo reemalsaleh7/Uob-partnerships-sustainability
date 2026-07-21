@@ -276,18 +276,12 @@ main {
 .page-heading {
     align-items: flex-start;
     position: relative;
-    padding: 0.35rem 0 0.35rem 1.2rem;
+    padding: 0.35rem 0;
 }
 
 .page-heading::before {
-    position: absolute;
-    top: 0.35rem;
-    bottom: 0.35rem;
-    left: 0;
-    width: 0.28rem;
-    border-radius: 999px;
-    background: linear-gradient(180deg, var(--uob-gold), #e5c458);
-    content: "";
+    display: none;
+    content: none;
 }
 
 .page-heading h1 {
@@ -641,6 +635,122 @@ textarea.form-control {
     max-width: 14rem;
 }
 
+.agreement-scope-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-bottom: 1px solid var(--uob-border);
+}
+
+.agreement-scope-button {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    text-align: left;
+    color: var(--workspace-ink);
+    background: #f8fafc;
+    border: 1px solid #dfe6ee;
+    border-radius: 0.9rem;
+    transition: 160ms ease;
+}
+
+.agreement-scope-button:hover,
+.agreement-scope-button:focus {
+    border-color: rgba(13, 74, 167, 0.35);
+    background: #f4f8ff;
+}
+
+.agreement-scope-button.active {
+    color: #fff;
+    background: var(--uob-navy);
+    border-color: var(--uob-navy);
+    box-shadow: 0 0.55rem 1.3rem rgba(11, 31, 58, 0.14);
+}
+
+.agreement-scope-button strong,
+.agreement-scope-button span,
+.agreement-scope-button small {
+    display: block;
+}
+
+.agreement-scope-button strong {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.agreement-scope-button span {
+    margin-top: 0.35rem;
+    font-size: 0.76rem;
+    font-weight: 850;
+}
+
+.agreement-scope-button small {
+    margin-top: 0.18rem;
+    overflow: hidden;
+    color: var(--uob-muted);
+    font-size: 0.62rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agreement-scope-button.active small {
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.agreement-discovery-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 1.25rem 0;
+    padding: 0.9rem 1rem;
+    color: var(--workspace-ink);
+    background: #edf5ff;
+    border: 1px solid #cfe0f7;
+    border-radius: 0.9rem;
+}
+
+.agreement-discovery-note strong,
+.agreement-discovery-note p {
+    display: block;
+}
+
+.agreement-discovery-note strong {
+    font-size: 0.78rem;
+}
+
+.agreement-discovery-note p {
+    margin: 0.2rem 0 0;
+    color: var(--uob-muted);
+    font-size: 0.68rem;
+}
+
+.agreement-owner-badge {
+    display: inline-flex;
+    padding: 0.32rem 0.58rem;
+    color: #174ea6;
+    background: #e8f1ff;
+    border: 1px solid #cfe0fb;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 850;
+}
+
+.agreement-owner-badge.is-institutional {
+    color: #526174;
+    background: #f1f4f7;
+    border-color: #dfe5eb;
+}
+
+.agreement-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    min-width: 12rem;
+}
+
 .dashboard-kpi {
     display: flex;
     flex-direction: column;
@@ -721,6 +831,18 @@ textarea.form-control {
 
     .report-status-filter {
         max-width: none;
+    }
+
+    .agreement-scope-bar {
+        grid-template-columns: 1fr 1fr;
+        padding: 1rem;
+    }
+
+    .agreement-discovery-note {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-right: 1rem;
+        margin-left: 1rem;
     }
 
     .form-actions {
@@ -1131,7 +1253,7 @@ textarea.form-control {
 }
 
 .eyebrow {
-    color: var(--workspace-accent);
+    color: var(--uob-blue);
     font-size: 0.68rem;
     font-weight: 900;
     letter-spacing: 0.09em;
@@ -1230,7 +1352,7 @@ textarea.form-control {
 }
 
 .dashboard-action span {
-    color: var(--workspace-accent);
+    color: var(--uob-blue);
     font-size: 0.7rem;
     font-weight: 900;
 }
@@ -1427,7 +1549,7 @@ textarea.form-control {
 
 .timeline-step span {
     margin-top: 0.35rem;
-    color: var(--workspace-accent);
+    color: var(--uob-blue);
     font-size: 0.58rem;
     font-weight: 800;
 }

@@ -9,10 +9,10 @@ workspaceHeader('Agreements', 'agreements');
 
 <section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
     <div>
-        <p class="eyebrow mb-2">Agreement management</p>
+        <p class="eyebrow mb-2">Partnership portfolio</p>
         <h1 class="display-6 mb-2">Agreements</h1>
-        <p class="text-secondary mb-0">
-            View drafts, Agreements under review, and completed decisions.
+        <p class="text-secondary mb-0" data-agreement-page-description>
+            Explore active University partnerships and manage Agreements within your authority.
         </p>
     </div>
 
@@ -35,6 +35,37 @@ workspaceHeader('Agreements', 'agreements');
                 Loading Agreements…
             </p>
         </div>
+    </div>
+
+    <div class="agreement-scope-bar" aria-label="Agreement view" data-agreement-scopes>
+        <button class="agreement-scope-button active" type="button" data-agreement-scope="ACTIVE">
+            <strong data-scope-count="ACTIVE">0</strong>
+            <span>Active Agreements</span>
+            <small>University partnerships available now</small>
+        </button>
+        <button class="agreement-scope-button" type="button" data-agreement-scope="MY_ACTIVE">
+            <strong data-scope-count="MY_ACTIVE">0</strong>
+            <span>My active Agreements</span>
+            <small>Active records created by you</small>
+        </button>
+        <button class="agreement-scope-button" type="button" data-agreement-scope="MINE">
+            <strong data-scope-count="MINE">0</strong>
+            <span>My Agreements</span>
+            <small>Draft through operational delivery</small>
+        </button>
+        <button class="agreement-scope-button" type="button" data-agreement-scope="ALL">
+            <strong data-scope-count="ALL">0</strong>
+            <span>All visible</span>
+            <small>Every record available to your role</small>
+        </button>
+    </div>
+
+    <div class="agreement-discovery-note d-none" data-faculty-agreement-note>
+        <div>
+            <strong>Build an Initiative on an active partnership</strong>
+            <p>Choose an active Agreement below, review its objectives, then use it as the partnership context for your Initiative request.</p>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" href="initiative-hub.php">Initiative guidance</a>
     </div>
 
     <div class="filter-bar">
@@ -83,6 +114,7 @@ workspaceHeader('Agreements', 'agreements');
                     <th scope="col">Title</th>
                     <th scope="col">Type</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Relationship</th>
                     <th scope="col">Partner</th>
                     <th scope="col">Updated</th>
                     <th scope="col"><span class="visually-hidden">Actions</span></th>
@@ -93,4 +125,4 @@ workspaceHeader('Agreements', 'agreements');
     </div>
 </section>
 
-<?php workspaceFooter(['assets/js/agreements.js']); ?>
+<?php workspaceFooter(['assets/js/agreements.js?v=20260722-showcase-data']); ?>

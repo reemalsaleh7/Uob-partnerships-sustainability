@@ -32,7 +32,7 @@ function workspaceHeader(
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-    <link href="assets/css/workspace.css?v=20260721-functional-redesign" rel="stylesheet">
+    <link href="assets/css/workspace.css?v=20260722-showcase-data" rel="stylesheet">
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -175,7 +175,7 @@ HTML;
 
     echo <<<HTML
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260721-functional-redesign"></script>
+    <script src="assets/js/api-client.js?v=20260722-showcase-data"></script>
 HTML;
 
     foreach ($scripts as $script) {

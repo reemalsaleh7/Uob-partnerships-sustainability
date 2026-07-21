@@ -11,7 +11,9 @@
         period: document.querySelector('[data-report-period]'),
         overdue: document.querySelector('[data-report-overdue]'),
         agreementLink: document.querySelector('[data-report-agreement-link]'),
+        downloadDocument: document.querySelector('[data-download-report-document]'),
         uploadLink: document.querySelector('[data-upload-report-document]'),
+        documentHelp: document.querySelector('[data-report-document-help]'),
         fields: [...document.querySelectorAll('[data-report-field]')],
         metrics: document.querySelector('[data-performance-metrics]'),
         programs: document.querySelector('[data-performance-programs]'),
@@ -212,10 +214,11 @@
 
         elements.document.replaceChildren();
         const prompt = document.createElement('option');
-        prompt.value = '';
+        prompt.value = report.report_document_id || '';
         prompt.textContent = report.report_document_name || 'Select the final annual report';
         elements.document.append(prompt);
         (report.eligible_documents || []).forEach((record) => {
+            if (String(record.document_id) === String(report.report_document_id || '')) return;
             const option = document.createElement('option');
             option.value = record.document_id;
             option.textContent = record.file_name;
@@ -223,6 +226,11 @@
         });
         elements.document.value = report.report_document_id || '';
         elements.document.disabled = !editable;
+        elements.downloadDocument.classList.toggle('d-none', !report.report_document_id);
+        elements.downloadDocument.textContent = report.report_document_name
+            ? `Download ${report.report_document_name}`
+            : 'Download annual report';
+        elements.documentHelp.classList.toggle('d-none', !editable && Boolean(report.report_document_id));
         elements.actions.classList.toggle('d-none', !editable);
         elements.reviewPanel.classList.toggle('d-none', report.can_review !== true);
         elements.reviewHistory.classList.toggle('d-none', !report.reviewed_at);
@@ -268,7 +276,7 @@
 
     function busy(value) {
         state.busy = value;
-        [elements.save, elements.submit, elements.accept, elements.returnReport].forEach((button) => {
+        [elements.save, elements.submit, elements.accept, elements.returnReport, elements.downloadDocument].forEach((button) => {
             button.disabled = value;
         });
     }
@@ -324,6 +332,27 @@
     }
     elements.accept.addEventListener('click', () => decide('ACCEPT'));
     elements.returnReport.addEventListener('click', () => decide('RETURN'));
+
+    elements.downloadDocument.addEventListener('click', async () => {
+        if (state.busy || !state.report?.report_document_id) return;
+        clearMessages();
+        busy(true);
+        try {
+            const blob = await AgreementApi.downloadDocument(state.report.report_document_id);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = state.report.report_document_name || 'annual-performance-report.pdf';
+            document.body.append(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            message(elements.alert, error.message || 'The annual report could not be downloaded.');
+        } finally {
+            busy(false);
+        }
+    });
 
     (async function initialize() {
         try {

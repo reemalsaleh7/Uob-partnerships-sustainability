@@ -306,18 +306,61 @@
         }
     }
 
-    function loadInitiativeCreatorView(user) {
+    async function loadInitiativeCreatorView(user) {
         const position = user.positions?.[0] || {};
+        const agreements = uniqueAgreements(await AgreementApi.agreements());
+        const active = agreements.filter((agreement) => agreement.status === 'ACTIVE');
         elements.kpiHeading.classList.remove('d-none');
         elements.kpis.classList.remove('d-none');
         elements.kpiTitle.textContent = 'Your initiative context';
-        elements.kpiDescription.textContent = 'The role and organizational route attached to your account.';
+        elements.kpiDescription.textContent = 'Active partnership opportunities and the organizational route attached to your account.';
         elements.kpis.replaceChildren(
-            kpi('1', 'Initiative role', 'You can propose initiatives'),
+            kpi(active.length, 'Active Agreements', 'Available partnership contexts'),
             kpi(position.organizational_unit || '—', 'Organizational unit', 'Your routing context'),
             kpi('5', 'Approval stages', 'Creator, Department, College, VP, President'),
             kpi('17', 'SDG goals', 'Available impact classifications')
         );
+
+        elements.workColumn.classList.remove('d-none');
+        elements.guidanceColumn.className = 'col-xl-5';
+        elements.workTitle.textContent = 'Active partnerships you can build on';
+        elements.workDescription.textContent = 'Review an Agreement or use it as the context for a new Initiative.';
+        elements.workLink.href = 'agreements.php';
+        elements.workList.replaceChildren();
+
+        active.slice(0, 5).forEach((agreement) => {
+            const item = document.createElement('li');
+            item.className = 'dashboard-list-item';
+            const copy = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = agreement.title;
+            const detail = document.createElement('small');
+            detail.textContent = agreement.partner_name
+                || agreement.partner_names?.[0]
+                || 'Active University partnership';
+            copy.append(title, detail);
+            const actions = document.createElement('div');
+            actions.className = 'agreement-row-actions';
+            const view = document.createElement('a');
+            view.className = 'btn btn-sm btn-outline-primary';
+            view.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+            view.textContent = 'View';
+            const use = document.createElement('a');
+            use.className = 'btn btn-sm btn-primary';
+            use.href = '#';
+            use.dataset.legacyInitiative = `request-initiative.php?lang=en&agreement_id=${encodeURIComponent(agreement.agreement_id)}&agreement_code=${encodeURIComponent(agreement.agreement_code || '')}`;
+            use.textContent = 'Use for Initiative';
+            actions.append(view, use);
+            item.append(copy, actions);
+            elements.workList.append(item);
+        });
+
+        if (!active.length) {
+            const empty = document.createElement('li');
+            empty.className = 'dashboard-empty';
+            empty.textContent = 'No active Agreements are available yet.';
+            elements.workList.append(empty);
+        }
     }
 
     async function initialize() {
@@ -332,7 +375,7 @@
             } else if (isAgreementCreator(user)) {
                 await loadAgreementCreatorView(user);
             } else if (isInitiativeCreator(user)) {
-                loadInitiativeCreatorView(user);
+                await loadInitiativeCreatorView(user);
             }
 
             elements.loading.classList.add('d-none');
