@@ -448,6 +448,38 @@ class AgreementRepository {
             'SELECT * FROM agreement_metrics WHERE agreement_id = :agreement_id ORDER BY agreement_metric_id',
             $agreementId
         );
+        $agreement['relationships'] = $this->fetchChildren(
+            'SELECT
+                ar.relationship_id,
+                ar.relationship_type,
+                CASE
+                    WHEN ar.parent_agreement_id = current.agreement_id
+                    THEN \'SUCCESSOR\'
+                    ELSE \'SOURCE\'
+                END AS direction,
+                CASE
+                    WHEN ar.parent_agreement_id = current.agreement_id
+                    THEN ar.related_agreement_id
+                    ELSE ar.parent_agreement_id
+                END AS linked_agreement_id,
+                linked.title AS linked_agreement_title,
+                linked.status AS linked_agreement_status,
+                ar.created_at
+             FROM agreement_relationships ar
+             CROSS JOIN (
+                SELECT CAST(:agreement_id AS BIGINT) AS agreement_id
+             ) current
+             JOIN agreements linked
+               ON linked.agreement_id = CASE
+                    WHEN ar.parent_agreement_id = current.agreement_id
+                    THEN ar.related_agreement_id
+                    ELSE ar.parent_agreement_id
+                  END
+             WHERE ar.parent_agreement_id = current.agreement_id
+                OR ar.related_agreement_id = current.agreement_id
+             ORDER BY ar.created_at, ar.relationship_id',
+            $agreementId
+        );
 
         return $agreement;
     }
@@ -490,7 +522,9 @@ class AgreementRepository {
 
     private function databaseValue(string $field, mixed $value): mixed {
         if (in_array($field, self::BOOLEAN_FIELDS, true)) {
-            return !empty($value) ? 'true' : 'false';
+            return in_array($value, [true, 1, '1', 't', 'true', 'on', 'yes'], true)
+                ? 'true'
+                : 'false';
         }
         return $value === '' ? null : $value;
     }

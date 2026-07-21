@@ -294,6 +294,7 @@ Development-only password: `UobDev2026!`.
 | `tests/PublicAgreementRepositorySmokeTest.php`     | Approved inclusion, draft exclusion, stable reference, and public identity allow-list. |
 | `tests/LegacyAgreementCsvMapperSmokeTest.php`      | Forty-one source rows, required fields, multi-partner splitting, SDGs, rankings, metrics, and stable hashes. |
 | `tests/LegacyAgreementImportVerification.php`      | Import count, active status, immutable versions, audits, no workflows, and public publication. |
+| `tests/AgreementLifecycleSuccessorSmokeTest.php`   | Renewal/amendment successor creation, cloned collections, dates, provenance, lineage, source preservation, and audits. |
 
 ## Transaction rollback checks
 
@@ -324,3 +325,18 @@ Operations requiring rollback verification include:
 | Next reviewer opens the request | Document access is granted for the active task |
 | User changes request/document IDs manually | No metadata or file bytes are returned |
 | File checksum differs from stored checksum | Download is blocked |
+
+## Lifecycle successor Agreements
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| LS-01 | President approves a renewal | One `APPROVED` successor is created; approved proposed dates are applied. |
+| LS-02 | Inspect the renewal source | Its fields, dates, status, and immutable versions are unchanged. |
+| LS-03 | President approves an amendment | One `APPROVED` cloned successor is created without guessing free-text clauses into base columns. |
+| LS-04 | Inspect successor collections | Partners, SDGs, rankings, contacts, programs, and metrics match the source. |
+| LS-05 | Inspect successor version 1 | Lifecycle request, source Agreement, approver, and approved request details exist in immutable provenance. |
+| LS-06 | Inspect lineage | Source and successor detail screens link to one another with `RENEWAL` or `AMENDMENT`. |
+| LS-07 | Repeat a completed President decision | The decision is rejected and no second successor or relationship is created. |
+| LS-08 | Force a late failure | Workflow, request, successor, version, relationship, and audits all roll back. |
+| LS-09 | Approve a termination | Source becomes `TERMINATED`; no successor is created. |
+| LS-10 | Inspect public catalogue | The approved successor is publishable; lifecycle provenance and private attachments remain private. |

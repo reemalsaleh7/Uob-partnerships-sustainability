@@ -25,6 +25,11 @@ workspaceHeader('Lifecycle request details', 'lifecycle');
         <dl class="detail-grid" data-request-fields></dl>
     </section>
 
+    <section class="workspace-card mt-4 d-none" data-successor-section>
+        <div class="workspace-card-header"><div><h2 class="h5 mb-1">Finalized successor Agreement</h2><p class="small text-secondary mb-0">Created from this approved request while preserving the source Agreement.</p></div></div>
+        <a class="btn btn-outline-primary" data-successor-link>Open successor Agreement</a>
+    </section>
+
     <section class="workspace-card mt-4">
         <div class="workspace-card-header"><div><h2 class="h5 mb-1">Request version history</h2><p class="small text-secondary mb-0">Immutable snapshots of each saved draft and revision.</p></div></div>
         <div class="table-responsive"><table class="table workspace-table align-middle mb-0"><thead><tr><th>Version</th><th>Summary</th><th>Created by</th><th>Created</th></tr></thead><tbody data-version-rows></tbody></table></div>

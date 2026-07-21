@@ -56,6 +56,9 @@
 -- Secure lifecycle-request evidence and review documents
 \ir migrations/20260721_secure_lifecycle_request_documents.sql
 
+-- Create traceable successor Agreements after approved renewals/amendments
+\ir migrations/20260721_lifecycle_successor_agreements.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 

@@ -10,7 +10,9 @@
         edit: document.querySelector('[data-edit-request]'),
         submit: document.querySelector('[data-submit-request]'),
         submitLabel: document.querySelector('[data-submit-request-label]'),
-        spinner: document.querySelector('[data-submit-request-spinner]')
+        spinner: document.querySelector('[data-submit-request-spinner]'),
+        successorSection: document.querySelector('[data-successor-section]'),
+        successorLink: document.querySelector('[data-successor-link]')
     };
     const id = new URLSearchParams(window.location.search).get('id');
     let request = null;
@@ -54,6 +56,11 @@
             });
             elements.versions.append(tr);
         });
+        const successorId = Number(value.successor_agreement_id || 0);
+        elements.successorSection.classList.toggle('d-none', successorId <= 0);
+        if (successorId > 0) {
+            elements.successorLink.href = `agreement.php?id=${encodeURIComponent(successorId)}`;
+        }
     }
 
     async function initialize() {

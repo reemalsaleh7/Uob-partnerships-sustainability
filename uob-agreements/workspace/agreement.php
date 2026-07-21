@@ -170,6 +170,21 @@ workspaceHeader('Agreement details', 'agreements');
         </section></div>
     </div>
 
+    <section class="workspace-card mt-4 d-none" data-relationship-section aria-labelledby="relationship-title">
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="relationship-title" class="h5 mb-1">Agreement lineage</h2>
+                <p class="small text-secondary mb-0">Approved renewals and amendments linked without replacing the original record.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table workspace-table align-middle mb-0">
+                <thead><tr><th>Relationship</th><th>Agreement</th><th>Status</th><th></th></tr></thead>
+                <tbody data-relationship-rows></tbody>
+            </table>
+        </div>
+    </section>
+
     <?php agreementDocumentsPanel('id', 'AGREEMENT_DRAFT'); ?>
 
     <section class="workspace-card mt-4" aria-labelledby="versions-title">

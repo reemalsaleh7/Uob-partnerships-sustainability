@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../repositories/AgreementLifecycleRepository.php';
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
+require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 require_once __DIR__ . '/../repositories/AgreementLifecycleDocumentRepository.php';
 require_once __DIR__ . '/PermissionService.php';
@@ -16,6 +17,7 @@ class AgreementLifecycleService
     private PDO $db;
     private AgreementLifecycleRepository $requests;
     private AgreementRepository $agreements;
+    private AgreementVersionRepository $agreementVersions;
     private WorkflowRepository $workflows;
     private PermissionService $permissions;
     private AuditService $audit;
@@ -27,6 +29,7 @@ class AgreementLifecycleService
         $this->db = Database::connect();
         $this->requests = new AgreementLifecycleRepository();
         $this->agreements = new AgreementRepository();
+        $this->agreementVersions = new AgreementVersionRepository();
         $this->workflows = new WorkflowRepository();
         $this->permissions = new PermissionService();
         $this->audit = new AuditService();
@@ -596,6 +599,12 @@ class AgreementLifecycleService
         }
 
         if ($stepKey === 'PRESIDENT_APPROVAL') {
+            $successorAgreementId = null;
+            $relationshipId = null;
+            if (in_array($request['request_type'], ['RENEWAL', 'AMENDMENT'], true)) {
+                [$successorAgreementId, $relationshipId] =
+                    $this->createSuccessorAgreement($request, $userId);
+            }
             $this->workflows->setInstanceStatus($instanceId, 'COMPLETED');
             $this->requests->changeStatus(
                 (int) $request['lifecycle_request_id'],
@@ -616,12 +625,133 @@ class AgreementLifecycleService
                 'APPROVE',
                 $userId,
                 ['status' => 'UNDER_REVIEW'],
-                ['status' => 'APPROVED']
+                [
+                    'status' => 'APPROVED',
+                    'successor_agreement_id' => $successorAgreementId,
+                ]
             );
-            return $this->decisionResult($request, $instanceId, 'COMPLETED', 'APPROVED');
+            $result = $this->decisionResult(
+                $request,
+                $instanceId,
+                'COMPLETED',
+                'APPROVED'
+            );
+            $result['successor_agreement_id'] = $successorAgreementId;
+            $result['relationship_id'] = $relationshipId;
+            return $result;
         }
 
         throw new DomainException('The active lifecycle step cannot be approved');
+    }
+
+    private function createSuccessorAgreement(array $request, int $approvedBy): array
+    {
+        if (!empty($request['successor_agreement_id'])) {
+            return [(int) $request['successor_agreement_id'], null];
+        }
+
+        $sourceAgreementId = (int) $request['agreement_id'];
+        $source = $this->agreements->findById($sourceAgreementId);
+        if ($source === null) {
+            throw new DomainException('The source Agreement was not found');
+        }
+
+        $successorData = $source;
+        $successorData['created_by'] = (int) $request['requested_by'];
+        $successorData['status'] = 'APPROVED';
+
+        if ($request['request_type'] === 'RENEWAL') {
+            $successorData['start_date'] = $request['proposed_start_date'];
+            $successorData['end_date'] = $request['proposed_end_date'];
+            $successorData['effective_date'] = $request['proposed_start_date'];
+        }
+
+        $successorAgreementId = $this->agreements->create($successorData);
+        $this->agreements->replacePartners(
+            $successorAgreementId,
+            $source['partner_ids'] ?? []
+        );
+        $this->agreements->replaceSdgs(
+            $successorAgreementId,
+            $source['sdgs'] ?? []
+        );
+        $this->agreements->replaceRankings(
+            $successorAgreementId,
+            $source['rankings'] ?? []
+        );
+        $this->agreements->replaceContacts(
+            $successorAgreementId,
+            $source['contacts'] ?? []
+        );
+        $this->agreements->replaceExecutivePrograms(
+            $successorAgreementId,
+            $source['executive_programs'] ?? []
+        );
+        $this->agreements->replaceMetrics(
+            $successorAgreementId,
+            $source['metrics'] ?? []
+        );
+
+        $relationshipId = $this->requests->linkSuccessorAgreement(
+            (int) $request['lifecycle_request_id'],
+            $sourceAgreementId,
+            $successorAgreementId,
+            (string) $request['request_type'],
+            $approvedBy
+        );
+
+        $snapshot = $this->agreements->findById($successorAgreementId);
+        if ($snapshot === null) {
+            throw new RuntimeException('The successor Agreement could not be loaded');
+        }
+        $snapshot['lifecycle_provenance'] = [
+            'lifecycle_request_id' => (int) $request['lifecycle_request_id'],
+            'request_type' => $request['request_type'],
+            'source_agreement_id' => $sourceAgreementId,
+            'approved_by' => $approvedBy,
+            'justification' => $request['justification'],
+            'proposed_start_date' => $request['proposed_start_date'],
+            'proposed_end_date' => $request['proposed_end_date'],
+            'amendment_type' => $request['amendment_type'],
+            'amendment_reason' => $request['amendment_reason'],
+            'terms_to_amend' => $request['terms_to_amend'],
+        ];
+
+        $this->agreementVersions->create($successorAgreementId, [
+            'version_number' => 1,
+            'change_summary' => sprintf(
+                'Created from approved %s request #%d',
+                strtolower((string) $request['request_type']),
+                (int) $request['lifecycle_request_id']
+            ),
+            'agreement_snapshot' => $snapshot,
+            'created_by' => $approvedBy,
+        ]);
+        $this->audit->write(
+            'agreements',
+            $successorAgreementId,
+            'INSERT',
+            $approvedBy,
+            null,
+            $snapshot
+        );
+
+        $this->audit->write(
+            'agreement_relationships',
+            $relationshipId,
+            'INSERT',
+            $approvedBy,
+            null,
+            [
+                'parent_agreement_id' => $sourceAgreementId,
+                'related_agreement_id' => $successorAgreementId,
+                'relationship_type' => $request['request_type'],
+                'lifecycle_request_id' =>
+                    (int) $request['lifecycle_request_id'],
+            ]
+        );
+
+        return [$successorAgreementId, $relationshipId];
     }
 
     private function routeChangeRequestToVp(

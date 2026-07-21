@@ -10,6 +10,8 @@
         versionEmpty: document.getElementById('version-empty'),
         versionWrap: document.getElementById('version-table-wrap'),
         versionBody: document.getElementById('version-table-body'),
+        relationshipSection: document.querySelector('[data-relationship-section]'),
+        relationshipRows: document.querySelector('[data-relationship-rows]'),
         lifecycle: document.querySelector('[data-lifecycle-request]'),
         edit: document.querySelector('[data-edit-agreement]'),
         submit: document.querySelector('[data-submit-agreement]'),
@@ -89,6 +91,28 @@
         if (!(agreement.executive_programs || []).length && !(agreement.metrics || []).length) {
             programs.append(summaryItem('Programs and outcomes', 'No executive program or outcome metrics recorded.'));
         }
+
+        const relationships = agreement.relationships || [];
+        elements.relationshipSection.classList.toggle('d-none', relationships.length === 0);
+        elements.relationshipRows.replaceChildren();
+        relationships.forEach((relationship) => {
+            const row = document.createElement('tr');
+            const type = document.createElement('td');
+            const linked = document.createElement('td');
+            const status = document.createElement('td');
+            const action = document.createElement('td');
+            const link = document.createElement('a');
+            type.textContent = `${relationship.relationship_type} ${relationship.direction === 'SOURCE' ? 'of this Agreement' : 'successor'}`;
+            linked.textContent = relationship.linked_agreement_title || `Agreement #${relationship.linked_agreement_id}`;
+            status.append(AgreementApi.createStatusBadge(relationship.linked_agreement_status));
+            action.className = 'text-end';
+            link.className = 'btn btn-sm btn-outline-primary';
+            link.href = `agreement.php?id=${encodeURIComponent(relationship.linked_agreement_id)}`;
+            link.textContent = 'Open';
+            action.append(link);
+            row.append(type, linked, status, action);
+            elements.relationshipRows.append(row);
+        });
     }
 
     function agreementId() {

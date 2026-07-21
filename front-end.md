@@ -186,3 +186,10 @@ The lifecycle request detail and shared lifecycle review screens now include a
 private, version-aware document panel. Its upload controls are driven by the
 backend's requester/status and active-assignment checks; hiding the form in the
 browser is not treated as authorization.
+
+## Lifecycle successor Agreements
+
+Approved renewal and amendment request pages now link directly to the generated
+successor Agreement. Agreement detail pages show an authenticated lineage table
+with source/successor direction, relationship type, status, and navigation.
+Termination requests never show a successor link.

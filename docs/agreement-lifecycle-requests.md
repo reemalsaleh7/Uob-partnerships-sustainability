@@ -36,10 +36,22 @@ and resubmission requires a version newer than the return baseline.
 5. President approval completes the lifecycle workflow.
 
 An approved termination changes the source Agreement to `TERMINATED` and adds
-an `agreement_actions` record. Approved renewal and amendment requests remain
-authoritative approvals linked to the original Agreement; the source Agreement
-is not changed. A later signed successor Agreement can be linked through
-`agreement_relationships` without rewriting history.
+an `agreement_actions` record. President approval of a renewal or amendment
+creates an `APPROVED` successor Agreement in the same transaction. The source
+Agreement and its versions are not changed.
+
+The successor clones the complete structured Agreement record and all normalized
+partners, SDGs, rankings, contacts, executive programs, and outcome metrics.
+A renewal applies its approved proposed start/end dates and uses the new start
+date as its effective date. An amendment keeps the source's structured values;
+its exact approved free-text clauses and private evidence remain authoritative
+in the lifecycle request instead of being guessed into unrelated columns.
+
+The lifecycle request stores `successor_agreement_id`, and
+`agreement_relationships` links source to successor with `RENEWAL` or
+`AMENDMENT`. Successor version 1 contains immutable lifecycle provenance, and
+the Agreement detail page shows lineage in both directions. A database uniqueness
+constraint prevents one request from producing multiple successors.
 
 ## Authorization and visibility
 
@@ -73,6 +85,9 @@ Decision payload:
 
 `include_finance` is considered only at `VP_INITIAL`. `RETURN` and `REJECT`
 require a non-empty reason.
+
+For a completed renewal or amendment, the decision response and later request
+reads include `successor_agreement_id`. Terminations return it as `null`.
 ## Secure request documents
 
 Lifecycle requests have a private document collection separate from the
