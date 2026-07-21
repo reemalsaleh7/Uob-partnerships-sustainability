@@ -77,6 +77,9 @@
 \ir seed/organizational_units.sql
 \ir seed/workflows.sql
 
+-- Finalized signing and date-controlled operational statuses
+\ir migrations/20260721_agreement_operational_status.sql
+
 -- Views
 \ir views/organization_structure.sql
 \ir views/user_positions.sql

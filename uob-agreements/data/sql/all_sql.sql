@@ -715,3 +715,6 @@ WHERE is_active = TRUE;
 
 -- Link approved renewal/amendment requests to finalized successor Agreements.
 \ir migrations/20260721_lifecycle_successor_agreements.sql
+
+-- Finalized signing and date-controlled operational statuses.
+\ir migrations/20260721_agreement_operational_status.sql

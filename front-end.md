@@ -193,3 +193,11 @@ Approved renewal and amendment request pages now link directly to the generated
 successor Agreement. Agreement detail pages show an authenticated lineage table
 with source/successor direction, relationship type, status, and navigation.
 Termination requests never show a successor link.
+
+## Agreement signing and operational status
+
+The Agreement detail page includes a post-approval operational panel. The
+creator uploads the executed file as **Final signed Agreement**, selects it,
+records actual dates and final UOB/partner signatories, and confirms permanent
+finalization. The panel then becomes read-only and displays the signing record,
+signatories, scheduled/active/expired state, and status-event history.

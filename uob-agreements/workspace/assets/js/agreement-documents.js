@@ -33,6 +33,7 @@
         SUPPORTING: 'Supporting document',
         LEGAL_REVIEW: 'Legal review document',
         FINANCE_REVIEW: 'Finance review document',
+        SIGNED_AGREEMENT: 'Final signed Agreement',
         OTHER: 'Other'
     };
 
@@ -206,6 +207,9 @@
     async function reloadDocuments() {
         const payload = await AgreementApi.documents(state.agreementId);
         renderDocuments(payload);
+        window.dispatchEvent(new CustomEvent('agreement-documents-changed', {
+            detail: { agreementId: state.agreementId }
+        }));
     }
 
     async function initialize() {

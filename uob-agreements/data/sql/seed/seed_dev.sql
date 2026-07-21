@@ -168,7 +168,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.role_id, p.permission_id FROM roles r JOIN permissions p
-  ON p.permission_code IN ('CREATE_AGREEMENT', 'EDIT_AGREEMENT', 'SUBMIT_AGREEMENT', 'VIEW_AGREEMENT', 'DELETE_AGREEMENT')
+  ON p.permission_code IN ('CREATE_AGREEMENT', 'EDIT_AGREEMENT', 'SUBMIT_AGREEMENT', 'VIEW_AGREEMENT', 'DELETE_AGREEMENT', 'MANAGE_AGREEMENT_OPERATIONS')
 WHERE r.role_name = 'Agreement Creator'
 ON CONFLICT DO NOTHING;
 

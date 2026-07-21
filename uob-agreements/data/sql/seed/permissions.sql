@@ -23,6 +23,10 @@ VALUES
 'Reject Agreement'),
 
 
+('MANAGE_AGREEMENT_OPERATIONS',
+'Manage Agreement operations'),
+
+
 ('CREATE_INITIATIVE',
 'Create Initiative'),
 

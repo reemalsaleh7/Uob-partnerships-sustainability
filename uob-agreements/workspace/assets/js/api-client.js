@@ -413,6 +413,15 @@
                 method: 'DELETE'
             });
         },
+        agreementOperations(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/operations`);
+        },
+        finalizeAgreementSigning(id, data) {
+            return request(`/agreements/${encodeURIComponent(id)}/signing-record`, {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
         lifecycleRequests() {
             return request('/agreement-lifecycle-requests');
         },

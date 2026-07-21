@@ -333,6 +333,24 @@ Operations requiring rollback verification include:
 | LS-01 | President approves a renewal | One `APPROVED` successor is created; approved proposed dates are applied. |
 | LS-02 | Inspect the renewal source | Its fields, dates, status, and immutable versions are unchanged. |
 | LS-03 | President approves an amendment | One `APPROVED` cloned successor is created without guessing free-text clauses into base columns. |
+
+## Operational signing and status
+
+| ID | Test | Expected result |
+| --- | --- | --- |
+| OS-01 | Creator opens an approved Agreement | Secure signed-document upload and signing finalization are available. |
+| OS-02 | Unrelated Agreement creator attempts finalization | Request is rejected without a signing record or status change. |
+| OS-03 | Finalize without a `SIGNED_AGREEMENT` document | Request is rejected. |
+| OS-03A | Reviewer labels an in-review upload as `SIGNED_AGREEMENT` | Upload is rejected; only the creator/admin may add it after approval. |
+| OS-04 | Finalize without both UOB and partner signatories | Request is rejected. |
+| OS-05 | Finalize with an effective date of today | Immutable signing record is created and Agreement becomes `ACTIVE`. |
+| OS-06 | Finalize with a future effective date | Agreement remains `APPROVED` and displays `SCHEDULED`. |
+| OS-07 | Run daily synchronization on effective date | Scheduled Agreement becomes `ACTIVE` once. |
+| OS-08 | Run daily synchronization after expiry date | Active Agreement becomes `EXPIRED` once. |
+| OS-09 | Run synchronization again for unchanged records | No duplicate status event is created. |
+| OS-10 | Delete the referenced signed document | Deletion is rejected, including for an administrator. |
+| OS-11 | Alter the stored signed file before finalization | SHA-256 verification rejects finalization. |
+| OS-12 | Run `AgreementOperationalStatusSmokeTest.php` | Activation, scheduling, expiry, idempotency, signatories, and document protection pass; transaction rolls back. |
 | LS-04 | Inspect successor collections | Partners, SDGs, rankings, contacts, programs, and metrics match the source. |
 | LS-05 | Inspect successor version 1 | Lifecycle request, source Agreement, approver, and approved request details exist in immutable provenance. |
 | LS-06 | Inspect lineage | Source and successor detail screens link to one another with `RENEWAL` or `AMENDMENT`. |

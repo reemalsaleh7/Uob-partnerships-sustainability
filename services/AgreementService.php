@@ -397,12 +397,34 @@ class AgreementService {
             'SUPPORTING',
             'LEGAL_REVIEW',
             'FINANCE_REVIEW',
+            'SIGNED_AGREEMENT',
             'OTHER',
         ];
 
         if (!in_array($normalizedType, $allowedTypes, true)) {
             throw new InvalidArgumentException(
                 'Select a valid document type'
+            );
+        }
+
+        if (
+            $normalizedType === 'SIGNED_AGREEMENT'
+            && (
+                $agreement['status'] !== AgreementStatus::APPROVED
+                || (
+                    !$this->isSystemAdministrator($userId)
+                    && (
+                        (int) $agreement['created_by'] !== $userId
+                        || !$this->permissionService->hasPermission(
+                            $userId,
+                            'MANAGE_AGREEMENT_OPERATIONS'
+                        )
+                    )
+                )
+            )
+        ) {
+            throw new DomainException(
+                'Only the Agreement creator or a system administrator may upload the final signed Agreement after approval'
             );
         }
 
@@ -602,6 +624,12 @@ class AgreementService {
             );
         }
 
+        if ($this->agreementDocumentRepo->isFinalizedSigningDocument($documentId)) {
+            throw new DomainException(
+                'The finalized signed Agreement document cannot be deleted'
+            );
+        }
+
         $db = Database::connect();
         $db->beginTransaction();
         try {
@@ -659,6 +687,17 @@ class AgreementService {
             $isCreator
             && AgreementStatus::isEditable(
                 (string) $agreement['status']
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            $isCreator
+            && $agreement['status'] === AgreementStatus::APPROVED
+            && $this->permissionService->hasPermission(
+                $userId,
+                'MANAGE_AGREEMENT_OPERATIONS'
             )
         ) {
             return true;

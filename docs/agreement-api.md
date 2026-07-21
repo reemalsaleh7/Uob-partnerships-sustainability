@@ -598,3 +598,19 @@ The authenticated user is always used as `created_by` or `updated_by`; clients c
 - Every create, update, and submit writes a JSON `agreement_snapshot` to `agreement_versions`.
 - Agreement creation, updates, submission, agreement deletion, and document metadata changes are transactional with their audit entries.
 - Audit actions use the database enum values `INSERT`, `UPDATE`, and `DELETE`.
+
+## Operational signing endpoints
+
+### `GET /agreements/{id}/operations`
+
+Returns the authorized Agreement's finalized signing record, frozen
+signatories, status-event history, operational state, and whether the current
+user may finalize signing. Secure document storage keys are never returned.
+
+### `POST /agreements/{id}/signing-record`
+
+Requires `MANAGE_AGREEMENT_OPERATIONS`. The Agreement creator (or a system
+administrator) supplies the signed-document ID, actual signing/effective/expiry
+dates, optional public ceremony details, and at least one UOB plus one linked
+partner signatory. The operation is transactional and permanent. It activates
+the Agreement immediately only when its effective date has arrived.

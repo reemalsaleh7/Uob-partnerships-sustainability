@@ -115,4 +115,16 @@ class AgreementDocumentRepository {
         $stmt = $this->db->prepare('DELETE FROM agreement_documents WHERE document_id = :document_id');
         $stmt->execute(['document_id' => $documentId]);
     }
+
+    public function isFinalizedSigningDocument(int $documentId): bool
+    {
+        $stmt = $this->db->prepare(
+            'SELECT 1
+             FROM agreement_signing_records
+             WHERE signed_document_id = :document_id
+             LIMIT 1'
+        );
+        $stmt->execute(['document_id' => $documentId]);
+        return (bool) $stmt->fetchColumn();
+    }
 }

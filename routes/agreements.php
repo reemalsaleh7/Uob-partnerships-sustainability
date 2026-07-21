@@ -4,8 +4,10 @@ require_once __DIR__ . '/../helpers/ApiSession.php';
 ApiSession::start();
 
 require_once __DIR__ . '/../controllers/AgreementController.php';
+require_once __DIR__ . '/../controllers/AgreementOperationController.php';
 
 $controller = new AgreementController();
+$operationController = new AgreementOperationController();
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -26,6 +28,10 @@ $uri = '/' . ltrim($uri, '/');
 
 if ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/operations$#', $uri, $matches)) {
+    $operationController->summary((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/signing-record$#', $uri, $matches)) {
+    $operationController->finalize((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
     $controller->show((int) $matches[1]);
 } elseif ($method === 'POST' && $uri === '/agreements') {

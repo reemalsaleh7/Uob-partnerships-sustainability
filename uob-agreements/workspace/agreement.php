@@ -187,6 +187,113 @@ workspaceHeader('Agreement details', 'agreements');
 
     <?php agreementDocumentsPanel('id', 'AGREEMENT_DRAFT'); ?>
 
+    <section
+        class="workspace-card mt-4"
+        aria-labelledby="agreement-operations-title"
+        data-agreement-operations
+    >
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="agreement-operations-title" class="h5 mb-1">
+                    Signing and operational status
+                </h2>
+                <p class="small text-secondary mb-0">
+                    Finalized signing evidence and date-controlled activation or expiry.
+                </p>
+            </div>
+            <span class="status-badge status-default" data-operational-state>Loading</span>
+        </div>
+
+        <div class="alert alert-danger m-3 mb-0 d-none" role="alert" tabindex="-1" data-operation-alert></div>
+        <div class="alert alert-success m-3 mb-0 d-none" role="status" tabindex="-1" data-operation-feedback></div>
+
+        <div class="loading-state compact" data-operation-loading>
+            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <span>Loading signing record…</span>
+        </div>
+
+        <div class="form-section d-none" data-signing-summary>
+            <dl class="detail-grid mb-0">
+                <div><dt>Signing date</dt><dd data-signing-field="signing_date"></dd></div>
+                <div><dt>Effective date</dt><dd data-signing-field="effective_date"></dd></div>
+                <div><dt>Expiry date</dt><dd data-signing-field="expiry_date"></dd></div>
+                <div><dt>Venue</dt><dd data-signing-field="venue"></dd></div>
+                <div><dt>Finalized by</dt><dd data-signing-field="finalized_by"></dd></div>
+                <div><dt>Finalized at</dt><dd data-signing-field="finalized_at"></dd></div>
+                <div class="detail-grid-wide"><dt>Signed document</dt><dd data-signing-field="document"></dd></div>
+                <div class="detail-grid-wide"><dt>Public announcement</dt><dd data-signing-field="public_announcement_url"></dd></div>
+                <div class="detail-grid-wide"><dt>Ceremony notes</dt><dd data-signing-field="ceremony_notes"></dd></div>
+            </dl>
+            <h3 class="h6 mt-4">Final signatories</h3>
+            <div class="table-responsive">
+                <table class="table workspace-table align-middle mb-0">
+                    <thead><tr><th>Party</th><th>Name</th><th>Job title</th><th>Organization</th></tr></thead>
+                    <tbody data-final-signatory-rows></tbody>
+                </table>
+            </div>
+            <h3 class="h6 mt-4">Status history</h3>
+            <div data-status-event-list></div>
+        </div>
+
+        <div class="empty-state compact d-none" data-signing-empty>
+            <p class="text-secondary mb-0">
+                No finalized digital signing record is available. The Agreement's existing status is preserved.
+            </p>
+        </div>
+
+        <form class="form-section border-top d-none" data-signing-form novalidate>
+            <div class="alert alert-info">
+                Upload the executed file above as <strong>Final signed Agreement</strong>, then select it here.
+                Finalization is permanent.
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" for="final-signing-date">Signing date</label>
+                    <input id="final-signing-date" class="form-control" type="date" required data-final-signing-date>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" for="final-effective-date">Effective date</label>
+                    <input id="final-effective-date" class="form-control" type="date" required data-final-effective-date>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" for="final-expiry-date">Expiry date</label>
+                    <input id="final-expiry-date" class="form-control" type="date" required data-final-expiry-date>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" for="final-signed-document">Signed document</label>
+                    <select id="final-signed-document" class="form-select" required data-final-signed-document></select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold" for="final-signing-venue">Signing venue</label>
+                    <input id="final-signing-venue" class="form-control" maxlength="255" data-final-signing-venue>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" for="final-announcement-url">Public signing/news URL</label>
+                    <input id="final-announcement-url" class="form-control" type="url" placeholder="https://..." data-final-announcement-url>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" for="final-ceremony-notes">Signing notes</label>
+                    <textarea id="final-ceremony-notes" class="form-control" rows="3" data-final-ceremony-notes></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center gap-3 mt-4">
+                <div>
+                    <h3 class="h6 mb-1">Final signatories</h3>
+                    <p class="small text-secondary mb-0">At least one UOB and one partner signatory are required.</p>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-add-final-signatory>Add signatory</button>
+            </div>
+            <div class="mt-3" data-signatory-editor></div>
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-primary" type="submit" data-finalize-signing>
+                    <span data-finalize-signing-label>Finalize signing</span>
+                    <span class="spinner-border spinner-border-sm ms-2 d-none" aria-hidden="true" data-finalize-signing-spinner></span>
+                </button>
+            </div>
+        </form>
+    </section>
+
     <section class="workspace-card mt-4" aria-labelledby="versions-title">
         <div class="workspace-card-header">
             <div>
@@ -225,4 +332,5 @@ workspaceHeader('Agreement details', 'agreements');
 <?php workspaceFooter([
     'assets/js/agreement-detail.js',
     'assets/js/agreement-documents.js',
+    'assets/js/agreement-operations.js',
 ]); ?>
