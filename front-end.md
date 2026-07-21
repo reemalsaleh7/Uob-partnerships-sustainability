@@ -23,12 +23,15 @@ This package adds a protected internal Agreement workspace without changing the 
 - Initial VP return-to-creator and terminal rejection decisions.
 - Legal review approval and documented change requests routed back to the VP.
 - Finance review approval and documented change requests routed back to the VP when Finance is required.
+- Final VP review with Legal/Finance outcome summary and routing to President.
+- Final VP return-to-creator and terminal rejection decisions.
+- VP mediation that displays the requesting stage and recorded reason, then routes to the creator, Legal, Finance, or rejection.
 - Logout using `POST /api/index.php/logout`.
 - Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-The Final VP, President, and physical document upload screens remain deferred to the next slices. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
+The President and physical document upload screens remain deferred to the next slices. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
 
 ## Install
 
@@ -100,6 +103,12 @@ Then open the workspace and verify:
 22. Route a new Agreement through Initial VP with Finance required, sign in as `dev.finance@uob.test`, and confirm the Finance task opens its dedicated review screen.
 23. Approve Finance before Legal and confirm no Final VP task appears until Legal also approves.
 24. Repeat with a Finance change request and confirm the active specialist work pauses while VP mediation receives the task.
+25. Complete all required specialist reviews and confirm the VP inbox labels the next task **Final VP review**.
+26. Open it and confirm the Agreement, latest version, Legal status, and Finance status/requirement appear.
+27. Approve it and confirm the task leaves the VP inbox and appears in the President inbox.
+28. In a separate test workflow, request Legal or Finance changes and confirm the VP inbox labels the task **VP mediation**.
+29. Open mediation and confirm the requesting stage and recorded reason appear.
+30. Route the request to the creator, Legal, or Finance and confirm only the selected destination receives the next task.
 
 The frontend files are under:
 

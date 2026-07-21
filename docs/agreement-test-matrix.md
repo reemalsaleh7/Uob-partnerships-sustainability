@@ -150,6 +150,8 @@ Development-only password: `UobDev2026!`.
 | I-04 | Increment review cycle                          | Value increases by one and stays positive.                                      |
 | I-05 | Parallel specialists finish near-simultaneously | Instance/step locks prevent duplicate Final VP activation.                      |
 | I-06 | Query inbox                                     | Only active assignments on active workflow steps are returned.                  |
+| I-07 | Query ordinary Final VP inbox task              | `task_mode` is `REVIEW`; Legal/Finance results are included.                 |
+| I-08 | Query VP task after a specialist change request | `task_mode` is `VP_MEDIATION`; source step and recorded reason are included. |
 
 ## HTTP routing, sessions, and permissions
 
@@ -164,6 +166,19 @@ Development-only password: `UobDev2026!`.
 | H-07 | Run the complete HTTP approval workflow             | Agreement ends`APPROVED`; workflow ends `COMPLETED`; all six steps and ordered history records persist. |
 | H-08 | Send malformed JSON                                 | `422` or controlled validation response; no data changes.                                                 |
 
+## Final VP and mediation frontend checks
+
+| ID    | Scenario                                      | Expected result                                                                                  |
+| ----- | --------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| UI-01 | Open an assigned ordinary `VP_FINAL` task   | Final VP screen shows Agreement, latest version, Legal result, and Finance result/requirement.   |
+| UI-02 | Approve an ordinary Final VP task             | Task leaves VP inbox and `PRESIDENT_APPROVAL` appears in the President inbox.                  |
+| UI-03 | Return from ordinary Final VP                 | Reason is required; Agreement becomes `REVISION_REQUIRED` and creator receives redraft work.   |
+| UI-04 | Reject from ordinary Final VP                 | Confirmation and reason are required; Agreement and workflow become terminally `REJECTED`.     |
+| UI-05 | Open `VP_FINAL` after a specialist request  | Screen displays **VP mediation**, the requesting stage, and its recorded reason.                 |
+| UI-06 | Mediate to creator, Legal, or Finance          | Selected destination receives the next controlled task and the VP task leaves the inbox.        |
+| UI-07 | Reject during mediation                       | Workflow ends and no active assignment remains.                                                  |
+| UI-08 | Open another user's VP task by changing IDs   | Page refuses the action because no matching active inbox assignment belongs to the signed-in VP. |
+
 ## Verified automated tests
 
 | Test file                                           | Coverage                                                                        |
@@ -173,10 +188,10 @@ Development-only password: `UobDev2026!`.
 | `tests/InitialVpDecisionSmokeTest.php`            | Initial VP with Finance.                                                        |
 | `tests/InitialVpNoFinanceSmokeTest.php`           | Initial VP without Finance.                                                     |
 | `tests/SpecialistReviewSmokeTest.php`             | Parallel specialist completion and Legal-only completion.                       |
-| `tests/FinalVpReviewSmokeTest.php`                | Final VP activation of President.                                               |
+| `tests/FinalVpReviewSmokeTest.php`                | Final VP inbox context and activation of President.                             |
 | `tests/PresidentApprovalSmokeTest.php`            | Workflow completion and Agreement approval.                                     |
 | `tests/ReturnWorkflowRepositorySmokeTest.php`     | Step reset, assignments, and review-cycle support.                              |
-| `tests/AgreementChangeRequestSmokeTest.php`       | Legal and President change requests routed to VP.                               |
+| `tests/AgreementChangeRequestSmokeTest.php`       | Legal/President requests and assignment-scoped VP mediation context.            |
 | `tests/VpRoutingDecisionSmokeTest.php`            | Creator, Legal, Finance, and rejection routing.                                 |
 | `tests/AgreementRedraftResubmissionSmokeTest.php` | Version enforcement and cycle-2 resubmission.                                   |
 | `tests/VpDirectDecisionSmokeTest.php`             | Initial and Final VP direct return/rejection.                                   |

@@ -123,6 +123,41 @@ try {
         'President approval should initially be pending'
     );
 
+    $finalVpInboxAssignment = null;
+
+    foreach (
+        $workflowRepository->findInboxForUser(
+            (int) $vp['user_id']
+        ) as $inboxItem
+    ) {
+        if (
+            (int) $inboxItem[
+                'workflow_instance_id'
+            ] === $instanceId
+            && $inboxItem['step_key']
+                === 'VP_FINAL'
+        ) {
+            $finalVpInboxAssignment = $inboxItem;
+            break;
+        }
+    }
+
+    finalVpAssert(
+        $finalVpInboxAssignment !== null
+        && $finalVpInboxAssignment['task_mode']
+            === 'REVIEW'
+        && $finalVpInboxAssignment[
+            'change_request_step_key'
+        ] === null
+        && $finalVpInboxAssignment[
+            'legal_review_status'
+        ] === 'APPROVED'
+        && $finalVpInboxAssignment[
+            'finance_review_status'
+        ] === 'SKIPPED',
+        'Final VP inbox did not expose ordinary review context'
+    );
+
     $result =
         $approvalService
             ->completeFinalVpReview(

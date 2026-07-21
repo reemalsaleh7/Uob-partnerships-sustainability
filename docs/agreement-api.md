@@ -192,6 +192,14 @@ Permission: `APPROVE_AGREEMENT` or `REJECT_AGREEMENT`.
 
 Returns only active assignments belonging to the authenticated user where both the workflow and step are `IN_PROGRESS`.
 
+Each inbox row also carries the context needed by the assigned review screen:
+
+- `task_mode` is `REVIEW` for an ordinary approval or `VP_MEDIATION` when `VP_FINAL` was reactivated by a change request.
+- `change_request_step_key` and `change_request_reason` identify the active Legal, Finance, or President request awaiting VP routing.
+- Legal, Finance, and President status/comment fields summarize the decisions already recorded in the workflow.
+
+This context does not broaden access. It is returned only with an active assignment owned by the authenticated user.
+
 ### Approve Initial VP review
 
 `POST /workflow-instances/{instanceId}/initial-vp/approve`

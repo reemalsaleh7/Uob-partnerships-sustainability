@@ -186,6 +186,38 @@ try {
         'Legal change request was not added to VP inbox'
     );
 
+    $vpMediationAssignment = null;
+
+    foreach (
+        $workflowRepository->findInboxForUser(
+            (int) $vp['user_id']
+        ) as $inboxItem
+    ) {
+        if (
+            (int) $inboxItem[
+                'workflow_instance_id'
+            ] === $specialistInstanceId
+            && $inboxItem['step_key']
+                === 'VP_FINAL'
+        ) {
+            $vpMediationAssignment = $inboxItem;
+            break;
+        }
+    }
+
+    changeRequestAssert(
+        $vpMediationAssignment !== null
+        && $vpMediationAssignment['task_mode']
+            === 'VP_MEDIATION'
+        && $vpMediationAssignment[
+            'change_request_step_key'
+        ] === 'LEGAL_REVIEW'
+        && $vpMediationAssignment[
+            'change_request_reason'
+        ] === 'The termination clause requires revision',
+        'VP inbox did not expose the Legal mediation context'
+    );
+
     changeRequestAssert(
         !inboxContainsWorkflow(
             $workflowRepository,

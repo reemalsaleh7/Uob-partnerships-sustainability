@@ -712,7 +712,30 @@ public function clearRedraftBaseVersion(
                 wis.status,
                 wis.started_at,
                 ou.code AS assigned_unit_code,
-                ou.name AS assigned_unit_name
+                ou.name AS assigned_unit_name,
+                CASE
+                    WHEN wis.step_key = \'VP_FINAL\'
+                     AND change_request.instance_step_id
+                         IS NOT NULL
+                    THEN \'VP_MEDIATION\'
+                    ELSE \'REVIEW\'
+                END AS task_mode,
+                change_request.step_key
+                    AS change_request_step_key,
+                change_request.comments
+                    AS change_request_reason,
+                legal_step.status
+                    AS legal_review_status,
+                legal_step.comments
+                    AS legal_review_comments,
+                finance_step.status
+                    AS finance_review_status,
+                finance_step.comments
+                    AS finance_review_comments,
+                president_step.status
+                    AS president_review_status,
+                president_step.comments
+                    AS president_review_comments
              FROM workflow_step_assignments wsa
              JOIN workflow_instance_steps wis
                 ON wis.instance_step_id =
@@ -722,6 +745,34 @@ public function clearRedraftBaseVersion(
                    wis.workflow_instance_id
              LEFT JOIN organizational_units ou
                 ON ou.unit_id = wis.assigned_unit_id
+             LEFT JOIN workflow_instance_steps legal_step
+                ON legal_step.workflow_instance_id =
+                   wi.workflow_instance_id
+               AND legal_step.step_key = \'LEGAL_REVIEW\'
+             LEFT JOIN workflow_instance_steps finance_step
+                ON finance_step.workflow_instance_id =
+                   wi.workflow_instance_id
+               AND finance_step.step_key = \'FINANCE_REVIEW\'
+             LEFT JOIN workflow_instance_steps president_step
+                ON president_step.workflow_instance_id =
+                   wi.workflow_instance_id
+               AND president_step.step_key =
+                   \'PRESIDENT_APPROVAL\'
+             LEFT JOIN LATERAL (
+                SELECT
+                    requested.instance_step_id,
+                    requested.step_key,
+                    requested.comments
+                FROM workflow_instance_steps requested
+                WHERE requested.workflow_instance_id =
+                      wi.workflow_instance_id
+                  AND requested.status =
+                      \'CHANGES_REQUESTED\'
+                ORDER BY
+                    requested.approved_at DESC NULLS LAST,
+                    requested.instance_step_id DESC
+                LIMIT 1
+             ) change_request ON TRUE
              WHERE wsa.user_id = :user_id
                AND wsa.is_active = TRUE
                AND wi.status = \'IN_PROGRESS\'

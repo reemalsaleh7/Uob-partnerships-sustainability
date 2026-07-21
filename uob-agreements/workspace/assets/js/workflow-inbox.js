@@ -62,7 +62,9 @@
             taskCell.className = 'workflow-task-cell';
             const label = document.createElement('span');
             label.className = 'workflow-task-label';
-            label.textContent = stepLabels[assignment.step_key] || 'Workflow review';
+            label.textContent = assignment.task_mode === 'VP_MEDIATION'
+                ? 'VP mediation'
+                : (stepLabels[assignment.step_key] || 'Workflow review');
             const key = document.createElement('span');
             key.className = 'workflow-task-key';
             key.textContent = assignment.step_key || 'Unknown step';
@@ -86,7 +88,7 @@
             actionCell.className = 'text-end';
 
             if (
-                ['VP_INITIAL', 'LEGAL_REVIEW', 'FINANCE_REVIEW']
+                ['VP_INITIAL', 'LEGAL_REVIEW', 'FINANCE_REVIEW', 'VP_FINAL']
                     .includes(assignment.step_key)
             ) {
                 const link = document.createElement('a');
@@ -98,7 +100,8 @@
                 const reviewPages = {
                     VP_INITIAL: 'workflow-review.php',
                     LEGAL_REVIEW: 'legal-review.php',
-                    FINANCE_REVIEW: 'finance-review.php'
+                    FINANCE_REVIEW: 'finance-review.php',
+                    VP_FINAL: 'vp-review.php'
                 };
                 link.href = `${reviewPages[assignment.step_key]}?${query.toString()}`;
                 link.textContent = 'Review';
