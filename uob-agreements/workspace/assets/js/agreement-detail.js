@@ -202,6 +202,18 @@
                 tr.appendChild(td);
             });
 
+            const action = document.createElement('td');
+            action.className = 'text-end';
+            if (Number(version.version_number) > 1) {
+                const compare = document.createElement('button');
+                compare.className = 'btn btn-sm btn-outline-primary';
+                compare.type = 'button';
+                compare.dataset.compareVersion = String(version.version_number);
+                compare.textContent = 'View changes';
+                action.append(compare);
+            }
+            tr.append(action);
+
             elements.versionBody.appendChild(tr);
         });
     }

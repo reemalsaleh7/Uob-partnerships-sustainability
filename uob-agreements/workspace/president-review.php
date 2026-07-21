@@ -45,7 +45,7 @@ workspaceHeader('President Agreement review', 'workflow');
 
         <div class="align-self-lg-end">
             <a href="#" class="btn btn-outline-primary" data-open-agreement>
-                Open full Agreement record
+                Review fields and add comments
             </a>
         </div>
     </section>

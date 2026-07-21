@@ -28,6 +28,18 @@ $uri = '/' . ltrim($uri, '/');
 
 if ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {
+    $controller->annotations((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {
+    $controller->createAnnotation((int) $matches[1]);
+} elseif ($method === 'PATCH' && preg_match('#^/agreements/([0-9]+)/annotations/([0-9]+)/resolve$#', $uri, $matches)) {
+    $controller->resolveAnnotation((int) $matches[1], (int) $matches[2]);
+} elseif ($method === 'DELETE' && preg_match('#^/agreements/([0-9]+)/annotations/([0-9]+)$#', $uri, $matches)) {
+    $controller->deleteAnnotation((int) $matches[1], (int) $matches[2]);
+} elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/review-context$#', $uri, $matches)) {
+    $controller->reviewContext((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/viewed$#', $uri, $matches)) {
+    $controller->markViewed((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/workflow-timeline$#', $uri, $matches)) {
     $controller->workflowTimeline((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/operations$#', $uri, $matches)) {

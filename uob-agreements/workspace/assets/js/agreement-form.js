@@ -12,7 +12,9 @@
         partnerHelp: document.querySelector('[data-partner-help]'),
         save: document.getElementById('save-agreement'),
         saveLabel: document.querySelector('[data-save-label]'),
-        saveSpinner: document.querySelector('[data-save-spinner]')
+        saveSpinner: document.querySelector('[data-save-spinner]'),
+        changeReasonSection: document.querySelector('[data-change-reason-section]'),
+        changeSummary: document.getElementById('change_summary')
     };
 
     const state = { agreementId: null, isEdit: false, isRevision: false };
@@ -140,6 +142,8 @@
             throw new AgreementApi.ApiError('Only draft or returned Agreements can be edited from this screen.', 409, null);
         }
         state.isRevision = agreement.status === 'REVISION_REQUIRED';
+        elements.changeReasonSection.classList.remove('d-none');
+        elements.changeSummary.required = true;
         elements.eyebrow.textContent = `Agreement #${agreement.agreement_id}`;
         elements.title.textContent = state.isRevision ? 'Revise returned Agreement' : 'Edit comprehensive Agreement';
         elements.description.textContent = state.isRevision
@@ -204,7 +208,7 @@
         data.executive_programs = programsPayload();
         data.metrics = metricsPayload();
         data.change_summary = state.isEdit
-            ? (state.isRevision ? 'Comprehensive Agreement revised after reviewer feedback' : 'Comprehensive Agreement draft updated')
+            ? elements.changeSummary.value.trim()
             : undefined;
         return data;
     }

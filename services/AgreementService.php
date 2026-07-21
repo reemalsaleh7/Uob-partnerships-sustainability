@@ -67,6 +67,15 @@ class AgreementService {
 
     public function updateAgreement(int $agreementId, array $data): array {
         $errors = AgreementValidator::validateUpdate($data);
+        $changeSummary = trim((string) ($data['change_summary'] ?? ''));
+        $changeSummaryLength = function_exists('mb_strlen')
+            ? mb_strlen($changeSummary, 'UTF-8')
+            : strlen($changeSummary);
+        if ($changeSummary === '') {
+            $errors[] = 'Explain why these Agreement changes were made';
+        } elseif ($changeSummaryLength > 1000) {
+            $errors[] = 'Change reason must not exceed 1000 characters';
+        }
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
@@ -114,7 +123,7 @@ class AgreementService {
             $nextVersion = $this->agreementVersionRepo->findByAgreement($agreementId);
             $this->agreementVersionRepo->create($agreementId, [
                 'version_number' => count($nextVersion) + 1,
-                'change_summary' => $data['change_summary'] ?? 'Agreement updated',
+                'change_summary' => $changeSummary,
                 'agreement_snapshot' => $snapshot,
                 'created_by' => $data['updated_by'] ?? 0,
             ]);

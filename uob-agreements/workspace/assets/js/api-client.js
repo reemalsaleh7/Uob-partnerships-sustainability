@@ -513,6 +513,39 @@
         versions(id) {
             return request(`/agreements/${encodeURIComponent(id)}/versions`);
         },
+        agreementAnnotations(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/annotations`);
+        },
+        createAgreementAnnotation(id, data) {
+            return request(`/agreements/${encodeURIComponent(id)}/annotations`, {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
+        resolveAgreementAnnotation(id, annotationId) {
+            return request(`/agreements/${encodeURIComponent(id)}/annotations/${encodeURIComponent(annotationId)}/resolve`, {
+                method: 'PATCH',
+                body: jsonBody({})
+            });
+        },
+        deleteAgreementAnnotation(id, annotationId) {
+            return request(`/agreements/${encodeURIComponent(id)}/annotations/${encodeURIComponent(annotationId)}`, {
+                method: 'DELETE'
+            });
+        },
+        agreementReviewContext(id, fromVersion = null, toVersion = null) {
+            const params = new URLSearchParams();
+            if (fromVersion != null) params.set('from', fromVersion);
+            if (toVersion != null) params.set('to', toVersion);
+            const query = params.toString();
+            return request(`/agreements/${encodeURIComponent(id)}/review-context${query ? `?${query}` : ''}`);
+        },
+        markAgreementViewed(id, versionNumber) {
+            return request(`/agreements/${encodeURIComponent(id)}/viewed`, {
+                method: 'POST',
+                body: jsonBody({ version_number: versionNumber })
+            });
+        },
         documents(id) {
             return request(`/agreements/${encodeURIComponent(id)}/documents`);
         },

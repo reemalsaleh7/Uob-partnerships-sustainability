@@ -37,7 +37,7 @@ workspaceHeader('Agreement details', 'agreements');
     <section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
         <div>
             <p class="eyebrow mb-2">Agreement <span data-agreement-id></span></p>
-            <h1 class="display-6 mb-3" data-agreement-title></h1>
+            <h1 class="display-6 mb-3" data-agreement-title data-annotation-field="title"></h1>
             <span data-agreement-status></span>
         </div>
 
@@ -69,6 +69,19 @@ workspaceHeader('Agreement details', 'agreements');
                 ></span>
             </button>
         </div>
+    </section>
+
+    <section class="workspace-card mt-4 d-none" aria-labelledby="agreement-changes-title" data-change-review>
+        <div class="workspace-card-header">
+            <div>
+                <p class="eyebrow mb-1">Updated since your last visit</p>
+                <h2 id="agreement-changes-title" class="h5 mb-1">What changed—and why</h2>
+                <p class="small text-secondary mb-0" data-change-range></p>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-dismiss-changes>Keep highlights, hide summary</button>
+        </div>
+        <div class="change-reason-banner" data-change-reason></div>
+        <div class="change-review-list" data-change-list></div>
     </section>
 
     <section class="workspace-card mt-4" aria-labelledby="workflow-timeline-title" data-workflow-timeline-section>
@@ -107,15 +120,15 @@ workspaceHeader('Agreement details', 'agreements');
                 <dl class="detail-grid">
                     <div>
                         <dt>Agreement type</dt>
-                        <dd data-agreement-type></dd>
+                        <dd data-agreement-type data-annotation-field="agreement_type"></dd>
                     </div>
                     <div>
                         <dt>Partner organization</dt>
-                        <dd data-partner-name></dd>
+                        <dd data-partner-name data-annotation-field="partner_names"></dd>
                     </div>
                     <div class="detail-grid-wide">
                         <dt>Description</dt>
-                        <dd data-agreement-description></dd>
+                        <dd data-agreement-description data-annotation-field="description"></dd>
                     </div>
                 </dl>
             </section>
@@ -184,6 +197,49 @@ workspaceHeader('Agreement details', 'agreements');
             <div class="detail-grid-wide"><dt>Other terms</dt><dd data-field="other_terms"></dd></div>
             <div class="detail-grid-wide"><dt>Public signing link</dt><dd data-field="signing_link"></dd></div>
         </dl>
+    </section>
+
+    <section class="workspace-card mt-4" aria-labelledby="agreement-comments-title" data-annotation-section>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="agreement-comments-title" class="h5 mb-1">Field comments and private notes</h2>
+                <p class="small text-secondary mb-0">Select text or use a field's comment button to point to the exact issue.</p>
+            </div>
+            <div class="annotation-count" data-annotation-count>0 open</div>
+        </div>
+
+        <div class="annotation-composer d-none" data-annotation-composer>
+            <div class="d-flex justify-content-between gap-3 align-items-start">
+                <div>
+                    <span class="annotation-field-label" data-annotation-field-label></span>
+                    <blockquote class="annotation-selection d-none" data-annotation-selection></blockquote>
+                </div>
+                <button class="btn-close" type="button" aria-label="Close comment editor" data-close-annotation></button>
+            </div>
+            <label class="form-label mt-3" for="annotation-comment">Comment</label>
+            <textarea id="annotation-comment" class="form-control" rows="3" maxlength="4000" data-annotation-comment></textarea>
+            <div class="row g-3 mt-1 align-items-end">
+                <div class="col-md-7">
+                    <label class="form-label" for="annotation-visibility">Who can see this?</label>
+                    <select id="annotation-visibility" class="form-select" data-annotation-visibility>
+                        <option value="SHARED">Shared review comment</option>
+                        <option value="PRIVATE">Private note — only me</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-md-end">
+                    <button class="btn btn-primary" type="button" data-save-annotation>Save comment</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-state compact" data-annotation-loading>
+            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <span>Loading comments…</span>
+        </div>
+        <div class="empty-state compact d-none" data-annotation-empty>
+            <p class="text-secondary mb-0">No comments yet. Use “Comment on this field” beside any Agreement value.</p>
+        </div>
+        <div class="annotation-list d-none" data-annotation-list></div>
     </section>
 
     <div class="row g-4 mt-1">
@@ -361,6 +417,7 @@ workspaceHeader('Agreement details', 'agreements');
                         <th scope="col">Change summary</th>
                         <th scope="col">Created by</th>
                         <th scope="col">Created</th>
+                        <th scope="col"><span class="visually-hidden">Compare</span></th>
                     </tr>
                 </thead>
                 <tbody id="version-table-body"></tbody>
@@ -371,6 +428,7 @@ workspaceHeader('Agreement details', 'agreements');
 
 <?php workspaceFooter([
     'assets/js/agreement-detail.js',
+    'assets/js/agreement-annotations.js',
     'assets/js/agreement-documents.js',
     'assets/js/agreement-operations.js',
     'assets/js/agreement-performance-summary.js',

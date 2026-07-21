@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/AgreementService.php';
+require_once __DIR__ . '/../services/AgreementAnnotationService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
@@ -7,9 +8,11 @@ require_once __DIR__ . '/../helpers/Response.php';
 
 class AgreementController {
     private AgreementService $agreementService;
+    private AgreementAnnotationService $annotationService;
 
     public function __construct() {
         $this->agreementService = new AgreementService();
+        $this->annotationService = new AgreementAnnotationService();
     }
 
     public function index(): void {
@@ -82,6 +85,104 @@ class AgreementController {
         }
 
         Response::success(['message' => 'Agreement updated']);
+    }
+
+    public function annotations(int $agreementId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $this->annotationResponse(function () use ($agreementId): array {
+            return $this->annotationService->listForUser(
+                $agreementId,
+                $this->userId()
+            );
+        });
+    }
+
+    public function createAnnotation(int $agreementId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+        $input = ApiRequest::json();
+
+        $this->annotationResponse(function () use ($agreementId, $input): array {
+            return $this->annotationService->create(
+                $agreementId,
+                $this->userId(),
+                $input
+            );
+        });
+    }
+
+    public function resolveAnnotation(int $agreementId, int $annotationId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $this->annotationResponse(function () use ($agreementId, $annotationId): array {
+            $this->annotationService->resolve(
+                $agreementId,
+                $annotationId,
+                $this->userId()
+            );
+
+            return ['message' => 'Comment resolved'];
+        });
+    }
+
+    public function deleteAnnotation(int $agreementId, int $annotationId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $this->annotationResponse(function () use ($agreementId, $annotationId): array {
+            $this->annotationService->delete(
+                $agreementId,
+                $annotationId,
+                $this->userId()
+            );
+
+            return ['message' => 'Comment deleted'];
+        });
+    }
+
+    public function reviewContext(int $agreementId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $from = $this->optionalPositiveInteger($_GET['from'] ?? null, 'from');
+        $to = $this->optionalPositiveInteger($_GET['to'] ?? null, 'to');
+        $this->annotationResponse(function () use ($agreementId, $from, $to): array {
+            return $this->annotationService->reviewContext(
+                $agreementId,
+                $this->userId(),
+                $from,
+                $to
+            );
+        });
+    }
+
+    public function markViewed(int $agreementId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+        $input = ApiRequest::json();
+        $version = $this->optionalPositiveInteger(
+            $input['version_number'] ?? null,
+            'version_number'
+        );
+
+        $this->annotationResponse(function () use ($agreementId, $version): array {
+            $this->annotationService->markViewed(
+                $agreementId,
+                $this->userId(),
+                $version
+            );
+
+            return ['message' => 'Agreement version marked as viewed'];
+        });
     }
 
     public function submit(int $agreementId): void
@@ -342,5 +443,37 @@ class AgreementController {
         }
 
         return $data;
+    }
+
+    private function userId(): int
+    {
+        return (int) ($_SESSION['user_id'] ?? 0);
+    }
+
+    private function optionalPositiveInteger(mixed $value, string $label): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value) || (int) $value < 1) {
+            Response::error("{$label} must be a positive integer", 422);
+        }
+
+        return (int) $value;
+    }
+
+    private function annotationResponse(callable $operation): void
+    {
+        try {
+            Response::success($operation());
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (DomainException $exception) {
+            $status = $exception->getMessage() === 'Agreement not found'
+                || $exception->getMessage() === 'Comment not found'
+                ? 404
+                : 403;
+            Response::error($exception->getMessage(), $status);
+        }
     }
 }

@@ -45,6 +45,18 @@ function textArea(string $id, string $label, string $help = '', int $rows = 4): 
 </div>
 
 <form id="agreement-form" class="d-none" novalidate>
+    <section class="workspace-card mt-4 d-none" aria-labelledby="change-reason-title" data-change-reason-section>
+        <div class="workspace-card-header"><div>
+            <h2 id="change-reason-title" class="h5 mb-1">Reason for this revision</h2>
+            <p class="small text-secondary mb-0">Everyone who previously reviewed this Agreement will see this explanation beside the highlighted changes.</p>
+        </div></div>
+        <div class="form-section">
+            <label for="change_summary" class="form-label">What changed, and why? *</label>
+            <textarea id="change_summary" name="change_summary" class="form-control" rows="3" maxlength="1000" placeholder="Example: Updated the termination notice from 3 to 6 months to address Legal Office feedback."></textarea>
+            <div class="form-text">Be specific enough for a previous reviewer to understand the revision without comparing the entire record manually.</div>
+        </div>
+    </section>
+
     <section class="workspace-card mt-4" aria-labelledby="identity-title">
         <div class="workspace-card-header"><div>
             <h2 id="identity-title" class="h5 mb-1">1. Cooperation project information</h2>

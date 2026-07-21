@@ -1715,6 +1715,230 @@ textarea.form-control {
     text-align: center;
 }
 
+.annotation-target {
+    position: relative;
+    padding-bottom: 2.1rem !important;
+    border-radius: 0.75rem;
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field-comment-button {
+    position: absolute;
+    right: 0.55rem;
+    bottom: 0.35rem;
+    padding: 0;
+    border: 0;
+    color: var(--uob-blue);
+    background: transparent;
+    font-size: 0.72rem;
+    font-weight: 800;
+    opacity: 0;
+    transition: opacity 140ms ease;
+}
+
+.annotation-target:hover .field-comment-button,
+.annotation-target:focus-within .field-comment-button,
+.field-comment-button:focus {
+    opacity: 1;
+}
+
+.annotation-target.has-field-comments {
+    background: #f5f3ff;
+    box-shadow: inset 3px 0 0 #7c3aed;
+}
+
+.annotation-target.has-unseen-change {
+    background: #eff6ff;
+    box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.annotation-target.has-field-comments.has-unseen-change {
+    background: linear-gradient(110deg, #f5f3ff 0 50%, #eff6ff 50% 100%);
+    box-shadow: inset 3px 0 0 #7c3aed, inset -3px 0 0 #2563eb;
+}
+
+.annotation-count-badge,
+.field-change-badge {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.55rem;
+    padding: 0.18rem 0.48rem;
+    border-radius: 999px;
+    font-size: 0.67rem;
+    font-weight: 800;
+}
+
+.annotation-count-badge {
+    color: #5b21b6;
+    background: #ede9fe;
+}
+
+.field-change-badge {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.annotation-count-badge + .field-change-badge,
+.field-change-badge + .annotation-count-badge {
+    top: 2rem;
+}
+
+.field-locate-pulse {
+    animation: field-locate-pulse 1.6s ease;
+}
+
+@keyframes field-locate-pulse {
+    0%, 100% { outline: 0 solid rgba(37, 99, 235, 0); }
+    35% { outline: 5px solid rgba(37, 99, 235, 0.24); }
+}
+
+.annotation-composer {
+    margin: 1rem;
+    padding: 1.1rem;
+    border: 1px solid #c4b5fd;
+    border-radius: 0.9rem;
+    background: #faf9ff;
+}
+
+.annotation-field-label {
+    color: #4c1d95;
+    font-weight: 800;
+}
+
+.annotation-selection {
+    margin: 0.65rem 0 0;
+    padding: 0.65rem 0.8rem;
+    border-left: 3px solid #8b5cf6;
+    color: #4c1d95;
+    background: #f5f3ff;
+    font-size: 0.86rem;
+}
+
+.annotation-list {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1rem;
+}
+
+.annotation-card {
+    padding: 1rem;
+    border: 1px solid var(--uob-border);
+    border-radius: 0.85rem;
+    background: #fff;
+}
+
+.annotation-card.is-resolved {
+    opacity: 0.7;
+    background: #f8fafc;
+}
+
+.annotation-card-header,
+.annotation-actions,
+.annotation-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.annotation-card-header {
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.annotation-card-header small {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--uob-muted);
+}
+
+.annotation-visibility,
+.annotation-count {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    color: #334155;
+    background: #e2e8f0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.annotation-visibility.is-private {
+    color: #5b21b6;
+    background: #ede9fe;
+}
+
+.annotation-visibility.is-resolved {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.annotation-comment {
+    margin: 0.8rem 0;
+    white-space: pre-wrap;
+}
+
+.annotation-actions {
+    flex-wrap: wrap;
+    margin-top: 0.8rem;
+}
+
+.change-reason-banner {
+    margin: 1rem 1rem 0;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid #2563eb;
+    border-radius: 0.5rem;
+    color: #1e3a8a;
+    background: #eff6ff;
+    font-weight: 700;
+}
+
+.change-review-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.change-review-item {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.85rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.75rem;
+    text-align: left;
+    background: #fff;
+}
+
+.change-review-item:hover,
+.change-review-item:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.change-values {
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+}
+
+.change-values del,
+.change-values ins {
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.change-values del {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.change-values ins {
+    color: #166534;
+    background: #dcfce7;
+}
+
 @media (max-width: 1199.98px) {
     .dashboard-action-grid,
     .dashboard-kpi-grid {
@@ -1759,6 +1983,19 @@ textarea.form-control {
 }
 
 @media (max-width: 575.98px) {
+    .change-review-list {
+        grid-template-columns: 1fr;
+    }
+
+    .field-comment-button {
+        opacity: 1;
+    }
+
+    .annotation-card-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
     .workspace-profile-link > span:last-child {
         display: none;
     }

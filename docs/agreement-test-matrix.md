@@ -399,3 +399,21 @@ Operations requiring rollback verification include:
 | LS-08 | Force a late failure | Workflow, request, successor, version, relationship, and audits all roll back. |
 | LS-09 | Approve a termination | Source becomes `TERMINATED`; no successor is created. |
 | LS-10 | Inspect public catalogue | The approved successor is publishable; lifecycle provenance and private attachments remain private. |
+
+## Field annotations, private notes, and change review
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| AN-01 | Comment on an Agreement field | Comment stores the latest immutable version and field key. |
+| AN-02 | Highlight part of a field and comment | Selected text and its range are stored; text must exist in that version. |
+| AN-03 | Add a shared comment | Every user currently authorized to view the Agreement can see it. |
+| AN-04 | Add a private note | Only its author sees it; another reviewer and administrator do not. |
+| AN-05 | Guess a private annotation ID | API responds as not found and does not reveal whether it exists. |
+| AN-06 | Resolve a shared comment as its author or Agreement creator | Comment becomes resolved and retains author/history metadata. |
+| AN-07 | Delete another user's comment | Request is rejected; only the author can delete it. |
+| AN-08 | Save an Agreement edit without a revision reason | Update is rejected and no new version is created. |
+| AN-09 | Reopen after a newer version exists | Changed fields are highlighted with before/after values and revision reasons. |
+| AN-10 | First visit to an Agreement | Current version is recorded without treating the full record as a change. |
+| AN-11 | Compare adjacent versions manually | Only changed fields are listed, even when there are no unseen changes. |
+| AN-12 | Compare across update and resubmission versions | Field changes retain the substantive edit reason rather than a status-only summary. |
+| AN-13 | Run `AgreementAnnotationSmokeTest.php` | Privacy, selected text, resolution, last-view tracking, diff, and rollback pass. |
