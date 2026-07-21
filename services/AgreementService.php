@@ -10,6 +10,7 @@ require_once __DIR__ . '/../helpers/AgreementStatus.php';
 require_once __DIR__ . '/../helpers/AuditAction.php';
 require_once __DIR__ . '/../services/ApprovalService.php';
 require_once __DIR__ . '/../services/PermissionService.php';
+require_once __DIR__ . '/../services/DocumentStorageService.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
@@ -20,6 +21,7 @@ class AgreementService {
     private AuditService $auditService;
     private PermissionService $permissionService;
     private WorkflowRepository $workflowRepo;
+    private DocumentStorageService $documentStorage;
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
@@ -30,6 +32,7 @@ class AgreementService {
         $this->approvalService = new ApprovalService();
         $this->permissionService = new PermissionService();
         $this->workflowRepo = new WorkflowRepository();
+        $this->documentStorage = new DocumentStorageService();
     }
 
     public function createAgreement(array $data): array {
@@ -331,42 +334,180 @@ class AgreementService {
     public function deleteAgreement(int $agreementId, int $userId): void {
         $db = Database::connect();
         $db->beginTransaction();
+        $documents = [];
         try {
             $existing = $this->agreementRepo->findById($agreementId);
             if (!$existing) {
                 $db->rollBack();
                 return;
             }
+            $documents = $this->agreementDocumentRepo
+                ->findByAgreement($agreementId);
             $this->agreementRepo->delete($agreementId);
             $this->auditService->write('agreements', $agreementId, AuditAction::DELETE, $userId, $existing, ['deleted' => true]);
             $db->commit();
+
+            foreach ($documents as $document) {
+                if (!empty($document['storage_key'])) {
+                    $this->documentStorage->delete(
+                        (string) $document['storage_key']
+                    );
+                }
+            }
         } catch (Throwable $exception) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             throw $exception;
         }
     }
 
-    public function uploadDocument(int $agreementId, array $data): array {
+    public function uploadDocument(
+        int $agreementId,
+        array $uploadedFile,
+        string $documentType,
+        int $userId
+    ): array {
+        $agreement = $this->findByIdForUser($agreementId, $userId);
+
+        if (!$agreement) {
+            throw new DomainException('Agreement not found');
+        }
+
+        if (!$this->canUploadDocument($agreement, $userId)) {
+            throw new DomainException(
+                'Documents may be uploaded only by the creator while the Agreement is editable or by its currently assigned reviewer'
+            );
+        }
+
+        $normalizedType = strtoupper(trim($documentType));
+        $allowedTypes = [
+            'AGREEMENT_DRAFT',
+            'SUPPORTING',
+            'LEGAL_REVIEW',
+            'FINANCE_REVIEW',
+            'OTHER',
+        ];
+
+        if (!in_array($normalizedType, $allowedTypes, true)) {
+            throw new InvalidArgumentException(
+                'Select a valid document type'
+            );
+        }
+
+        $latestVersion = $this->agreementVersionRepo
+            ->findLatest($agreementId);
+
+        if (!$latestVersion) {
+            throw new DomainException(
+                'The Agreement has no version to associate with this document'
+            );
+        }
+
+        $storedFile = $this->documentStorage->store($uploadedFile);
         $db = Database::connect();
-        $db->beginTransaction();
+
         try {
-            $documentId = $this->agreementDocumentRepo->create($agreementId, [
-                'file_name' => $data['file_name'],
-                'file_path' => $data['file_path'],
-                'document_type' => $data['document_type'] ?? 'GENERAL',
-                'uploaded_by' => $data['uploaded_by'],
-            ]);
-            $this->auditService->write('agreement_documents', $documentId, AuditAction::INSERT, $data['uploaded_by'] ?? null, null, ['agreement_id' => $agreementId]);
+            $db->beginTransaction();
+            $documentId = $this->agreementDocumentRepo->create(
+                $agreementId,
+                [
+                    'agreement_version_id' =>
+                        (int) $latestVersion['version_id'],
+                    'file_name' => $storedFile['file_name'],
+                    'storage_key' => $storedFile['storage_key'],
+                    'mime_type' => $storedFile['mime_type'],
+                    'file_size_bytes' =>
+                        $storedFile['file_size_bytes'],
+                    'sha256_checksum' =>
+                        $storedFile['sha256_checksum'],
+                    'document_type' => $normalizedType,
+                    'uploaded_by' => $userId,
+                ]
+            );
+            $this->auditService->write(
+                'agreement_documents',
+                $documentId,
+                AuditAction::INSERT,
+                $userId,
+                null,
+                [
+                    'agreement_id' => $agreementId,
+                    'agreement_version_id' =>
+                        (int) $latestVersion['version_id'],
+                    'file_name' => $storedFile['file_name'],
+                    'document_type' => $normalizedType,
+                    'mime_type' => $storedFile['mime_type'],
+                    'file_size_bytes' =>
+                        $storedFile['file_size_bytes'],
+                    'sha256_checksum' =>
+                        $storedFile['sha256_checksum'],
+                ]
+            );
             $db->commit();
-            return ['success' => true, 'document_id' => $documentId];
+
+            return [
+                'success' => true,
+                'document_id' => $documentId,
+            ];
         } catch (Throwable $exception) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+
+            $this->documentStorage->delete(
+                (string) $storedFile['storage_key']
+            );
+
             throw $exception;
         }
     }
 
-    public function listDocuments(int $agreementId): array {
-        return $this->agreementDocumentRepo->findByAgreement($agreementId);
+    public function listDocuments(
+        int $agreementId,
+        int $userId
+    ): array {
+        $agreement = $this->findByIdForUser($agreementId, $userId);
+
+        if (!$agreement) {
+            throw new DomainException('Agreement not found');
+        }
+
+        $canUpload = $this->canUploadDocument($agreement, $userId);
+        $documents = array_map(
+            function (array $document) use ($agreement, $userId): array {
+                $document['available'] =
+                    ($document['has_stored_file'] ?? false)
+                    && $this->documentStorage->absolutePath(
+                        (string) ($document['storage_key'] ?? '')
+                    ) !== null;
+                $document['can_delete'] = $this->canDeleteDocument(
+                    $agreement,
+                    $document,
+                    $userId
+                );
+                unset(
+                    $document['storage_key'],
+                    $document['file_path'],
+                    $document['has_stored_file']
+                );
+
+                return $document;
+            },
+            $this->agreementDocumentRepo
+                ->findByAgreement($agreementId)
+        );
+
+        return [
+            'documents' => $documents,
+            'can_upload' => $canUpload,
+            'constraints' => [
+                'max_file_size_bytes' =>
+                    DocumentStorageService::MAX_FILE_SIZE_BYTES,
+                'allowed_extensions' =>
+                    DocumentStorageService::allowedExtensions(),
+            ],
+        ];
     }
 
     public function findVersions(int $agreementId): array {
@@ -377,10 +518,77 @@ class AgreementService {
         return $this->agreementVersionRepo->findByAgreementAndVersion($agreementId, $versionNumber);
     }
 
+    public function downloadDocument(
+        int $documentId,
+        int $userId
+    ): ?array {
+        $document = $this->agreementDocumentRepo->findById($documentId);
+
+        if (!$document) {
+            return null;
+        }
+
+        if (!$this->findByIdForUser(
+            (int) $document['agreement_id'],
+            $userId
+        )) {
+            return null;
+        }
+
+        $absolutePath = $this->documentStorage->absolutePath(
+            (string) ($document['storage_key'] ?? '')
+        );
+
+        if ($absolutePath === null) {
+            return null;
+        }
+
+        $expectedChecksum = (string) (
+            $document['sha256_checksum'] ?? ''
+        );
+        $actualChecksum = hash_file('sha256', $absolutePath);
+
+        if (
+            $expectedChecksum !== ''
+            && (
+                $actualChecksum === false
+                || !hash_equals(
+                    $expectedChecksum,
+                    $actualChecksum
+                )
+            )
+        ) {
+            throw new RuntimeException(
+                'Document integrity verification failed'
+            );
+        }
+
+        $document['absolute_path'] = $absolutePath;
+        unset($document['storage_key'], $document['file_path']);
+
+        return $document;
+    }
+
     public function deleteDocument(int $documentId, int $userId): bool {
         $document = $this->agreementDocumentRepo->findById($documentId);
+
         if (!$document) {
             return false;
+        }
+
+        $agreement = $this->findByIdForUser(
+            (int) $document['agreement_id'],
+            $userId
+        );
+
+        if (!$agreement) {
+            return false;
+        }
+
+        if (!$this->canDeleteDocument($agreement, $document, $userId)) {
+            throw new DomainException(
+                'You may delete only your own document while you can still upload to this Agreement'
+            );
         }
 
         $db = Database::connect();
@@ -389,6 +597,13 @@ class AgreementService {
             $this->agreementDocumentRepo->delete($documentId);
             $this->auditService->write('agreement_documents', $documentId, AuditAction::DELETE, $userId, $document, ['deleted' => true]);
             $db->commit();
+
+            if (!empty($document['storage_key'])) {
+                $this->documentStorage->delete(
+                    (string) $document['storage_key']
+                );
+            }
+
             return true;
         } catch (Throwable $exception) {
             $db->rollBack();
@@ -417,6 +632,46 @@ class AgreementService {
 
     public function findByStatus(string $status): array {
         return $this->agreementRepo->findByStatus($status);
+    }
+
+    private function canUploadDocument(
+        array $agreement,
+        int $userId
+    ): bool {
+        if ($this->isSystemAdministrator($userId)) {
+            return true;
+        }
+
+        $isCreator = (int) $agreement['created_by'] === $userId;
+
+        if (
+            $isCreator
+            && AgreementStatus::isEditable(
+                (string) $agreement['status']
+            )
+        ) {
+            return true;
+        }
+
+        return $agreement['status'] === AgreementStatus::UNDER_REVIEW
+            && $this->workflowRepo->hasActiveAssignmentForEntity(
+                'AGREEMENT',
+                (int) $agreement['agreement_id'],
+                $userId
+            );
+    }
+
+    private function canDeleteDocument(
+        array $agreement,
+        array $document,
+        int $userId
+    ): bool {
+        if ($this->isSystemAdministrator($userId)) {
+            return true;
+        }
+
+        return (int) ($document['uploaded_by'] ?? 0) === $userId
+            && $this->canUploadDocument($agreement, $userId);
     }
 
     private function isSystemAdministrator(int $userId): bool {

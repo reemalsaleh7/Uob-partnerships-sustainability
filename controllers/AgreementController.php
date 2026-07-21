@@ -173,15 +173,33 @@ class AgreementController {
 
     public function uploadDocument(int $agreementId): void {
         AuthMiddleware::handle();
-        PermissionMiddleware::require('CREATE_AGREEMENT');
+        PermissionMiddleware::require('VIEW_AGREEMENT');
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        $result = $this->agreementService->uploadDocument($agreementId, [
-            'file_name' => $input['file_name'] ?? null,
-            'file_path' => $input['file_path'] ?? null,
-            'document_type' => $input['document_type'] ?? 'GENERAL',
-            'uploaded_by' => (int) ($_SESSION['user_id'] ?? 0),
-        ]);
+        if (!$this->agreementService->findByIdForUser(
+            $agreementId,
+            (int) $_SESSION['user_id']
+        )) {
+            Response::error('Agreement not found', 404);
+        }
+
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            Response::error('Choose a document to upload', 422);
+        }
+
+        try {
+            $result = $this->agreementService->uploadDocument(
+                $agreementId,
+                $_FILES['file'],
+                (string) ($_POST['document_type'] ?? 'OTHER'),
+                (int) ($_SESSION['user_id'] ?? 0)
+            );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
 
         Response::success($result);
     }
@@ -197,15 +215,67 @@ class AgreementController {
             Response::error('Agreement not found', 404);
         }
 
-        Response::success($this->agreementService->listDocuments($agreementId));
+        Response::success(
+            $this->agreementService->listDocuments(
+                $agreementId,
+                (int) $_SESSION['user_id']
+            )
+        );
+    }
+
+    public function downloadDocument(int $documentId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $document = $this->agreementService->downloadDocument(
+            $documentId,
+            (int) $_SESSION['user_id']
+        );
+
+        if (!$document) {
+            Response::error('Document not found', 404);
+        }
+
+        $absolutePath = (string) $document['absolute_path'];
+        $fileName = basename(
+            str_replace('\\', '/', (string) $document['file_name'])
+        );
+        $mimeType = (string) (
+            $document['mime_type']
+            ?? 'application/octet-stream'
+        );
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        header_remove('Content-Type');
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: attachment; filename="document"; filename*=UTF-8\'\'' . rawurlencode($fileName));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store, max-age=0');
+        readfile($absolutePath);
+        exit;
     }
 
     public function deleteDocument(int $documentId): void {
         AuthMiddleware::handle();
-        PermissionMiddleware::require('DELETE_AGREEMENT');
+        PermissionMiddleware::require('VIEW_AGREEMENT');
 
-        if (!$this->agreementService->deleteDocument($documentId, (int) $_SESSION['user_id'])) {
-            Response::error('Document not found', 404);
+        try {
+            if (!$this->agreementService->deleteDocument(
+                $documentId,
+                (int) $_SESSION['user_id']
+            )) {
+                Response::error('Document not found', 404);
+            }
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
         }
 
         Response::success(['message' => 'Document deleted']);

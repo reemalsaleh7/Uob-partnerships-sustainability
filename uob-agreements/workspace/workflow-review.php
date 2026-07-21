@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/agreement-documents.php';
 
 workspaceHeader('Initial VP review', 'workflow');
 ?>
@@ -96,39 +97,7 @@ workspaceHeader('Initial VP review', 'workflow');
         </div>
     </div>
 
-    <section class="workspace-card mt-4" aria-labelledby="review-documents-title">
-        <div class="workspace-card-header">
-            <div>
-                <h2 id="review-documents-title" class="h5 mb-1">Supporting documents</h2>
-                <p class="small text-secondary mb-0">
-                    Document records attached to the Agreement for this review.
-                </p>
-            </div>
-        </div>
-
-        <div id="review-documents-loading" class="loading-state compact" aria-live="polite">
-            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
-            <span>Loading documents…</span>
-        </div>
-
-        <div id="review-documents-empty" class="empty-state compact d-none">
-            <p class="text-secondary mb-0">No supporting documents are attached.</p>
-        </div>
-
-        <div id="review-documents-wrap" class="table-responsive d-none">
-            <table class="table workspace-table align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th scope="col">File name</th>
-                        <th scope="col">Document type</th>
-                        <th scope="col">Uploaded by</th>
-                        <th scope="col">Uploaded</th>
-                    </tr>
-                </thead>
-                <tbody id="review-documents-body"></tbody>
-            </table>
-        </div>
-    </section>
+    <?php agreementDocumentsPanel('agreement_id', 'SUPPORTING'); ?>
 
     <section class="workspace-card mt-4" aria-labelledby="vp-decision-title">
         <div class="workspace-card-header">
@@ -245,4 +214,7 @@ workspaceHeader('Initial VP review', 'workflow');
     </section>
 </div>
 
-<?php workspaceFooter(['assets/js/workflow-review.js']); ?>
+<?php workspaceFooter([
+    'assets/js/workflow-review.js',
+    'assets/js/agreement-documents.js',
+]); ?>

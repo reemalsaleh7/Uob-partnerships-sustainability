@@ -26,7 +26,11 @@ Development-only password: `UobDev2026!`.
 | A-05 | Read an earlier version after updating           | Authorized viewer  | Original historical`agreement_snapshot` remains unchanged.                                                     |
 | A-06 | Submit a`DRAFT` Agreement                      | Eligible creator   | Agreement becomes`UNDER_REVIEW`; submission version and audit record exist; workflow begins at `VP_INITIAL`. |
 | A-07 | Submit a non-`DRAFT` Agreement                 | Any creator        | `409`/`422`; no second active workflow is created.                                                           |
-| A-08 | Add and remove document metadata                 | Authorized creator | Metadata row is created then removed;`INSERT` and `DELETE` audit records exist.                              |
+| A-08 | Upload a valid PDF, DOC, or DOCX                 | Authorized creator | A random private storage key, MIME type, byte size, SHA-256, version link, and `INSERT` audit record exist.      |
+| A-08A | Upload an executable, renamed file, or file over 10 MB | Authorized actor | `422`; no metadata, audit row, or private stored file remains.                                                   |
+| A-08B | Download a stored document                       | Authorized viewer  | File is streamed as an attachment after a fresh record-level authorization check; storage path is not disclosed. |
+| A-08C | Delete the actor's own manageable document       | Uploader           | Metadata is deleted, private file is removed, and a `DELETE` audit row exists.                                   |
+| A-08D | Delete another user's or locked document         | Other/previous actor | `403`; metadata and private file remain unchanged.                                                               |
 | A-09 | Delete a permitted Agreement                     | Authorized user    | Agreement and dependent partner/version/document rows are removed; deletion audit remains.                       |
 | A-10 | Attempt deletion without permission              | Approver           | `403`; no rows change.                                                                                         |
 
@@ -43,6 +47,8 @@ Development-only password: `UobDev2026!`.
 | V-07 | Complete final President approval                            | Any permitted viewer | The `APPROVED` Agreement is visible in the register and by direct URL.                            |
 | V-08 | Inspect all Agreement states                                 | System administrator | Every Agreement remains visible for administration and support.                                 |
 | V-09 | Load a Dean draft, sign out, then sign in as VP in the same browser | VP              | A fresh authorized response is fetched; the Dean's cached register, details, versions, and documents are not reused. |
+| V-10 | Inspect document list response                               | Authorized viewer  | Original name and safe metadata appear; `storage_key`, `file_path`, and absolute path are absent.                    |
+| V-11 | Finish a reviewer assignment then reuse its download URL     | Former reviewer    | `404`; the file is not streamed after Agreement visibility ends.                                                     |
 
 ## Workflow creation and hierarchy
 
@@ -191,6 +197,18 @@ Development-only password: `UobDev2026!`.
 | UI-13 | Open another user's President task by IDs     | Page refuses access because the signed-in user does not own that active assignment.                     |
 | UI-14 | Repeat a completed President decision         | No active assignment remains; direct page access and duplicate backend decision are rejected.           |
 
+## Document frontend checks
+
+| ID    | Scenario                                             | Expected result                                                                                       |
+| ----- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| UI-15 | Open an editable draft as its creator                | Upload form is visible; document list loads.                                                          |
+| UI-16 | Open the same draft as VP by changing its ID         | Agreement and documents return `404`; no metadata is shown.                                          |
+| UI-17 | Upload a valid file                                  | File appears with type, linked version, uploader, date, size, Download, and permitted Delete action. |
+| UI-18 | Submit the draft and reopen it as creator            | Documents remain downloadable, but creator upload/delete controls are hidden during review.          |
+| UI-19 | Open an active Legal, Finance, VP, or President task | Existing documents load and the assigned reviewer can upload a review document.                      |
+| UI-20 | Complete that reviewer task                          | Former reviewer can no longer reopen or download the still-private in-review Agreement documents.    |
+| UI-21 | Open an approved Agreement                           | Authorized viewers can download documents; upload/delete controls remain locked.                     |
+
 ## Verified automated tests
 
 | Test file                                           | Coverage                                                                        |
@@ -208,6 +226,7 @@ Development-only password: `UobDev2026!`.
 | `tests/AgreementRedraftResubmissionSmokeTest.php` | Version enforcement and cycle-2 resubmission.                                   |
 | `tests/VpDirectDecisionSmokeTest.php`             | Initial and Final VP direct return/rejection.                                   |
 | `tests/PresidentRejectionSmokeTest.php`           | Terminal President rejection.                                                   |
+| `tests/AgreementDocumentAuthorizationSmokeTest.php` | Creator/reviewer document visibility and active-assignment upload authorization. |
 
 ## Transaction rollback checks
 
@@ -216,7 +235,7 @@ For every multi-write operation, force a controlled failure at the final reposit
 Operations requiring rollback verification include:
 
 - Agreement create, update, submit, and delete.
-- Document metadata create and delete.
+- Document metadata create/delete and physical-file cleanup on failed database writes.
 - Workflow creation.
 - Initial VP activation of specialist steps.
 - Specialist completion and Final VP activation.

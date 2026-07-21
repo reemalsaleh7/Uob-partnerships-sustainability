@@ -56,6 +56,20 @@ class AgreementVersionRepository {
         return $version ? $this->hydrateSnapshot($version) : null;
     }
 
+    public function findLatest(int $agreementId): ?array {
+        $stmt = $this->db->prepare('
+            SELECT *
+            FROM agreement_versions
+            WHERE agreement_id = :agreement_id
+            ORDER BY version_number DESC
+            LIMIT 1
+        ');
+        $stmt->execute(['agreement_id' => $agreementId]);
+        $version = $stmt->fetch();
+
+        return $version ? $this->hydrateSnapshot($version) : null;
+    }
+
     public function findLatestVersionNumber(
     int $agreementId
 ): int {

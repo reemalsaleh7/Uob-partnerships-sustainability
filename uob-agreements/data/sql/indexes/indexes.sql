@@ -10,6 +10,13 @@ CREATE INDEX IF NOT EXISTS idx_users_email
 CREATE INDEX IF NOT EXISTS idx_agreements_status
     ON agreements(status);
 
+CREATE INDEX IF NOT EXISTS idx_agreement_documents_agreement
+    ON agreement_documents(agreement_id, uploaded_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_agreement_documents_version
+    ON agreement_documents(agreement_version_id)
+    WHERE agreement_version_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_workflow_instances_status
     ON workflow_instances(status);
 

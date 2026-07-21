@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/agreement-documents.php';
 
 workspaceHeader('Agreement details', 'agreements');
 ?>
@@ -109,6 +110,8 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </div>
 
+    <?php agreementDocumentsPanel('id', 'AGREEMENT_DRAFT'); ?>
+
     <section class="workspace-card mt-4" aria-labelledby="versions-title">
         <div class="workspace-card-header">
             <div>
@@ -144,4 +147,7 @@ workspaceHeader('Agreement details', 'agreements');
     </section>
 </div>
 
-<?php workspaceFooter(['assets/js/agreement-detail.js']); ?>
+<?php workspaceFooter([
+    'assets/js/agreement-detail.js',
+    'assets/js/agreement-documents.js',
+]); ?>

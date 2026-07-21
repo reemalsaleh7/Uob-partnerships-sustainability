@@ -85,7 +85,14 @@
         headers.set('Accept', 'application/json');
         headers.set('X-UOB-Tab-Session', tabSessionId());
 
-        if (options.body !== undefined && !headers.has('Content-Type')) {
+        const isFormData = typeof FormData !== 'undefined'
+            && options.body instanceof FormData;
+
+        if (
+            options.body !== undefined
+            && !isFormData
+            && !headers.has('Content-Type')
+        ) {
             headers.set('Content-Type', 'application/json');
         }
 
@@ -138,6 +145,56 @@
         }
 
         return payload?.data ?? payload;
+    }
+
+    async function download(path) {
+        const headers = new Headers();
+        headers.set('Accept', 'application/octet-stream');
+        headers.set('X-UOB-Tab-Session', tabSessionId());
+
+        let response;
+
+        try {
+            response = await fetch(`${apiBase}${path}`, {
+                method: 'GET',
+                headers,
+                cache: 'no-store',
+                credentials: 'same-origin'
+            });
+        } catch (error) {
+            throw new ApiError(
+                'The server could not be reached. Check Apache and your network connection.',
+                0,
+                null
+            );
+        }
+
+        const responseTabSessionId = response.headers.get(
+            'X-UOB-Tab-Session'
+        );
+
+        if (responseTabSessionId) {
+            saveTabSessionId(responseTabSessionId);
+        }
+
+        if (!response.ok) {
+            const rawBody = await response.text();
+            let payload = null;
+
+            try {
+                payload = rawBody === '' ? null : JSON.parse(rawBody);
+            } catch (error) {
+                payload = null;
+            }
+
+            throw new ApiError(
+                payload?.error || `Download failed with status ${response.status}.`,
+                response.status,
+                payload
+            );
+        }
+
+        return response.blob();
     }
 
     function jsonBody(value) {
@@ -329,6 +386,32 @@
         },
         versions(id) {
             return request(`/agreements/${encodeURIComponent(id)}/versions`);
+        },
+        documents(id) {
+            return request(`/agreements/${encodeURIComponent(id)}/documents`);
+        },
+        uploadDocument(id, file, documentType) {
+            const body = new FormData();
+            body.append('file', file);
+            body.append('document_type', documentType);
+
+            return request(
+                `/agreements/${encodeURIComponent(id)}/documents`,
+                {
+                    method: 'POST',
+                    body
+                }
+            );
+        },
+        downloadDocument(id) {
+            return download(
+                `/documents/${encodeURIComponent(id)}/download`
+            );
+        },
+        deleteDocument(id) {
+            return request(`/documents/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            });
         },
         workflowInbox() {
             return request('/workflow-inbox');

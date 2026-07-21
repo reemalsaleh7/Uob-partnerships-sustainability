@@ -797,6 +797,39 @@ public function clearRedraftBaseVersion(
         return $stmt->fetchAll();
     }
 
+    public function hasActiveAssignmentForEntity(
+        string $entityType,
+        int $entityId,
+        int $userId
+    ): bool {
+        $stmt = $this->db->prepare(
+            'SELECT EXISTS (
+                SELECT 1
+                FROM workflow_instances wi
+                JOIN workflow_instance_steps wis
+                    ON wis.workflow_instance_id =
+                       wi.workflow_instance_id
+                JOIN workflow_step_assignments wsa
+                    ON wsa.workflow_instance_step_id =
+                       wis.instance_step_id
+                WHERE wi.entity_type = :entity_type
+                  AND wi.entity_id = :entity_id
+                  AND wi.status = \'IN_PROGRESS\'
+                  AND wis.status = \'IN_PROGRESS\'
+                  AND wsa.user_id = :user_id
+                  AND wsa.is_active = TRUE
+            )'
+        );
+
+        $stmt->execute([
+            'entity_type' => strtoupper($entityType),
+            'entity_id' => $entityId,
+            'user_id' => $userId,
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function findActiveUnitByCode(
         string $unitCode
     ): ?array {

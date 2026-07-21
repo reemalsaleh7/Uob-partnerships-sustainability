@@ -82,9 +82,10 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `DELETE` | `/agreements/{id}`                    | `DELETE_AGREEMENT` | Delete the Agreement.                                                  |
 | `GET`    | `/agreements/{id}/versions`           | `VIEW_AGREEMENT`   | List immutable versions newest first.                                  |
 | `GET`    | `/agreements/{id}/versions/{version}` | `VIEW_AGREEMENT`   | Get one immutable Agreement snapshot.                                  |
-| `GET`    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List document metadata.                                                |
-| `POST`   | `/agreements/{id}/documents`          | `CREATE_AGREEMENT` | Create document metadata.                                              |
-| `DELETE` | `/documents/{id}`                     | `DELETE_AGREEMENT` | Remove document metadata.                                              |
+| `GET`    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List authorized document metadata and available actions.               |
+| `POST`   | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | Upload a validated file when the actor may contribute documents.       |
+| `GET`    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Re-authorize and stream one private document.                           |
+| `DELETE` | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete the actor's own still-manageable document.                       |
 | `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
 
 ### List active partners
@@ -120,6 +121,25 @@ The authenticated user is always used as `created_by` or `updated_by`. Clients c
 The same record-level check protects Agreement details, version lists, individual version snapshots, and document metadata. An inaccessible Agreement returns `404` so direct URL or ID changes do not disclose the record.
 
 All API responses send `Cache-Control: no-store` and related compatibility headers. The workspace client also uses the Fetch API's `no-store` mode. This prevents authenticated Agreement data loaded for one user from being reused after another user signs in through the same browser.
+
+### Secure Agreement documents
+
+`POST /agreements/{id}/documents` accepts `multipart/form-data` with:
+
+- `file`: required PDF, DOC, or DOCX file, no more than 10 MB.
+- `document_type`: one of `AGREEMENT_DRAFT`, `SUPPORTING`, `LEGAL_REVIEW`, `FINANCE_REVIEW`, or `OTHER`.
+
+The server ignores client paths, verifies the extension, detected MIME type, file signature, and size, generates a random private storage key, calculates SHA-256, and associates the document with the latest Agreement version. Storage keys and paths are never returned by list or download APIs.
+
+Upload access is record- and state-scoped:
+
+- The original creator can upload while the Agreement is `DRAFT` or `REVISION_REQUIRED`.
+- A reviewer can upload while that exact user has an active assignment on an `UNDER_REVIEW` Agreement.
+- The creator cannot alter the document set while review is active.
+- A non-administrator can delete only a file they uploaded while they still have upload access.
+- Download and list access use the same Agreement visibility rule as details and versions.
+
+Older metadata-only rows remain listed after migration, but they are marked unavailable because no server file exists. The private storage directory is denied to direct Apache/IIS requests; downloads must pass through the authenticated endpoint.
 
 ### Update Agreement
 
@@ -487,9 +507,10 @@ All endpoints require an authenticated session and the listed permission.
 | DELETE | `/agreements/{id}`                    | `DELETE_AGREEMENT` | Delete the agreement.                              |
 | GET    | `/agreements/{id}/versions`           | `VIEW_AGREEMENT`   | List versions newest first.                        |
 | GET    | `/agreements/{id}/versions/{version}` | `VIEW_AGREEMENT`   | Get one immutable agreement snapshot.              |
-| GET    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List document metadata.                            |
-| POST   | `/agreements/{id}/documents`          | `CREATE_AGREEMENT` | Create document metadata.                          |
-| DELETE | `/documents/{id}`                     | `DELETE_AGREEMENT` | Remove document metadata.                          |
+| GET    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List authorized document metadata/actions.        |
+| POST   | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | Upload a validated private document.               |
+| GET    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Stream an authorized private document.             |
+| DELETE | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete an owned, still-manageable document.        |
 
 ## Create request
 

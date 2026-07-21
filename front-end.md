@@ -29,12 +29,14 @@ This package adds a protected internal Agreement workspace without changing the 
 - President review with Legal, Finance, and Final VP outcome summaries.
 - President approval that completes the workflow and publishes the Agreement as `APPROVED`.
 - President change requests routed to VP mediation and terminal President rejection with a required reason.
+- Secure Agreement document upload, listing, download, and controlled deletion on the Agreement record and every role-specific review screen.
+- PDF/DOC/DOCX validation, 10 MB limit, server-generated private storage keys, SHA-256 checksums, and Agreement-version association.
 - Logout using `POST /api/index.php/logout`.
 - Non-cacheable authenticated API requests so data from one account cannot appear after switching users in the same browser.
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 
-The physical document upload screen remains deferred to the next slice. Create, edit, submit, redraft, and workflow controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission.
+Create, edit, submit, redraft, workflow, and document controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission. Physical files are served only through the authenticated API; private storage paths are never exposed to the browser.
 
 ## Install
 
@@ -80,6 +82,15 @@ git diff --check
 git status --short
 ```
 
+Before testing documents on an existing database, apply the idempotent migration:
+
+```powershell
+& "C:\Program Files\PostgreSQL\17\bin\psql.exe" `
+  -U postgres `
+  -d UOB_Partnership_and_Initiative `
+  -f ".\uob-agreements\data\sql\migrations\20260721_secure_agreement_documents.sql"
+```
+
 Then open the workspace and verify:
 
 1. An invalid login displays the API error.
@@ -118,6 +129,12 @@ Then open the workspace and verify:
 34. In a separate workflow, submit a required President change reason and confirm a **VP mediation** task appears with the President reason.
 35. In another workflow, reject from President with a required reason and confirm the Agreement becomes terminally `REJECTED`.
 36. Change the President review URL IDs or sign in as another approver and confirm the page refuses access without that exact active assignment.
+37. As the Dean, upload a valid PDF to a draft and confirm it appears with its linked Agreement version and can be downloaded.
+38. Try an unsupported or renamed file and a file over 10 MB; confirm the upload is rejected without a document row.
+39. Submit the Agreement and confirm the Dean can download but cannot upload or delete during review.
+40. Open the active reviewer screen and confirm only the assigned reviewer can upload a review document.
+41. Complete the reviewer task and confirm the former reviewer can no longer reuse the document URL while the Agreement remains under review.
+42. Approve the Agreement and confirm permitted viewers can download documents while upload/delete remain locked.
 
 The frontend files are under:
 

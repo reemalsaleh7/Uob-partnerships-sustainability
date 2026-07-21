@@ -46,6 +46,8 @@ if ($method === 'GET' && $uri === '/agreements') {
     $controller->documents((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/documents$#', $uri, $matches)) {
     $controller->uploadDocument((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/documents/([0-9]+)/download$#', $uri, $matches)) {
+    $controller->downloadDocument((int) $matches[1]);
 } elseif ($method === 'DELETE' && preg_match('#^/documents/([0-9]+)$#', $uri, $matches)) {
     $controller->deleteDocument((int) $matches[1]);
 } else {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/agreement-documents.php';
 
 workspaceHeader('President Agreement review', 'workflow');
 ?>
@@ -98,6 +99,8 @@ workspaceHeader('President Agreement review', 'workflow');
             </section>
         </div>
     </div>
+
+    <?php agreementDocumentsPanel('agreement_id', 'SUPPORTING'); ?>
 
     <section class="workspace-card mt-4" aria-labelledby="president-review-summary-title">
         <div class="workspace-card-header">
@@ -222,4 +225,7 @@ workspaceHeader('President Agreement review', 'workflow');
     </section>
 </div>
 
-<?php workspaceFooter(['assets/js/president-review.js']); ?>
+<?php workspaceFooter([
+    'assets/js/president-review.js',
+    'assets/js/agreement-documents.js',
+]); ?>
