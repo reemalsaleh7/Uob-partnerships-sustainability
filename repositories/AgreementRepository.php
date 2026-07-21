@@ -116,10 +116,15 @@ class AgreementRepository {
         $stmt = $this->db->prepare('
             SELECT
                 a.*,
-                ou.name AS responsible_unit_name
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             WHERE a.agreement_id = :agreement_id
             LIMIT 1
         ');
@@ -197,10 +202,15 @@ class AgreementRepository {
         $stmt = $this->db->prepare('
             SELECT
                 a.*,
-                ou.name AS responsible_unit_name
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             WHERE a.agreement_id = :agreement_id
               AND (
                   a.created_by = :creator_user_id

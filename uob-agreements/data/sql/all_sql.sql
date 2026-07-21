@@ -703,3 +703,6 @@ WHERE is_active = TRUE;
 -- Kept as an include so this consolidated deployment entry point and the
 -- modular deployment script execute the same idempotent migration.
 \ir migrations/20260721_comprehensive_agreement_fields.sql
+
+-- Preserve provenance and idempotency for controlled historical imports.
+\ir migrations/20260721_legacy_agreement_import_tracking.sql

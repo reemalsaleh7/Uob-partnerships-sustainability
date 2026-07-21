@@ -42,6 +42,7 @@ The draft editor is now a comprehensive nine-section form combining the official
 - PostgreSQL-backed public catalogue restricted to `APPROVED` and `ACTIVE` Agreements.
 - Stable `UOB-AGR-######` public references and an explicit non-sensitive field allow-list.
 - Compatibility-only approved legacy detail lookup for Initiative links; legacy rows are not listed in the catalogue.
+- Controlled migration of the 41 enriched legacy CSV Agreements into PostgreSQL with immutable versions, audit history, and source provenance.
 
 Create, edit, submit, redraft, workflow, and document controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission. Physical files are served only through the authenticated API; private storage paths are never exposed to the browser.
 
@@ -158,6 +159,9 @@ Then open the workspace and verify:
 50. Open a listed Agreement and confirm its public reference, title, type, partner, country, status, summary, and responsible unit render.
 51. Confirm creator/reviewer identity, workflow comments, versions, audits, and private documents are absent from public output.
 52. Open an existing Initiative with a legacy approved Agreement code and confirm its compatibility detail still opens without adding the row to the catalogue.
+53. Apply the legacy-import tracking migration and run the importer in dry-run mode; confirm 41 ready rows and no conflicts.
+54. Commit the import and confirm all 41 Agreement codes appear in the PostgreSQL-backed public catalogue.
+55. Run the importer again in dry-run mode and confirm all 41 rows are skipped without creating duplicates.
 
 The frontend files are under:
 
@@ -168,3 +172,4 @@ uob-agreements/workspace/
 The partner lookup also adds the corresponding controller, service, repository, and route in the existing backend layers.
 
 The controlled replacement boundary is documented in `docs/agreement-legacy-replacement.md`. The publication boundary is documented in `docs/agreement-public-catalogue.md`.
+The historical migration boundary is documented in `docs/agreement-legacy-csv-import.md`.

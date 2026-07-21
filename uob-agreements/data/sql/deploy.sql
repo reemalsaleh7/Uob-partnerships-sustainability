@@ -47,6 +47,9 @@
 -- Comprehensive Agreement fields and normalized supporting records
 \ir migrations/20260721_comprehensive_agreement_fields.sql
 
+-- Controlled historical CSV import provenance
+\ir migrations/20260721_legacy_agreement_import_tracking.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 

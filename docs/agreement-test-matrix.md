@@ -244,6 +244,22 @@ Development-only password: `UobDev2026!`.
 | UI-33 | Open an existing legacy Initiative link     | Approved CSV detail remains readable for compatibility but absent from the PostgreSQL catalogue.       |
 | UI-34 | Stop PostgreSQL and open the catalogue      | Empty public state renders; the stale CSV catalogue is not silently restored.                          |
 
+## Controlled historical import checks
+
+| ID    | Scenario | Expected result |
+| ----- | -------- | --------------- |
+| IMP-01 | Run importer without `--commit` | Dry-run performs no writes and reports 41 ready rows on a clean database. |
+| IMP-02 | Commit a clean import | All 41 Agreements, partner links, version snapshots, audits, and provenance rows commit together. |
+| IMP-03 | Run importer after commit | All 41 rows are skipped by source hash; no Agreement or partner duplicates appear. |
+| IMP-04 | Existing untracked Agreement code | Conflict is reported and the whole commit is rolled back. |
+| IMP-05 | Previously imported row changes | Hash mismatch is reported; the imported Agreement is not overwritten. |
+| IMP-06 | Existing partner name has another country | Conflict is reported instead of merging different organizations. |
+| IMP-07 | Imported owner unit is unavailable | Raw owner label remains in provenance and public display; no organizational unit is invented. |
+| IMP-08 | Inspect imported workflow state | No workflow instance or active assignment exists for historical records. |
+| IMP-09 | Inspect imported version and audit | Exactly one immutable version and a controlled-import `INSERT` audit entry exist. |
+| IMP-10 | Inspect public output | Imported approved records appear, but provenance payload, hashes, warnings, versions, and audits remain private. |
+| IMP-11 | Modify, add, or remove a source CSV row | Canonical dataset identity fails before any database write. |
+
 ## Verified automated tests
 
 | Test file                                           | Coverage                                                                        |
@@ -263,6 +279,8 @@ Development-only password: `UobDev2026!`.
 | `tests/PresidentRejectionSmokeTest.php`           | Terminal President rejection.                                                   |
 | `tests/AgreementDocumentAuthorizationSmokeTest.php` | Creator/reviewer document visibility and active-assignment upload authorization. |
 | `tests/PublicAgreementRepositorySmokeTest.php`     | Approved inclusion, draft exclusion, stable reference, and public identity allow-list. |
+| `tests/LegacyAgreementCsvMapperSmokeTest.php`      | Forty-one source rows, required fields, multi-partner splitting, SDGs, rankings, metrics, and stable hashes. |
+| `tests/LegacyAgreementImportVerification.php`      | Import count, active status, immutable versions, audits, no workflows, and public publication. |
 
 ## Transaction rollback checks
 

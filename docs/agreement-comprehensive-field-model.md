@@ -103,3 +103,12 @@ The existing `agreement_relationships`, `agreement_actions`, workflow engine, ve
 - Commitment descriptions become required only when their corresponding flag is enabled.
 - Every save snapshots scalar and repeating child data in `agreement_versions.agreement_snapshot`.
 - Reviewers and the public catalogue receive only the fields allowed by their existing record-visibility or publication rules.
+
+## Historical import boundary
+
+The enriched 41-row `agreements.csv` dataset is imported by the controlled CLI
+workflow documented in `agreement-legacy-csv-import.md`. Each imported record
+receives provenance, a source hash, an immutable version, and an audit entry.
+The archived `agreementsold.csv` remains excluded pending manual data-quality
+review; using its schema during field design did not make its uncertain records
+safe to publish.

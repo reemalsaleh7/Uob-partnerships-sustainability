@@ -70,3 +70,15 @@ could expose stale or differently approved data.
    confirm the compatibility detail remains readable.
 
 No database migration is required for this phase.
+
+## Historical PostgreSQL population
+
+The later controlled import phase populates this publication query with the 41
+approved `agreements.csv` records. They are stored as `ACTIVE` Agreements and
+therefore pass the same public allow-list as newly approved records. Import
+provenance, raw payloads, source hashes, warnings, audit rows, and versions are
+not selected publicly. When no current organizational-unit row matches a
+legacy owner label, the public owner display uses that preserved source label.
+
+See `agreement-legacy-csv-import.md` for deduplication, dry-run, and rollback
+rules.

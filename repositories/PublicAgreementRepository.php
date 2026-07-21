@@ -102,6 +102,15 @@ final class PublicAgreementRepository
                 ), '') AS joint_programs,
                 COALESCE((
                     SELECT ou.name
+                    FROM organizational_units ou
+                    WHERE ou.unit_id = a.responsible_unit_id
+                ), (
+                    SELECT NULLIF(ali.source_payload->>'owner_entity', '')
+                    FROM agreement_legacy_imports ali
+                    WHERE ali.agreement_id = a.agreement_id
+                    LIMIT 1
+                ), (
+                    SELECT ou.name
                     FROM user_positions up
                     JOIN organizational_units ou
                         ON ou.unit_id = up.unit_id
