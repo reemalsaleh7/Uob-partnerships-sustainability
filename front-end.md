@@ -180,3 +180,9 @@ The partner lookup also adds the corresponding controller, service, repository, 
 
 The controlled replacement boundary is documented in `docs/agreement-legacy-replacement.md`. The publication boundary is documented in `docs/agreement-public-catalogue.md`.
 The historical migration boundary is documented in `docs/agreement-legacy-csv-import.md`.
+## Lifecycle-request documents
+
+The lifecycle request detail and shared lifecycle review screens now include a
+private, version-aware document panel. Its upload controls are driven by the
+backend's requester/status and active-assignment checks; hiding the form in the
+browser is not treated as authorization.

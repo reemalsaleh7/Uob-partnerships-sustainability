@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/lifecycle-request-documents.php';
 workspaceHeader('Lifecycle request review', 'workflow');
 ?>
 
@@ -35,6 +36,8 @@ workspaceHeader('Lifecycle request review', 'workflow');
             </div>
         </div>
     </section>
+
+    <?php lifecycleRequestDocumentsPanel('request_id', 'SUPPORTING'); ?>
 </div>
 
-<?php workspaceFooter(['assets/js/lifecycle-review.js']); ?>
+<?php workspaceFooter(['assets/js/lifecycle-review.js', 'assets/js/lifecycle-documents.js']); ?>

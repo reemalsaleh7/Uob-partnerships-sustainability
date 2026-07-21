@@ -6,8 +6,10 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../repositories/AgreementLifecycleRepository.php';
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
+require_once __DIR__ . '/../repositories/AgreementLifecycleDocumentRepository.php';
 require_once __DIR__ . '/PermissionService.php';
 require_once __DIR__ . '/AuditService.php';
+require_once __DIR__ . '/DocumentStorageService.php';
 
 class AgreementLifecycleService
 {
@@ -17,6 +19,8 @@ class AgreementLifecycleService
     private WorkflowRepository $workflows;
     private PermissionService $permissions;
     private AuditService $audit;
+    private AgreementLifecycleDocumentRepository $documents;
+    private DocumentStorageService $documentStorage;
 
     public function __construct()
     {
@@ -26,6 +30,198 @@ class AgreementLifecycleService
         $this->workflows = new WorkflowRepository();
         $this->permissions = new PermissionService();
         $this->audit = new AuditService();
+        $this->documents = new AgreementLifecycleDocumentRepository();
+        $this->documentStorage = new DocumentStorageService(
+            dirname(__DIR__) . '/storage/private/lifecycle-request-documents'
+        );
+    }
+
+    public function listDocuments(int $requestId, int $userId): array
+    {
+        $request = $this->documentAccessibleRequest($requestId, $userId);
+        if ($request === null) {
+            throw new DomainException('Lifecycle request not found');
+        }
+
+        $canUpload = $this->canUploadDocument($request, $userId);
+        $documents = array_map(function (array $document) use ($request, $userId): array {
+            $document['available'] = $this->documentStorage->absolutePath(
+                (string) $document['storage_key']
+            ) !== null;
+            $document['can_delete'] = $this->canDeleteDocument(
+                $request,
+                $document,
+                $userId
+            );
+            unset($document['storage_key']);
+            return $document;
+        }, $this->documents->findByRequest($requestId));
+
+        return [
+            'documents' => $documents,
+            'can_upload' => $canUpload,
+            'constraints' => [
+                'max_file_size_bytes' => DocumentStorageService::MAX_FILE_SIZE_BYTES,
+                'allowed_extensions' => DocumentStorageService::allowedExtensions(),
+            ],
+        ];
+    }
+
+    public function uploadDocument(
+        int $requestId,
+        array $uploadedFile,
+        string $documentType,
+        int $userId
+    ): array {
+        $request = $this->documentAccessibleRequest($requestId, $userId);
+        if ($request === null) {
+            throw new DomainException('Lifecycle request not found');
+        }
+        if (!$this->canUploadDocument($request, $userId)) {
+            throw new DomainException(
+                'Files may be uploaded only by the requester while editable or by the currently assigned reviewer'
+            );
+        }
+
+        $documentType = strtoupper(trim($documentType));
+        $allowedTypes = [
+            'REQUEST_FORM', 'SUPPORTING', 'PROPOSED_AMENDMENT',
+            'RENEWAL_EVIDENCE', 'TERMINATION_EVIDENCE',
+            'LEGAL_REVIEW', 'FINANCE_REVIEW',
+            'PRESIDENT_DECISION', 'OTHER',
+        ];
+        if (!in_array($documentType, $allowedTypes, true)) {
+            throw new InvalidArgumentException('Select a valid document type');
+        }
+
+        $version = $this->documents->latestVersion($requestId);
+        if ($version === null) {
+            throw new DomainException(
+                'The lifecycle request has no saved version for this file'
+            );
+        }
+
+        $storedFile = $this->documentStorage->store($uploadedFile);
+        $ownsTransaction = !$this->db->inTransaction();
+        try {
+            if ($ownsTransaction) {
+                $this->db->beginTransaction();
+            }
+            $documentId = $this->documents->create($requestId, [
+                'lifecycle_request_version_id' =>
+                    (int) $version['lifecycle_request_version_id'],
+                'file_name' => $storedFile['file_name'],
+                'storage_key' => $storedFile['storage_key'],
+                'mime_type' => $storedFile['mime_type'],
+                'file_size_bytes' => $storedFile['file_size_bytes'],
+                'sha256_checksum' => $storedFile['sha256_checksum'],
+                'document_type' => $documentType,
+                'uploaded_by' => $userId,
+            ]);
+            $this->audit->write(
+                'agreement_lifecycle_request_documents',
+                $documentId,
+                'INSERT',
+                $userId,
+                null,
+                [
+                    'lifecycle_request_id' => $requestId,
+                    'version_number' => (int) $version['version_number'],
+                    'file_name' => $storedFile['file_name'],
+                    'mime_type' => $storedFile['mime_type'],
+                    'file_size_bytes' => $storedFile['file_size_bytes'],
+                    'sha256_checksum' => $storedFile['sha256_checksum'],
+                    'document_type' => $documentType,
+                ]
+            );
+            if ($ownsTransaction) {
+                $this->db->commit();
+            }
+            return ['success' => true, 'document_id' => $documentId];
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            $this->documentStorage->delete((string) $storedFile['storage_key']);
+            throw $exception;
+        }
+    }
+
+    public function downloadDocument(int $documentId, int $userId): ?array
+    {
+        $document = $this->documents->findById($documentId);
+        if ($document === null || $this->documentAccessibleRequest(
+            (int) $document['lifecycle_request_id'],
+            $userId
+        ) === null) {
+            return null;
+        }
+
+        $absolutePath = $this->documentStorage->absolutePath(
+            (string) $document['storage_key']
+        );
+        if ($absolutePath === null) {
+            return null;
+        }
+        $actualChecksum = hash_file('sha256', $absolutePath);
+        if ($actualChecksum === false || !hash_equals(
+            (string) $document['sha256_checksum'],
+            $actualChecksum
+        )) {
+            throw new RuntimeException('Document integrity verification failed');
+        }
+
+        $document['absolute_path'] = $absolutePath;
+        unset($document['storage_key']);
+        return $document;
+    }
+
+    public function deleteDocument(int $documentId, int $userId): bool
+    {
+        $document = $this->documents->findById($documentId);
+        if ($document === null) {
+            return false;
+        }
+        $request = $this->documentAccessibleRequest(
+            (int) $document['lifecycle_request_id'],
+            $userId
+        );
+        if ($request === null) {
+            return false;
+        }
+        if (!$this->canDeleteDocument($request, $document, $userId)) {
+            throw new DomainException(
+                'You may delete only your own file while you can still upload to this request'
+            );
+        }
+
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) {
+            $this->db->beginTransaction();
+        }
+        try {
+            $this->documents->delete($documentId);
+            $auditRecord = $document;
+            unset($auditRecord['storage_key']);
+            $this->audit->write(
+                'agreement_lifecycle_request_documents',
+                $documentId,
+                'DELETE',
+                $userId,
+                $auditRecord,
+                ['deleted' => true]
+            );
+            if ($ownsTransaction) {
+                $this->db->commit();
+            }
+            $this->documentStorage->delete((string) $document['storage_key']);
+            return true;
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function findAll(int $userId): array
@@ -689,6 +885,63 @@ class AgreementLifecycleService
             'status' => $status ?? 'UNDER_REVIEW',
             'current_stage' => $stage,
         ];
+    }
+
+    private function documentAccessibleRequest(
+        int $requestId,
+        int $userId
+    ): ?array {
+        $request = $this->requests->findById($requestId);
+        if ($request === null) {
+            return null;
+        }
+        if ($this->isAdministrator($userId)
+            || (int) $request['requested_by'] === $userId) {
+            return $request;
+        }
+
+        return $request['status'] === 'UNDER_REVIEW'
+            && $this->workflows->hasActiveAssignmentForEntity(
+                'AGREEMENT_LIFECYCLE',
+                $requestId,
+                $userId
+            )
+                ? $request
+                : null;
+    }
+
+    private function canUploadDocument(array $request, int $userId): bool
+    {
+        if ($this->isAdministrator($userId)) {
+            return true;
+        }
+        if ((int) $request['requested_by'] === $userId) {
+            return in_array(
+                $request['status'],
+                ['DRAFT', 'REVISION_REQUIRED'],
+                true
+            );
+        }
+
+        return $request['status'] === 'UNDER_REVIEW'
+            && $this->workflows->hasActiveAssignmentForEntity(
+                'AGREEMENT_LIFECYCLE',
+                (int) $request['lifecycle_request_id'],
+                $userId
+            );
+    }
+
+    private function canDeleteDocument(
+        array $request,
+        array $document,
+        int $userId
+    ): bool {
+        if ($this->isAdministrator($userId)) {
+            return true;
+        }
+
+        return (int) $document['uploaded_by'] === $userId
+            && $this->canUploadDocument($request, $userId);
     }
 
     private function isAdministrator(int $userId): bool

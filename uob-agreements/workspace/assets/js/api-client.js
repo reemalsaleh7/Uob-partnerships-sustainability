@@ -422,6 +422,28 @@
         lifecycleVersions(id) {
             return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}/versions`);
         },
+        lifecycleDocuments(id) {
+            return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}/documents`);
+        },
+        uploadLifecycleDocument(id, file, documentType) {
+            const body = new FormData();
+            body.append('file', file);
+            body.append('document_type', documentType);
+            return request(
+                `/agreement-lifecycle-requests/${encodeURIComponent(id)}/documents`,
+                { method: 'POST', body }
+            );
+        },
+        downloadLifecycleDocument(id) {
+            return download(
+                `/lifecycle-request-documents/${encodeURIComponent(id)}/download`
+            );
+        },
+        deleteLifecycleDocument(id) {
+            return request(`/lifecycle-request-documents/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            });
+        },
         createLifecycleRequest(agreementId, data) {
             return request(`/agreements/${encodeURIComponent(agreementId)}/lifecycle-requests`, {
                 method: 'POST',

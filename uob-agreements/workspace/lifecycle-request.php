@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/lifecycle-request-documents.php';
 workspaceHeader('Lifecycle request details', 'lifecycle');
 ?>
 
@@ -28,6 +29,8 @@ workspaceHeader('Lifecycle request details', 'lifecycle');
         <div class="workspace-card-header"><div><h2 class="h5 mb-1">Request version history</h2><p class="small text-secondary mb-0">Immutable snapshots of each saved draft and revision.</p></div></div>
         <div class="table-responsive"><table class="table workspace-table align-middle mb-0"><thead><tr><th>Version</th><th>Summary</th><th>Created by</th><th>Created</th></tr></thead><tbody data-version-rows></tbody></table></div>
     </section>
+
+    <?php lifecycleRequestDocumentsPanel('id', 'SUPPORTING'); ?>
 </div>
 
-<?php workspaceFooter(['assets/js/lifecycle-request.js']); ?>
+<?php workspaceFooter(['assets/js/lifecycle-request.js', 'assets/js/lifecycle-documents.js']); ?>

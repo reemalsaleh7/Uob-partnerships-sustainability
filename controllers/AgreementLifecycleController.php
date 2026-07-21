@@ -42,6 +42,88 @@ class AgreementLifecycleController
         Response::success($versions);
     }
 
+    public function documents(int $requestId): void
+    {
+        $this->requireView();
+        try {
+            Response::success($this->service->listDocuments(
+                $requestId,
+                $this->userId()
+            ));
+        } catch (DomainException $exception) {
+            Response::error('Lifecycle request not found', 404);
+        }
+    }
+
+    public function uploadDocument(int $requestId): void
+    {
+        $this->requireView();
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            Response::error('Choose a document to upload', 422);
+        }
+        try {
+            Response::success($this->service->uploadDocument(
+                $requestId,
+                $_FILES['file'],
+                (string) ($_POST['document_type'] ?? 'OTHER'),
+                $this->userId()
+            ));
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
+    }
+
+    public function downloadDocument(int $documentId): void
+    {
+        $this->requireView();
+        $document = $this->service->downloadDocument(
+            $documentId,
+            $this->userId()
+        );
+        if ($document === null) {
+            Response::error('Document not found', 404);
+        }
+
+        $absolutePath = (string) $document['absolute_path'];
+        $fileName = basename(str_replace(
+            '\\',
+            '/',
+            (string) $document['file_name']
+        ));
+        $mimeType = (string) ($document['mime_type'] ?? 'application/octet-stream');
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header_remove('Content-Type');
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . (string) filesize($absolutePath));
+        header('Content-Disposition: attachment; filename="document"; filename*=UTF-8\'\'' . rawurlencode($fileName));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store, max-age=0');
+        readfile($absolutePath);
+        exit;
+    }
+
+    public function deleteDocument(int $documentId): void
+    {
+        $this->requireView();
+        try {
+            if (!$this->service->deleteDocument($documentId, $this->userId())) {
+                Response::error('Document not found', 404);
+            }
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        }
+        Response::success(['message' => 'Document deleted']);
+    }
+
     public function create(int $agreementId): void
     {
         AuthMiddleware::handle();

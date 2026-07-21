@@ -23,6 +23,14 @@ if ($method === 'GET' && $uri === '/agreement-lifecycle-requests') {
     $controller->submit((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/agreement-lifecycle-requests/([0-9]+)/versions$#', $uri, $matches)) {
     $controller->versions((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/agreement-lifecycle-requests/([0-9]+)/documents$#', $uri, $matches)) {
+    $controller->documents((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreement-lifecycle-requests/([0-9]+)/documents$#', $uri, $matches)) {
+    $controller->uploadDocument((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/lifecycle-request-documents/([0-9]+)/download$#', $uri, $matches)) {
+    $controller->downloadDocument((int) $matches[1]);
+} elseif ($method === 'DELETE' && preg_match('#^/lifecycle-request-documents/([0-9]+)$#', $uri, $matches)) {
+    $controller->deleteDocument((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/lifecycle-workflow-instances/([0-9]+)/decide$#', $uri, $matches)) {
     $controller->decide((int) $matches[1]);
 } else {

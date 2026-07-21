@@ -73,3 +73,30 @@ Decision payload:
 
 `include_finance` is considered only at `VP_INITIAL`. `RETURN` and `REJECT`
 require a non-empty reason.
+## Secure request documents
+
+Lifecycle requests have a private document collection separate from the
+Agreement's own documents. Every new file is linked to the latest immutable
+lifecycle-request version at upload time.
+
+Supported types are request form, supporting evidence, proposed amendment,
+renewal evidence, termination evidence, Legal review, Finance review,
+President decision, and other. PDF, DOC, and DOCX files are accepted up to
+10 MB and use the same signature, MIME, macro, filename, checksum, and private
+storage controls as Agreement documents.
+
+Access is deliberately narrower than lifecycle-record visibility:
+
+- the requester can read files throughout the request and upload/delete their
+  own files only in `DRAFT` or `REVISION_REQUIRED`;
+- the exact active reviewer can read files and upload/delete their own files;
+- reviewer access ends immediately when the assignment closes;
+- a System Administrator can manage files for recovery and support;
+- no storage key or server path is included in API responses.
+
+Routes:
+
+- `GET /agreement-lifecycle-requests/{id}/documents`
+- `POST /agreement-lifecycle-requests/{id}/documents`
+- `GET /lifecycle-request-documents/{id}/download`
+- `DELETE /lifecycle-request-documents/{id}`

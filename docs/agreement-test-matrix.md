@@ -312,3 +312,15 @@ Operations requiring rollback verification include:
 - VP routing.
 - Creator redraft resubmission.
 - Direct VP return or rejection.
+## Lifecycle-request document authorization
+
+| Case | Expected result |
+| --- | --- |
+| Requester opens a lifecycle draft | Can list and upload request documents |
+| VP opens another user's unsubmitted request | Request/document endpoints return not found |
+| Requester opens a submitted request | Can download but cannot upload or delete |
+| Active reviewer opens assigned request | Can list, download, and upload documents |
+| Reviewer completes their task | Document access ends immediately |
+| Next reviewer opens the request | Document access is granted for the active task |
+| User changes request/document IDs manually | No metadata or file bytes are returned |
+| File checksum differs from stored checksum | Download is blocked |

@@ -53,6 +53,9 @@
 -- Amendment, renewal, and termination request workflow
 \ir migrations/20260721_agreement_lifecycle_workflow.sql
 
+-- Secure lifecycle-request evidence and review documents
+\ir migrations/20260721_secure_lifecycle_request_documents.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 

@@ -709,3 +709,6 @@ WHERE is_active = TRUE;
 
 -- Add the governed amendment, renewal, and termination request workflow.
 \ir migrations/20260721_agreement_lifecycle_workflow.sql
+
+-- Add private, version-linked lifecycle-request documents.
+\ir migrations/20260721_secure_lifecycle_request_documents.sql
