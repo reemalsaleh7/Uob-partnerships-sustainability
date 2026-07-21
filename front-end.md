@@ -1,6 +1,8 @@
-# Agreement frontend — complete workflow and controlled legacy replacement
+# Agreement frontend — complete workflow and PostgreSQL public catalogue
 
-This package provides the protected internal Agreement workspace and makes it the canonical Agreement administration interface. The existing public CSV-driven `uob-agreements/agreements.php` catalogue remains available until a separate publication model is implemented.
+This package provides the protected internal Agreement workspace, makes it the canonical Agreement administration interface, and publishes only approved or active PostgreSQL Agreements to `uob-agreements/agreements.php`.
+
+The draft editor is now a comprehensive nine-section form combining the official cooperation request, MOU, executive-program, legacy form, and CSV reporting fields. It captures multiple partners; bilingual titles; duration and renewal; need, objectives, value, focus and cooperation fields; commitments; rankings and SDGs; monitoring and legal clauses; coordinators and signatories; an executive program; outcome metrics; and a public signing link. The Agreement detail screen renders the complete record, while applicant, organizational, submission, approval, and status data remain system-derived.
 
 ## Included
 
@@ -13,7 +15,7 @@ This package provides the protected internal Agreement workspace and makes it th
 - Client-side title/type/status/ID filtering.
 - Agreement detail loaded from `GET /api/index.php/agreements/{id}`.
 - Version history loaded from `GET /api/index.php/agreements/{id}/versions`.
-- Active partner selection loaded from `GET /api/index.php/partners`.
+- Multiple active partner selection loaded from `GET /api/index.php/partners`.
 - Create Agreement draft using `POST /api/index.php/agreements`.
 - Edit a draft or returned Agreement using `PUT /api/index.php/agreements/{id}`.
 - Submit a draft into the approval workflow using `POST /api/index.php/agreements/{id}/submit`.
@@ -36,24 +38,27 @@ This package provides the protected internal Agreement workspace and makes it th
 - Responsive UOB-styled Bootstrap layout.
 - DOM-safe rendering with `textContent` rather than HTML interpolation.
 - Controlled replacement of legacy Agreement add/review routes with non-cacheable redirects to the authenticated workspace.
-- A reversible rollout switch that keeps Initiative administration and public Agreement pages unchanged.
+- A reversible rollout switch that keeps Initiative administration unchanged while retiring legacy internal Agreement pages.
+- PostgreSQL-backed public catalogue restricted to `APPROVED` and `ACTIVE` Agreements.
+- Stable `UOB-AGR-######` public references and an explicit non-sensitive field allow-list.
+- Compatibility-only approved legacy detail lookup for Initiative links; legacy rows are not listed in the catalogue.
 
 Create, edit, submit, redraft, workflow, and document controls are displayed only when the authenticated user owns the applicable record or active workflow assignment and has the required permission. Physical files are served only through the authenticated API; private storage paths are never exposed to the browser.
 
 ## Install
 
-Copy the supplied project files into the repository root while preserving their paths. The controlled replacement phase updates shared public-site navigation, legacy administrator routes, configuration, and documentation in addition to the existing workspace:
+Copy the supplied project files into the repository root while preserving their paths. The public-catalogue phase adds the public repository, adapter, public pages, regression test, and documentation:
 
 ```text
 Uob-partnerships-sustainability/
+├── repositories/
+├── tests/
 ├── docs/
 ├── front-end.md
 └── uob-agreements/
-    ├── admin/
     ├── includes/
     ├── agreements.php
-    ├── header.php
-    └── login.php
+    └── agreement-details.php
 ```
 
 Replace matching files. Do not delete the public Agreement catalogue, public detail page, or any Initiative files.
@@ -147,8 +152,12 @@ Then open the workspace and verify:
 44. Open `admin/review-agreements.php`, `admin/agreements.php`, and `admin/edit-agreement.php`; confirm each reaches the protected Agreement register.
 45. Repeat the legacy-route checks while signed out and confirm workspace login returns to the requested canonical page after authentication.
 46. Open Agreement actions from the legacy administrator dashboard and header; confirm they use the workspace.
-47. Confirm the public `uob-agreements/agreements.php` catalogue and `agreement-details.php` still render.
+47. Complete a President approval and confirm the public catalogue lists the new PostgreSQL Agreement.
 48. Confirm Initiative administration routes remain unchanged.
+49. Confirm draft, in-review, returned, and rejected Agreements do not appear in the public catalogue.
+50. Open a listed Agreement and confirm its public reference, title, type, partner, country, status, summary, and responsible unit render.
+51. Confirm creator/reviewer identity, workflow comments, versions, audits, and private documents are absent from public output.
+52. Open an existing Initiative with a legacy approved Agreement code and confirm its compatibility detail still opens without adding the row to the catalogue.
 
 The frontend files are under:
 
@@ -158,4 +167,4 @@ uob-agreements/workspace/
 
 The partner lookup also adds the corresponding controller, service, repository, and route in the existing backend layers.
 
-The controlled replacement design and rollback boundary are documented in `docs/agreement-legacy-replacement.md`.
+The controlled replacement boundary is documented in `docs/agreement-legacy-replacement.md`. The publication boundary is documented in `docs/agreement-public-catalogue.md`.

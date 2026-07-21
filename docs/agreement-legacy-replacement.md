@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The authenticated Agreement workspace is now the canonical internal interface for creating, reviewing, revising, approving, rejecting, and managing Agreement documents. This phase retires the CSV-based internal Agreement administration paths without changing the public Agreement catalogue or the Initiative module.
+The authenticated Agreement workspace is now the canonical internal interface for creating, reviewing, revising, approving, rejecting, and managing Agreement documents. This phase retires the CSV-based internal Agreement administration paths. The subsequent public-catalogue phase changes the catalogue to PostgreSQL while leaving the Initiative module unchanged.
 
 ## Canonical internal routes
 
@@ -42,13 +42,12 @@ Legacy Agreement codes are not guessed or translated to PostgreSQL numeric IDs. 
 
 This phase does **not** remove or replace:
 
-- `uob-agreements/agreements.php`, the public CSV-backed Agreement catalogue.
-- `uob-agreements/agreement-details.php`, the public Agreement detail page.
-- Public Agreement links used by Initiative and SDG pages.
+- The approved legacy Agreement detail compatibility lookup used by existing Initiative links.
+- Initiative and SDG data ownership or relationships.
 - Initiative creation, review, administration, CSV files, or Initiative workflows.
 - The legacy Agreement source code below the redirect guard, until production acceptance is complete.
 
-The public catalogue remains separate because it has public presentation fields and Initiative/SDG relationships that are not yet published from the PostgreSQL Agreement model.
+The public catalogue is now PostgreSQL-backed and uses the core fields available in the Agreement model. Optional legacy map/SDG/publication metadata remains outside this phase. Existing approved legacy detail links remain readable until the Initiative relationship migration is complete.
 
 ## Rollout switch and rollback
 
@@ -60,7 +59,7 @@ define('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN', true);
 
 Set it to `false` only as a temporary rollback during acceptance testing. The old add/review pages and legacy navigation then become reachable again. The compatibility-only edit alias remains redirected because there was no safe legacy-code-to-database-ID mapping. Do not leave both systems writable in normal operation, because they use different data stores and would diverge.
 
-Once production acceptance is complete and the public publication model is implemented, the unreachable legacy Agreement management code and the temporary switch can be removed in a later cleanup commit.
+Once production acceptance and the Initiative relationship migration are complete, the unreachable legacy Agreement management code, compatibility detail lookup, and temporary switch can be removed in a later cleanup commit.
 
 ## Acceptance checks
 

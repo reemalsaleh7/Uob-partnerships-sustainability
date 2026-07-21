@@ -40,13 +40,8 @@ class AgreementController {
         PermissionMiddleware::require('CREATE_AGREEMENT');
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        $data = [
-            'title' => $input['title'] ?? null,
-            'agreement_type' => $input['agreement_type'] ?? null,
-            'description' => $input['description'] ?? null,
-            'partner_id' => $input['partner_id'] ?? null,
-            'created_by' => (int) ($_SESSION['user_id'] ?? 0),
-        ];
+        $data = $this->agreementInput($input);
+        $data['created_by'] = (int) ($_SESSION['user_id'] ?? 0);
 
         $result = $this->agreementService->createAgreement($data);
         if (!$result['success']) {
@@ -61,14 +56,9 @@ class AgreementController {
         PermissionMiddleware::require('EDIT_AGREEMENT');
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        $data = [
-            'title' => $input['title'] ?? null,
-            'agreement_type' => $input['agreement_type'] ?? null,
-            'description' => $input['description'] ?? null,
-            'partner_id' => $input['partner_id'] ?? null,
-            'change_summary' => $input['change_summary'] ?? null,
-            'updated_by' => (int) ($_SESSION['user_id'] ?? 0),
-        ];
+        $data = $this->agreementInput($input);
+        $data['change_summary'] = $input['change_summary'] ?? null;
+        $data['updated_by'] = (int) ($_SESSION['user_id'] ?? 0);
 
         $result = $this->agreementService->updateAgreement($agreementId, $data);
         if (!$result['success']) {
@@ -279,5 +269,65 @@ class AgreementController {
         }
 
         Response::success(['message' => 'Document deleted']);
+    }
+
+    private function agreementInput(array $input): array
+    {
+        $scalarFields = [
+            'title', 'title_ar', 'agreement_type', 'description',
+            'geographic_scope', 'start_date', 'end_date', 'effective_date',
+            'signing_date', 'renewal_term_months', 'non_renewal_notice_months',
+            'termination_notice_months', 'responsible_unit_id',
+            'need_justification', 'expected_value', 'objectives', 'focus_areas',
+            'collaboration_areas', 'implementation_methods', 'financial_amount',
+            'financial_currency', 'financial_description',
+            'human_resources_description', 'training_programs_description',
+            'monitoring_plan', 'confidentiality_terms',
+            'intellectual_property_terms', 'compliance_terms',
+            'relationship_disclaimer', 'amendment_terms',
+            'dispute_resolution_terms', 'other_terms',
+            'legal_binding_status', 'signing_link',
+        ];
+        $booleanFields = [
+            'auto_renew', 'financial_commitments',
+            'human_resources_commitments', 'training_programs',
+            'annual_report_required',
+        ];
+        $data = [];
+
+        foreach ($scalarFields as $field) {
+            if (array_key_exists($field, $input)) {
+                $data[$field] = $input[$field];
+            }
+        }
+        foreach ($booleanFields as $field) {
+            if (array_key_exists($field, $input)) {
+                $data[$field] = filter_var(
+                    $input[$field],
+                    FILTER_VALIDATE_BOOLEAN,
+                    FILTER_NULL_ON_FAILURE
+                ) ?? false;
+            }
+        }
+
+        if (array_key_exists('partner_ids', $input) || array_key_exists('partner_id', $input)) {
+            $partnerIds = $input['partner_ids'] ?? [];
+            if (!is_array($partnerIds)) {
+                $partnerIds = [];
+            }
+            if (empty($partnerIds) && !empty($input['partner_id'])) {
+                $partnerIds = [$input['partner_id']];
+            }
+            $data['partner_ids'] = $partnerIds;
+            $data['partner_id'] = $partnerIds[0] ?? null;
+        }
+
+        foreach (['sdgs', 'rankings', 'contacts', 'executive_programs', 'metrics'] as $field) {
+            if (array_key_exists($field, $input)) {
+                $data[$field] = is_array($input[$field]) ? $input[$field] : [];
+            }
+        }
+
+        return $data;
     }
 }

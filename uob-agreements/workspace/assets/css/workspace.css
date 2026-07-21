@@ -315,6 +315,32 @@ main {
     gap: 0.75rem;
 }
 
+.sdg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: .65rem;
+}
+
+.sdg-option,
+.contact-row,
+.metric-row {
+    border: 1px solid var(--workspace-border, #dfe4ea);
+    border-radius: .75rem;
+    padding: 1rem;
+    background: #fff;
+}
+
+.contact-row legend {
+    float: none;
+    width: auto;
+    padding: 0 .25rem;
+}
+
+.comprehensive-detail-grid dd {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
 .detail-actions {
     display: flex;
     flex-wrap: wrap;

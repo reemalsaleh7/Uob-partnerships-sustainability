@@ -698,3 +698,8 @@ CREATE INDEX idx_workflow_instance_steps_status ON workflow_instance_steps(statu
 CREATE UNIQUE INDEX uq_active_position_assignment
 ON user_positions(position_id, unit_id)
 WHERE is_active = TRUE;
+
+-- Apply the backward-compatible comprehensive Agreement extension.
+-- Kept as an include so this consolidated deployment entry point and the
+-- modular deployment script execute the same idempotent migration.
+\ir migrations/20260721_comprehensive_agreement_fields.sql

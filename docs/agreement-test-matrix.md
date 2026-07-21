@@ -1,6 +1,18 @@
 
 # Agreement regression matrix
 
+## Comprehensive field regression
+
+1. Apply `20260721_comprehensive_agreement_fields.sql` twice and confirm both runs succeed.
+2. Create a draft with two partners, Arabic/English titles, dates, objectives, impact, commitments, rankings, SDGs, four contact roles, one executive program, all three metrics, and a signing link.
+3. Reload the edit form and confirm every scalar, selected partner, checkbox, contact, program, and metric is restored.
+4. Save the draft and confirm the latest `agreement_versions.agreement_snapshot` contains the same nested partner, SDG, ranking, contact, program, and metric arrays.
+5. Attempt submission without dates, need/justification, objectives, expected value, collaboration areas, or implementation methods; confirm the API returns `422` and no workflow is created.
+6. Complete the required fields and submit; confirm Initial VP activates normally.
+7. Complete the workflow and confirm only approved public fields appear in the PostgreSQL catalogue. Contacts, clauses, workflow comments, versions, and private documents must remain absent from public output.
+8. Update an existing Agreement with the former four-field API payload and confirm omitted comprehensive child collections are preserved rather than erased.
+9. Confirm `agreement_lifecycle_requests` exists, but no base Agreement form field can overwrite an approved Agreement as a renewal, amendment, or termination.
+
 Run these scenarios against the development fixtures after applying all migrations and restarting Apache. Service smoke tests execute inside transactions and roll back temporary records. HTTP lifecycle tests persist only the explicitly created development record.
 
 ## Development actors
@@ -217,9 +229,20 @@ Development-only password: `UobDev2026!`.
 | UI-23 | Open legacy review/list/edit routes                  | `302` to `workspace/agreements.php`; no CSV management page renders.                            |
 | UI-24 | Follow a legacy redirect without a workspace session | Workspace login appears and safely returns to the intended canonical page after authentication. |
 | UI-25 | Use legacy administrator Agreement navigation       | Create, register, and workflow actions open the authenticated workspace.                         |
-| UI-26 | Open public Agreement catalogue and details          | Public pages continue to render; Initiative and SDG links are not changed.                       |
+| UI-26 | Open public Agreement catalogue and details          | Public pages render approved/active PostgreSQL Agreements; Initiative routes are unchanged.       |
 | UI-27 | Use Initiative administration                       | Initiative pages retain their existing routes and behavior.                                     |
 | UI-28 | Temporarily disable the rollout switch locally       | Legacy add/review pages render again for rollback verification; re-enable immediately afterward. |
+
+## Public PostgreSQL catalogue checks
+
+| ID    | Scenario                                    | Expected result                                                                                        |
+| ----- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| UI-29 | Complete President approval                 | The `APPROVED` Agreement appears in the unauthenticated public catalogue.                             |
+| UI-30 | Create, submit, return, or reject Agreement | Private/non-published statuses never appear in the public catalogue.                                   |
+| UI-31 | Open a PostgreSQL catalogue detail          | Generated `UOB-AGR-######` reference resolves to the Agreement and its allow-listed public fields.    |
+| UI-32 | Inspect public HTML and query output        | No identity, workflow comment, version, audit, document, or private storage data is exposed.           |
+| UI-33 | Open an existing legacy Initiative link     | Approved CSV detail remains readable for compatibility but absent from the PostgreSQL catalogue.       |
+| UI-34 | Stop PostgreSQL and open the catalogue      | Empty public state renders; the stale CSV catalogue is not silently restored.                          |
 
 ## Verified automated tests
 
@@ -239,6 +262,7 @@ Development-only password: `UobDev2026!`.
 | `tests/VpDirectDecisionSmokeTest.php`             | Initial and Final VP direct return/rejection.                                   |
 | `tests/PresidentRejectionSmokeTest.php`           | Terminal President rejection.                                                   |
 | `tests/AgreementDocumentAuthorizationSmokeTest.php` | Creator/reviewer document visibility and active-assignment upload authorization. |
+| `tests/PublicAgreementRepositorySmokeTest.php`     | Approved inclusion, draft exclusion, stable reference, and public identity allow-list. |
 
 ## Transaction rollback checks
 

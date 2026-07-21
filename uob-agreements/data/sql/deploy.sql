@@ -44,6 +44,9 @@
 \ir tables/audit_logs.sql
 \ir tables/agreement_documents.sql
 
+-- Comprehensive Agreement fields and normalized supporting records
+\ir migrations/20260721_comprehensive_agreement_fields.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 

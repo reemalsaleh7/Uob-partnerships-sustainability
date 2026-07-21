@@ -29,6 +29,67 @@
         }
     }
 
+    function yesNo(value) {
+        return value === true || value === 1 || value === '1' || value === 't' || value === 'true'
+            ? 'Yes'
+            : 'No';
+    }
+
+    function setField(name, value) {
+        setText(`[data-field="${name}"]`, value === '' || value == null ? '—' : value);
+    }
+
+    function summaryItem(label, value) {
+        const item = document.createElement('div');
+        item.className = 'mb-3';
+        const heading = document.createElement('strong');
+        heading.className = 'd-block small text-secondary';
+        heading.textContent = label;
+        const content = document.createElement('span');
+        content.textContent = value || '—';
+        item.append(heading, content);
+        return item;
+    }
+
+    function renderRelatedRecords(agreement) {
+        const contacts = document.querySelector('[data-contact-summary]');
+        contacts.replaceChildren();
+        if (!(agreement.contacts || []).length) {
+            contacts.append(summaryItem('Contacts', 'No coordinators or signatories recorded.'));
+        } else {
+            agreement.contacts.forEach((contact) => {
+                const label = `${contact.party_type === 'UOB' ? 'UOB' : 'Partner'} ${String(contact.contact_role).toLowerCase()}`;
+                const value = [contact.full_name, contact.job_title, contact.email, contact.phone].filter(Boolean).join(' · ');
+                contacts.append(summaryItem(label, value));
+            });
+        }
+
+        const programs = document.querySelector('[data-program-summary]');
+        programs.replaceChildren();
+        (agreement.executive_programs || []).forEach((program) => {
+            programs.append(
+                summaryItem('Program', program.title),
+                summaryItem('Description', program.description),
+                summaryItem('Objectives', program.objectives),
+                summaryItem('Expected outputs', program.expected_outputs),
+                summaryItem('Timeline', [program.start_date, program.end_date].filter(Boolean).join(' to ')),
+                summaryItem('Responsible entity', program.responsible_entity)
+            );
+        });
+        (agreement.metrics || []).forEach((metric) => {
+            const label = String(metric.metric_code).replaceAll('_', ' ').toLowerCase();
+            const value = [
+                metric.planned_value != null ? `Planned: ${metric.planned_value}` : '',
+                metric.actual_value != null ? `Actual: ${metric.actual_value}` : '',
+                metric.notes
+            ].filter(Boolean).join(' · ');
+            programs.append(summaryItem(label, value));
+        });
+        if (!(agreement.executive_programs || []).length && !(agreement.metrics || []).length) {
+            programs.append(summaryItem('Programs and outcomes', 'No executive program or outcome metrics recorded.'));
+        }
+    }
+
     function agreementId() {
         const value = new URLSearchParams(window.location.search).get('id');
 
@@ -45,7 +106,7 @@
         setText('[data-agreement-type]', agreement.agreement_type);
         setText(
             '[data-partner-name]',
-            agreement.partner_name || (
+            (agreement.partner_names || []).join(', ') || agreement.partner_name || (
                 agreement.partner_id
                     ? `Partner #${agreement.partner_id}`
                     : '—'
@@ -55,6 +116,33 @@
         setText('[data-created-by]', agreement.created_by);
         setText('[data-created-at]', AgreementApi.formatDate(agreement.created_at));
         setText('[data-updated-at]', AgreementApi.formatDate(agreement.updated_at));
+
+        [
+            'title_ar', 'geographic_scope', 'start_date', 'end_date',
+            'signing_date', 'effective_date', 'legal_binding_status',
+            'responsible_unit_name', 'need_justification', 'objectives',
+            'expected_value', 'focus_areas', 'collaboration_areas',
+            'implementation_methods', 'monitoring_plan', 'confidentiality_terms',
+            'intellectual_property_terms', 'compliance_terms',
+            'relationship_disclaimer', 'amendment_terms',
+            'dispute_resolution_terms', 'other_terms', 'signing_link'
+        ].forEach((field) => setField(field, agreement[field]));
+        setField('auto_renew', yesNo(agreement.auto_renew));
+        setField('annual_report_required', yesNo(agreement.annual_report_required));
+        setField('renewal_term_months', agreement.renewal_term_months == null ? '—' : `${agreement.renewal_term_months} months`);
+        setField('non_renewal_notice_months', agreement.non_renewal_notice_months == null ? '—' : `${agreement.non_renewal_notice_months} months`);
+        setField('termination_notice_months', agreement.termination_notice_months == null ? '—' : `${agreement.termination_notice_months} months`);
+        setField(
+            'financial_summary',
+            yesNo(agreement.financial_commitments) === 'Yes'
+                ? [agreement.financial_amount, agreement.financial_currency, agreement.financial_description].filter(Boolean).join(' · ')
+                : 'None'
+        );
+        setField('human_resources_summary', yesNo(agreement.human_resources_commitments) === 'Yes' ? (agreement.human_resources_description || 'Yes') : 'None');
+        setField('training_programs_summary', yesNo(agreement.training_programs) === 'Yes' ? (agreement.training_programs_description || 'Yes') : 'None');
+        setField('rankings_summary', (agreement.rankings || []).map((value) => value.replaceAll('_', ' ')).join(', ') || 'Not applicable');
+        setField('sdgs_summary', (agreement.sdgs || []).map((value) => `SDG ${value}`).join(', ') || 'None selected');
+        renderRelatedRecords(agreement);
 
         const status = document.querySelector('[data-agreement-status]');
         status.replaceChildren(AgreementApi.createStatusBadge(agreement.status));

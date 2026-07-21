@@ -107,6 +107,71 @@ Returns active partners ordered by organization name. The response contains `par
 }
 ```
 
+The former four-field payload remains valid for saving a draft. The workspace now sends the comprehensive payload below; fields not yet known may be empty until formal submission:
+
+```json
+{
+  "title": "Research Collaboration MOU",
+  "title_ar": "مذكرة تفاهم للتعاون البحثي",
+  "agreement_type": "Memorandum of Understanding",
+  "geographic_scope": "INTERNATIONAL",
+  "partner_ids": [1, 3],
+  "description": "Brief cooperation profile",
+  "start_date": "2026-09-01",
+  "end_date": "2029-08-31",
+  "auto_renew": true,
+  "renewal_term_months": 36,
+  "non_renewal_notice_months": 6,
+  "termination_notice_months": 6,
+  "need_justification": "Institutional need and rationale",
+  "objectives": "Joint research\nFaculty exchange",
+  "expected_value": "Expected University impact",
+  "focus_areas": "Research; academic collaboration",
+  "collaboration_areas": "Approved MOU fields of cooperation",
+  "implementation_methods": "Written programs and joint coordination",
+  "financial_commitments": false,
+  "human_resources_commitments": true,
+  "human_resources_description": "Named academic coordinators",
+  "training_programs": true,
+  "training_programs_description": "Annual joint workshops",
+  "rankings": ["QS_WORLD", "THE_IMPACT"],
+  "sdgs": [4, 9, 17],
+  "legal_binding_status": "NON_BINDING",
+  "annual_report_required": true,
+  "contacts": [
+    {
+      "party_type": "UOB",
+      "contact_role": "COORDINATOR",
+      "full_name": "Coordinator name",
+      "job_title": "Professor",
+      "email": "coordinator@uob.edu.bh",
+      "phone": "+973..."
+    }
+  ],
+  "executive_programs": [
+    {
+      "title": "Joint Research Launch Program",
+      "description": "Program summary",
+      "objectives": "Program objectives",
+      "expected_outputs": "Expected outputs",
+      "start_date": "2026-10-01",
+      "end_date": "2027-05-31",
+      "responsible_entity": "College of Science"
+    }
+  ],
+  "metrics": [
+    {
+      "metric_code": "JOINT_PROGRAMS",
+      "planned_value": 1,
+      "actual_value": null,
+      "notes": "One planned program"
+    }
+  ]
+}
+```
+
+The server snapshots scalar fields, partners, SDGs, rankings, contacts, executive programs, and metrics in one transaction. See `docs/agreement-comprehensive-field-model.md` for the source mapping and ownership rules.
+
 The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement. The update controller accepts only Agreement content fields; clients cannot change workflow status through the general update endpoint.
 
 ### Agreement visibility
@@ -161,6 +226,8 @@ Each update creates an immutable row in `agreement_versions` containing a JSON s
 `POST /agreements/{id}/submit`
 
 Only a `DRAFT` Agreement can start a new workflow. Eligible initiators are a Dean, VP Office member, or President Office member.
+
+Before starting the workflow, the service enforces formal-request completeness: partner(s), geographic scope, start/end dates, description, need and justification, objectives, expected value, collaboration areas, and implementation methods. Conditional commitment descriptions are validated when their flags are enabled.
 
 Example response:
 

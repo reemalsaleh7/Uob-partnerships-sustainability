@@ -44,14 +44,11 @@ class AgreementService {
         $db = Database::connect();
         $db->beginTransaction();
         try {
-            $agreementId = $this->agreementRepo->create([
-                'title' => trim($data['title']),
-                'agreement_type' => trim($data['agreement_type']),
-                'description' => trim($data['description']),
-                'created_by' => $data['created_by'],
-                'status' => AgreementStatus::DRAFT,
-            ]);
-            $this->agreementRepo->replacePartners($agreementId, [(int) $data['partner_id']]);
+            $content = $this->normalizeAgreementContent($data);
+            $content['created_by'] = $data['created_by'];
+            $content['status'] = AgreementStatus::DRAFT;
+            $agreementId = $this->agreementRepo->create($content);
+            $this->replaceAgreementCollections($agreementId, $data);
             $snapshot = $this->agreementRepo->findById($agreementId);
             $this->agreementVersionRepo->create($agreementId, [
                 'version_number' => 1,
@@ -108,10 +105,11 @@ class AgreementService {
                 ];
             }
 
-            $this->agreementRepo->update($agreementId, $data);
-            if (array_key_exists('partner_id', $data)) {
-                $this->agreementRepo->replacePartners($agreementId, [(int) $data['partner_id']]);
-            }
+            $this->agreementRepo->update(
+                $agreementId,
+                $this->normalizeAgreementContent($data)
+            );
+            $this->replaceAgreementCollections($agreementId, $data);
             $snapshot = $this->agreementRepo->findById($agreementId);
             $nextVersion = $this->agreementVersionRepo->findByAgreement($agreementId);
             $this->agreementVersionRepo->create($agreementId, [
@@ -192,6 +190,14 @@ class AgreementService {
                     'Only the original Agreement creator may submit this Agreement',
                 ],
             ];
+        }
+
+        $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (!empty($submissionErrors)) {
+            if ($ownsTransaction && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            return ['success' => false, 'errors' => $submissionErrors];
         }
 
         $workflow =
@@ -303,6 +309,11 @@ class AgreementService {
                     'Only a REVISION_REQUIRED Agreement may be resubmitted',
                 ],
             ];
+        }
+
+        $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (!empty($submissionErrors)) {
+            return ['success' => false, 'errors' => $submissionErrors];
         }
 
         $workflow = $this->workflowRepo->findActiveByEntity(
@@ -680,5 +691,42 @@ class AgreementService {
             $this->permissionService->getRoleNames($userId),
             true
         );
+    }
+
+    private function replaceAgreementCollections(int $agreementId, array $data): void {
+        if (array_key_exists('partner_ids', $data) || array_key_exists('partner_id', $data)) {
+            $partnerIds = is_array($data['partner_ids'] ?? null)
+                ? $data['partner_ids']
+                : [$data['partner_id'] ?? null];
+            $this->agreementRepo->replacePartners($agreementId, $partnerIds);
+        }
+        if (array_key_exists('sdgs', $data)) {
+            $this->agreementRepo->replaceSdgs($agreementId, $data['sdgs']);
+        }
+        if (array_key_exists('rankings', $data)) {
+            $this->agreementRepo->replaceRankings($agreementId, $data['rankings']);
+        }
+        if (array_key_exists('contacts', $data)) {
+            $this->agreementRepo->replaceContacts($agreementId, $data['contacts']);
+        }
+        if (array_key_exists('executive_programs', $data)) {
+            $this->agreementRepo->replaceExecutivePrograms(
+                $agreementId,
+                $data['executive_programs']
+            );
+        }
+        if (array_key_exists('metrics', $data)) {
+            $this->agreementRepo->replaceMetrics($agreementId, $data['metrics']);
+        }
+    }
+
+    private function normalizeAgreementContent(array $data): array {
+        $content = $data;
+        foreach ($content as $field => $value) {
+            if (is_string($value)) {
+                $content[$field] = trim($value);
+            }
+        }
+        return $content;
     }
 }

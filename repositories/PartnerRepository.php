@@ -20,7 +20,12 @@ class PartnerRepository
                 partner_id,
                 organization_name,
                 partner_type,
-                country
+                country,
+                city,
+                website,
+                logo_url,
+                latitude,
+                longitude
             FROM partners
             WHERE is_active = TRUE
             ORDER BY organization_name, partner_id
