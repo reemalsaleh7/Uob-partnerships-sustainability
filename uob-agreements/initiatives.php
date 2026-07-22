@@ -605,21 +605,16 @@ $gallerySlides = array_map(function($file){
     </div>
   </div>
 </section>
-
 <section class="sdg-sectionX sdg-sectionX-alt">
   <div class="container">
-    <div class="sdg-aboutX">
-      <div class="sdg-aboutX-media uob-reveal left">
-        <img src="<?= h($aboutImg) ?>" alt="<?= h(tt('uob_initiatives_alt')) ?>">
-      </div>
+    <div class="sdg-aboutX about-initiatives-only">
 
       <div class="sdg-aboutX-content uob-reveal right">
         <h2><?= h(tt('about_title')) ?></h2>
-        <div class="sdg-lineX"></div>
+        <div class="sdg-lineX center"></div>
         <p><?= h(tt('about_desc')) ?></p>
-
-        
       </div>
+
     </div>
   </div>
 </section>
