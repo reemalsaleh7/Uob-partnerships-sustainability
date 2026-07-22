@@ -44,6 +44,21 @@
 \ir tables/audit_logs.sql
 \ir tables/agreement_documents.sql
 
+-- Comprehensive Agreement fields and normalized supporting records
+\ir migrations/20260721_comprehensive_agreement_fields.sql
+
+-- Controlled historical CSV import provenance
+\ir migrations/20260721_legacy_agreement_import_tracking.sql
+
+-- Amendment, renewal, and termination request workflow
+\ir migrations/20260721_agreement_lifecycle_workflow.sql
+
+-- Secure lifecycle-request evidence and review documents
+\ir migrations/20260721_secure_lifecycle_request_documents.sql
+
+-- Create traceable successor Agreements after approved renewals/amendments
+\ir migrations/20260721_lifecycle_successor_agreements.sql
+
 -- Indexes
 \ir indexes/indexes.sql
 
@@ -61,6 +76,15 @@
 \ir seed/role_permissions.sql
 \ir seed/organizational_units.sql
 \ir seed/workflows.sql
+
+-- Finalized signing and date-controlled operational statuses
+\ir migrations/20260721_agreement_operational_status.sql
+
+-- Annual reports, executive-program progress, KPI results, and dashboards
+\ir migrations/20260721_agreement_performance_monitoring.sql
+
+-- Authentication, session, and release-integration hardening
+\ir migrations/20260721_agreement_integration_hardening.sql
 
 -- Views
 \ir views/organization_structure.sql

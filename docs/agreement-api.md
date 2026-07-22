@@ -1,0 +1,671 @@
+# Agreement API
+
+All state-changing workspace requests must include `X-UOB-Tab-Session`. JSON
+requests use `Content-Type: application/json`, contain a JSON object, and are
+limited to 1 MB. Malformed JSON returns `422`, unsupported media types return
+`415`, and oversized JSON returns `413`. Secure document uploads use multipart
+form data and retain their separate 10 MB limit.
+
+The Agreement API provides CRUD, versioning, document metadata, approval workflow, change-request, redraft, routing, and rejection operations.
+
+## Base URL and authentication
+
+Local XAMPP base URL:
+
+```text
+http://localhost/Uob-partnerships-sustainability/api/index.php
+```
+
+All endpoints require a PHP session unless stated otherwise. Traditional API clients may log in through `POST /login`, retain the `PHPSESSID` cookie, and send it with later requests.
+
+The Agreement workspace instead sends a cryptographically random tab identifier in the `X-UOB-Tab-Session` request header. The API returns the active identifier in the response header with the same name. The workspace stores it in browser `sessionStorage`, so separate tabs can sign in as different users and retain their own identities after refresh. A client using this header must replace its stored identifier when login returns a regenerated value.
+
+Successful responses use:
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+Error responses use:
+
+```json
+{
+  "success": false,
+  "error": "Error description"
+}
+```
+
+Common status codes:
+
+| Status  | Meaning                                                             |
+| ------- | ------------------------------------------------------------------- |
+| `200` | Request completed successfully.                                     |
+| `401` | No authenticated session.                                           |
+| `403` | The user lacks the required permission.                             |
+| `404` | Resource or route not found.                                        |
+| `409` | The requested workflow transition is invalid for the current state. |
+| `422` | Request validation failed.                                          |
+| `500` | Unexpected server error.                                            |
+
+## Authentication
+
+### Log in
+
+`POST /login`
+
+```json
+{
+  "email": "dev.vp@uob.test",
+  "password": "UobDev2026!"
+}
+```
+
+The fixture password is development-only and must never be used in production.
+
+### Current session
+
+`GET /me`
+
+Returns the authenticated user's identity, roles, permissions, and active positions.
+
+### Log out
+
+`POST /logout`
+
+## Agreement CRUD and supporting resources
+
+| Method     | Endpoint                                | Permission           | Purpose                                                                |
+| ---------- | --------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
+| `GET`    | `/agreements`                         | `VIEW_AGREEMENT`   | List Agreements visible to the authenticated user.                     |
+| `GET`    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get one Agreement when the authenticated user may view it.             |
+| `POST`   | `/agreements`                         | `CREATE_AGREEMENT` | Create a draft Agreement and version 1.                                |
+| `PUT`    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update a draft/returned Agreement and create a snapshot version.       |
+| `POST`   | `/agreements/{id}/submit`             | `SUBMIT_AGREEMENT` | Start the approval workflow and move the Agreement to`UNDER_REVIEW`. |
+| `POST`   | `/agreements/{id}/resubmit`           | `SUBMIT_AGREEMENT` | Resubmit a newly versioned returned Agreement to Initial VP.           |
+| `DELETE` | `/agreements/{id}`                    | `DELETE_AGREEMENT` | Delete the Agreement.                                                  |
+| `GET`    | `/agreements/{id}/versions`           | `VIEW_AGREEMENT`   | List immutable versions newest first.                                  |
+| `GET`    | `/agreements/{id}/versions/{version}` | `VIEW_AGREEMENT`   | Get one immutable Agreement snapshot.                                  |
+| `GET`    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List authorized document metadata and available actions.               |
+| `POST`   | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | Upload a validated file when the actor may contribute documents.       |
+| `GET`    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Re-authorize and stream one private document.                           |
+| `DELETE` | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete the actor's own still-manageable document.                       |
+| `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
+| `GET`    | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | List shared comments plus only the caller's private notes.              |
+| `POST`   | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | Add a field- or selected-text comment to the latest immutable version.  |
+| `PATCH`  | `/agreements/{id}/annotations/{annotation}/resolve` | `VIEW_AGREEMENT` | Resolve an authorized comment.                         |
+| `DELETE` | `/agreements/{id}/annotations/{annotation}` | `VIEW_AGREEMENT` | Delete the caller's own comment.                                |
+| `GET`    | `/agreements/{id}/review-context`     | `VIEW_AGREEMENT`   | Return unseen field changes since the caller's last viewed version.     |
+| `POST`   | `/agreements/{id}/viewed`             | `VIEW_AGREEMENT`   | Record the immutable version the caller has now reviewed.               |
+
+`PUT /agreements/{id}` requires a non-empty `change_summary` of at most
+1,000 characters. The summary is stored on the new immutable version and is
+shown beside every field changed by that revision.
+
+Private annotation content is filtered at the query boundary. It is returned
+only when `author_user_id` equals the authenticated user, including when the
+requesting account has the System Administrator role. Audit entries record
+private-note metadata but never copy the comment text.
+
+### List active partners
+
+`GET /partners`
+
+Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, `partner_type`, and `country`; inactive partner records are excluded from new Agreement forms.
+
+### Create Agreement
+
+`POST /agreements`
+
+```json
+{
+  "title": "Research Collaboration MOU",
+  "agreement_type": "MOU",
+  "description": "Research collaboration between both organizations",
+  "partner_id": 1
+}
+```
+
+The former four-field payload remains valid for saving a draft. The workspace now sends the comprehensive payload below; fields not yet known may be empty until formal submission:
+
+```json
+{
+  "title": "Research Collaboration MOU",
+  "title_ar": "مذكرة تفاهم للتعاون البحثي",
+  "agreement_type": "Memorandum of Understanding",
+  "geographic_scope": "INTERNATIONAL",
+  "partner_ids": [1, 3],
+  "description": "Brief cooperation profile",
+  "start_date": "2026-09-01",
+  "end_date": "2029-08-31",
+  "auto_renew": true,
+  "renewal_term_months": 36,
+  "non_renewal_notice_months": 6,
+  "termination_notice_months": 6,
+  "need_justification": "Institutional need and rationale",
+  "objectives": "Joint research\nFaculty exchange",
+  "expected_value": "Expected University impact",
+  "focus_areas": "Research; academic collaboration",
+  "collaboration_areas": "Approved MOU fields of cooperation",
+  "implementation_methods": "Written programs and joint coordination",
+  "financial_commitments": false,
+  "human_resources_commitments": true,
+  "human_resources_description": "Named academic coordinators",
+  "training_programs": true,
+  "training_programs_description": "Annual joint workshops",
+  "rankings": ["QS_WORLD", "THE_IMPACT"],
+  "sdgs": [4, 9, 17],
+  "legal_binding_status": "NON_BINDING",
+  "annual_report_required": true,
+  "contacts": [
+    {
+      "party_type": "UOB",
+      "contact_role": "COORDINATOR",
+      "full_name": "Coordinator name",
+      "job_title": "Professor",
+      "email": "coordinator@uob.edu.bh",
+      "phone": "+973..."
+    }
+  ],
+  "executive_programs": [
+    {
+      "title": "Joint Research Launch Program",
+      "description": "Program summary",
+      "objectives": "Program objectives",
+      "expected_outputs": "Expected outputs",
+      "start_date": "2026-10-01",
+      "end_date": "2027-05-31",
+      "responsible_entity": "College of Science"
+    }
+  ],
+  "metrics": [
+    {
+      "metric_code": "JOINT_PROGRAMS",
+      "planned_value": 1,
+      "actual_value": null,
+      "notes": "One planned program"
+    }
+  ]
+}
+```
+
+The server snapshots scalar fields, partners, SDGs, rankings, contacts, executive programs, and metrics in one transaction. See `docs/agreement-comprehensive-field-model.md` for the source mapping and ownership rules.
+
+## Agreement performance monitoring
+
+| Method | Endpoint | Permission | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/agreement-performance-reports` | Manage or review reports | Owner/reviewer reporting queue. |
+| `GET` | `/agreements/{id}/performance-reports` | Manage or review reports | Reporting periods for one authorized Agreement. |
+| `GET` | `/agreement-performance-reports/{id}` | Manage or review reports | Report content, metrics, programs, history, and allowed actions. |
+| `PUT` | `/agreement-performance-reports/{id}` | `MANAGE_AGREEMENT_REPORTS` | Save a draft or returned report transactionally. |
+| `POST` | `/agreement-performance-reports/{id}/submit` | `MANAGE_AGREEMENT_REPORTS` | Validate evidence and submit for review. |
+| `POST` | `/agreement-performance-reports/{id}/review` | `REVIEW_AGREEMENT_REPORTS` | `ACCEPT` or `RETURN`; return comments are mandatory. |
+| `GET` | `/agreement-performance-dashboard?year=YYYY` | `VIEW_AGREEMENT_DASHBOARD` | Aggregate compliance, deadlines, accepted metrics, and program health. |
+
+Agreement creators with `MANAGE_AGREEMENT_REPORTS` may also use the performance
+dashboard. Their response is scoped to Agreements they created and includes
+`scope: "OWN_PORTFOLIO"`; approvers and administrators receive
+`scope: "INSTITUTIONAL"`.
+
+### Review timeline
+
+| Method | Endpoint | Permission | Purpose |
+|---|---|---|---|
+| `GET` | `/agreements/{id}/workflow-timeline` | `VIEW_AGREEMENT` plus record visibility | Latest workflow, ordered stages, current assigned office/reviewer, completed actors, and action history. |
+
+### Initiative portal handoff
+
+`POST /legacy-initiative-handoff` requires an authenticated workspace session
+and Initiative Creator authority. It returns a two-minute one-time token. The
+browser immediately sends that token to `uob-agreements/workspace-handoff.php`,
+which consumes it, opens the existing Initiative portal session, and redirects
+to the requested allow-listed Initiative page. The raw token is never stored.
+
+The annual period generator is CLI-only and is documented in
+`docs/agreement-performance-monitoring.md`.
+
+The authenticated user is always used as `created_by` or `updated_by`. Clients cannot supply trusted actor identifiers. Only the original Agreement creator may edit or submit that Agreement. The update controller accepts only Agreement content fields; clients cannot change workflow status through the general update endpoint.
+
+### Agreement visibility
+
+`VIEW_AGREEMENT` grants access to the Agreement workspace, but record visibility is also enforced by the backend:
+
+- A `DRAFT` or `REVISION_REQUIRED` Agreement is visible only to its creator.
+- An `UNDER_REVIEW` Agreement is visible to its creator and users with an active assignment on its current workflow step.
+- An `APPROVED` or `ACTIVE` Agreement is visible to every user with `VIEW_AGREEMENT`.
+- A user with the `System Administrator` role can view every Agreement.
+
+The same record-level check protects Agreement details, version lists, individual version snapshots, and document metadata. An inaccessible Agreement returns `404` so direct URL or ID changes do not disclose the record.
+
+All API responses send `Cache-Control: no-store` and related compatibility headers. The workspace client also uses the Fetch API's `no-store` mode. This prevents authenticated Agreement data loaded for one user from being reused after another user signs in through the same browser.
+
+### Secure Agreement documents
+
+`POST /agreements/{id}/documents` accepts `multipart/form-data` with:
+
+- `file`: required PDF, DOC, or DOCX file, no more than 10 MB.
+- `document_type`: one of `AGREEMENT_DRAFT`, `SUPPORTING`, `LEGAL_REVIEW`, `FINANCE_REVIEW`, or `OTHER`.
+
+The server ignores client paths, verifies the extension, detected MIME type, file signature, and size, generates a random private storage key, calculates SHA-256, and associates the document with the latest Agreement version. Storage keys and paths are never returned by list or download APIs.
+
+Upload access is record- and state-scoped:
+
+- The original creator can upload while the Agreement is `DRAFT` or `REVISION_REQUIRED`.
+- A reviewer can upload while that exact user has an active assignment on an `UNDER_REVIEW` Agreement.
+- The creator cannot alter the document set while review is active.
+- A non-administrator can delete only a file they uploaded while they still have upload access.
+- Download and list access use the same Agreement visibility rule as details and versions.
+
+Older metadata-only rows remain listed after migration, but they are marked unavailable because no server file exists. The private storage directory is denied to direct Apache/IIS requests; downloads must pass through the authenticated endpoint.
+
+### Update Agreement
+
+`PUT /agreements/{id}`
+
+```json
+{
+  "title": "Updated Research Collaboration MOU",
+  "description": "Revised scope and implementation obligations",
+  "partner_id": 1,
+  "change_summary": "Updated after Legal review"
+}
+```
+
+Each update creates an immutable row in `agreement_versions` containing a JSON snapshot. Updates are accepted only while the Agreement is `DRAFT` or `REVISION_REQUIRED`; the creator cannot edit it while review is active or after a terminal/published decision.
+
+### Submit Agreement
+
+`POST /agreements/{id}/submit`
+
+Only a `DRAFT` Agreement can start a new workflow. Eligible initiators are a Dean, VP Office member, or President Office member.
+
+Before starting the workflow, the service enforces formal-request completeness: partner(s), geographic scope, start/end dates, description, need and justification, objectives, expected value, collaboration areas, and implementation methods. Conditional commitment descriptions are validated when their flags are enabled.
+
+Example response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "workflow_instance_id": 64,
+    "current_step_key": "VP_INITIAL"
+  }
+}
+```
+
+### Resubmit a revised Agreement by Agreement ID
+
+`POST /agreements/{id}/resubmit`
+
+Permission: `SUBMIT_AGREEMENT`.
+
+```json
+{
+  "comments": "Requested legal clauses were revised"
+}
+```
+
+This creator-facing endpoint resolves the active workflow internally. The Agreement must be `REVISION_REQUIRED`, belong to the authenticated creator, and contain a version newer than the recorded redraft baseline. Success returns it to `UNDER_REVIEW` at `VP_INITIAL` for a new review cycle.
+
+## Approval workflow
+
+The normal successful workflow is:
+
+```text
+CREATOR
+  -> VP_INITIAL
+  -> LEGAL_REVIEW + optional FINANCE_REVIEW
+  -> VP_FINAL
+  -> PRESIDENT_APPROVAL
+  -> COMPLETED
+```
+
+Legal is always required. The Initial VP decides whether Finance is also required. Legal and Finance can operate in parallel, but Final VP activates only after all required specialist reviews finish.
+
+### Workflow inbox
+
+`GET /workflow-inbox`
+
+Permission: `APPROVE_AGREEMENT` or `REJECT_AGREEMENT`.
+
+Returns only active assignments belonging to the authenticated user where both the workflow and step are `IN_PROGRESS`.
+
+Each inbox row also carries the context needed by the assigned review screen:
+
+- `task_mode` is `REVIEW` for an ordinary approval or `VP_MEDIATION` when `VP_FINAL` was reactivated by a change request.
+- `change_request_step_key` and `change_request_reason` identify the active Legal, Finance, or President request awaiting VP routing.
+- Legal, Finance, Final VP, and President status/comment fields summarize the decisions already recorded in the workflow.
+
+The President review uses `final_vp_review_status` and `final_vp_review_comments` to display the VP recommendation that activated the President task.
+
+This context does not broaden access. It is returned only with an active assignment owned by the authenticated user.
+
+### Approve Initial VP review
+
+`POST /workflow-instances/{instanceId}/initial-vp/approve`
+
+Permission: `APPROVE_AGREEMENT`.
+
+```json
+{
+  "include_finance": true,
+  "comments": "Legal and Finance reviews required"
+}
+```
+
+Effects:
+
+- Approves `VP_INITIAL`.
+- Always activates `LEGAL_REVIEW`.
+- Activates `FINANCE_REVIEW` when `include_finance` is `true`; otherwise marks it `SKIPPED`.
+- Creates active assignments for eligible office members.
+
+### Approve specialist review
+
+`POST /workflow-instances/{instanceId}/specialist/approve`
+
+Permission: `APPROVE_AGREEMENT`.
+
+Legal example:
+
+```json
+{
+  "step_key": "LEGAL_REVIEW",
+  "comments": "Legal review approved"
+}
+```
+
+Finance example:
+
+```json
+{
+  "step_key": "FINANCE_REVIEW",
+  "comments": "Finance review approved"
+}
+```
+
+Final VP activates only after Legal and every required Finance review are approved.
+
+### Approve Final VP review
+
+`POST /workflow-instances/{instanceId}/final-vp/approve`
+
+Permission: `APPROVE_AGREEMENT`.
+
+```json
+{
+  "comments": "Final VP review approved"
+}
+```
+
+Approves `VP_FINAL`, activates `PRESIDENT_APPROVAL`, and assigns eligible President Office users.
+
+### Approve as President
+
+`POST /workflow-instances/{instanceId}/president/approve`
+
+Permission: `APPROVE_AGREEMENT`.
+
+```json
+{
+  "comments": "Agreement approved by President"
+}
+```
+
+Effects:
+
+- Approves `PRESIDENT_APPROVAL`.
+- Completes the workflow and records `completed_at`.
+- Changes the Agreement to `APPROVED`.
+- Removes the completed assignment from the President inbox.
+
+The President frontend also exposes the existing change-request and rejection endpoints below. A change request is used when correction is possible; rejection is terminal.
+
+## Change requests and VP mediation
+
+A correctable issue is a change request, not a terminal rejection. Legal, Finance, and President change requests return to the VP, who chooses a controlled destination.
+
+### Request changes
+
+`POST /workflow-instances/{instanceId}/changes/request`
+
+Permission: `APPROVE_AGREEMENT`.
+
+```json
+{
+  "step_key": "LEGAL_REVIEW",
+  "reason": "The termination clause requires revision"
+}
+```
+
+Allowed `step_key` values:
+
+- `LEGAL_REVIEW`
+- `FINANCE_REVIEW`
+- `PRESIDENT_APPROVAL`
+
+Effects:
+
+- Marks the source step `CHANGES_REQUESTED`.
+- Pauses other active assignments.
+- Records `CHANGES_REQUESTED` and `ROUTED_TO_VP` in workflow history.
+- Reactivates `VP_FINAL` as the VP mediation task.
+
+### VP routing decision
+
+`POST /workflow-instances/{instanceId}/vp/route`
+
+Permission: `APPROVE_AGREEMENT` or `REJECT_AGREEMENT`.
+
+Route to creator:
+
+```json
+{
+  "destination": "CREATOR",
+  "reason": "Creator must revise the requested clauses"
+}
+```
+
+Route to Legal:
+
+```json
+{
+  "destination": "LEGAL",
+  "reason": "Legal Office must clarify the requested clause"
+}
+```
+
+Route to Finance:
+
+```json
+{
+  "destination": "FINANCE",
+  "reason": "Finance Office must reassess the revised cost"
+}
+```
+
+Terminal rejection:
+
+```json
+{
+  "destination": "REJECT",
+  "reason": "The Agreement cannot proceed"
+}
+```
+
+| Destination | Result                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `CREATOR` | Agreement becomes`REVISION_REQUIRED`; creator redraft activates; the current version is recorded as `redraft_base_version`. |
+| `LEGAL`   | Legal review reactivates and the Agreement remains`UNDER_REVIEW`.                                                             |
+| `FINANCE` | Finance becomes required and its review reactivates.                                                                            |
+| `REJECT`  | Workflow and Agreement become terminally`REJECTED`.                                                                           |
+
+## Creator redraft and resubmission
+
+The creator updates the Agreement through `PUT /agreements/{id}`. That update must create a newer immutable version before resubmission is permitted.
+
+### Resubmit revised Agreement
+
+`POST /workflow-instances/{instanceId}/redraft/resubmit`
+
+Permission: `SUBMIT_AGREEMENT`.
+
+```json
+{
+  "comments": "Requested clauses were revised in version 2"
+}
+```
+
+Validation rules:
+
+- Only the original creator may resubmit.
+- Agreement must be `REVISION_REQUIRED`.
+- Creator redraft step must be active and assigned to that creator.
+- Latest version number must be greater than `redraft_base_version`.
+
+Successful resubmission:
+
+- Increments `review_cycle`.
+- Approves the creator redraft step.
+- Clears the prior Finance decision and redraft baseline.
+- Resets downstream workflow steps to `PENDING`.
+- Changes the Agreement to `UNDER_REVIEW`.
+- Reactivates Initial VP review so the VP can select which reviews repeat.
+- Records `RESUBMITTED` in workflow history.
+
+The workspace calls `POST /agreements/{id}/resubmit` so the creator does not need the internal workflow instance ID. The instance-based route above remains available for workflow clients and applies the same workflow rules.
+
+## Direct VP decisions
+
+Initial VP and Final VP can return an Agreement directly to the creator or reject it without another VP-mediation loop.
+
+`POST /workflow-instances/{instanceId}/vp/decide`
+
+Permission: `APPROVE_AGREEMENT` or `REJECT_AGREEMENT`.
+
+Return to creator:
+
+```json
+{
+  "step_key": "VP_INITIAL",
+  "decision": "RETURN_TO_CREATOR",
+  "reason": "Agreement scope must be clarified"
+}
+```
+
+Terminal rejection:
+
+```json
+{
+  "step_key": "VP_FINAL",
+  "decision": "REJECT",
+  "reason": "Final review determined that the Agreement cannot proceed"
+}
+```
+
+Allowed step keys are `VP_INITIAL` and `VP_FINAL`. Return activates creator redrafting and records a version baseline. Rejection terminates the workflow and Agreement.
+
+## President rejection
+
+`POST /workflow-instances/{instanceId}/president/reject`
+
+Permission: `REJECT_AGREEMENT`.
+
+```json
+{
+  "reason": "Agreement does not meet final institutional requirements"
+}
+```
+
+Effects:
+
+- Marks `PRESIDENT_APPROVAL` as `REJECTED`.
+- Changes the workflow and Agreement to `REJECTED`.
+- Records the completion timestamp and rejection history.
+- Deactivates the President inbox assignment.
+- Blocks duplicate decisions after termination.
+
+## State and history guarantees
+
+- Workflow-changing operations run inside database transactions.
+- A user can act only on an active step assigned to that user.
+- Obsolete active assignments are deactivated instead of deleted.
+- Earlier review decisions remain in `workflow_history` even when current step state is reset for another cycle.
+- Only one active assignment exists for the same step and user.
+- Parallel Legal and Finance completion cannot activate Final VP twice.
+- Duplicate approvals or rejections on completed workflows are rejected.
+- Agreement creation, update, submission, deletion, and document metadata changes write audit records.
+- Workflow decisions write ordered records to `workflow_history`.
+
+## Development accounts
+
+Development fixtures use password `UobDev2026!`:
+
+| Actor            | Email                      |
+| ---------------- | -------------------------- |
+| Dean             | `dev.dean@uob.test`      |
+| Vice President   | `dev.vp@uob.test`        |
+| Legal reviewer   | `dev.legal@uob.test`     |
+| Finance reviewer | `dev.finance@uob.test`   |
+| President        | `dev.president@uob.test` |
+
+These credentials are strictly for local developmen
+
+# Agreement API
+
+All endpoints require an authenticated session and the listed permission.
+
+| Method | Endpoint                                | Permission           | Purpose                                            |
+| ------ | --------------------------------------- | -------------------- | -------------------------------------------------- |
+| GET    | `/agreements`                         | `VIEW_AGREEMENT`   | List agreements.                                   |
+| GET    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get an agreement.                                  |
+| POST   | `/agreements`                         | `CREATE_AGREEMENT` | Create a draft agreement and version 1.            |
+| PUT    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update an agreement and create a snapshot version. |
+| POST   | `/agreements/{id}/submit`             | `SUBMIT_AGREEMENT` | Move the agreement to`UNDER_REVIEW`.             |
+| DELETE | `/agreements/{id}`                    | `DELETE_AGREEMENT` | Delete the agreement.                              |
+| GET    | `/agreements/{id}/versions`           | `VIEW_AGREEMENT`   | List versions newest first.                        |
+| GET    | `/agreements/{id}/versions/{version}` | `VIEW_AGREEMENT`   | Get one immutable agreement snapshot.              |
+| GET    | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | List authorized document metadata/actions.        |
+| POST   | `/agreements/{id}/documents`          | `VIEW_AGREEMENT`   | Upload a validated private document.               |
+| GET    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Stream an authorized private document.             |
+| DELETE | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete an owned, still-manageable document.        |
+
+## Create request
+
+```json
+{
+  "title": "Research Collaboration MOU",
+  "agreement_type": "MOU",
+  "description": "Development test agreement",
+  "partner_id": 1
+}
+```
+
+The authenticated user is always used as `created_by` or `updated_by`; clients cannot supply those fields.
+
+## Lifecycle and guarantees
+
+- New agreements begin as `DRAFT`; submitting transitions them to `UNDER_REVIEW`.
+- Every create, update, and submit writes a JSON `agreement_snapshot` to `agreement_versions`.
+- Agreement creation, updates, submission, agreement deletion, and document metadata changes are transactional with their audit entries.
+- Audit actions use the database enum values `INSERT`, `UPDATE`, and `DELETE`.
+
+## Operational signing endpoints
+
+### `GET /agreements/{id}/operations`
+
+Returns the authorized Agreement's finalized signing record, frozen
+signatories, status-event history, operational state, and whether the current
+user may finalize signing. Secure document storage keys are never returned.
+
+### `POST /agreements/{id}/signing-record`
+
+Requires `MANAGE_AGREEMENT_OPERATIONS`. The Agreement creator (or a system
+administrator) supplies the signed-document ID, actual signing/effective/expiry
+dates, optional public ceremony details, and at least one UOB plus one linked
+partner signatory. The operation is transactional and permanent. It activates
+the Agreement immediately only when its effective date has arrived.

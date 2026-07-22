@@ -15,12 +15,36 @@ VALUES
 'Submit Agreement'),
 
 
+('VIEW_AGREEMENT',
+'View Agreement'),
+
+
+('DELETE_AGREEMENT',
+'Delete Agreement'),
+
+
 ('APPROVE_AGREEMENT',
 'Approve Agreement'),
 
 
 ('REJECT_AGREEMENT',
 'Reject Agreement'),
+
+
+('MANAGE_AGREEMENT_OPERATIONS',
+'Manage Agreement operations'),
+
+
+('MANAGE_AGREEMENT_REPORTS',
+'Manage Agreement performance reports'),
+
+
+('REVIEW_AGREEMENT_REPORTS',
+'Review Agreement performance reports'),
+
+
+('VIEW_AGREEMENT_DASHBOARD',
+'View Agreement performance dashboard'),
 
 
 ('CREATE_INITIATIVE',

@@ -1,5 +1,4 @@
 CREATE TABLE workflow_instances (
-
     workflow_instance_id BIGINT
         GENERATED ALWAYS AS IDENTITY
         PRIMARY KEY,
@@ -17,6 +16,21 @@ CREATE TABLE workflow_instances (
         NOT NULL
         DEFAULT 1,
 
+    -- NULL: initial VP decision has not been made.
+    -- FALSE: Legal review only.
+    -- TRUE: Legal and Finance reviews.
+    finance_review_required BOOLEAN,
+
+    -- Starts at 1 and increases whenever a revised
+    -- Agreement is resubmitted for another review cycle.
+    review_cycle INTEGER
+        NOT NULL
+        DEFAULT 1,
+
+    -- Latest Agreement version at the time it was returned
+    -- to the creator. Resubmission requires a newer version.
+    redraft_base_version INTEGER,
+
     status workflow_status
         NOT NULL
         DEFAULT 'IN_PROGRESS',
@@ -30,9 +44,20 @@ CREATE TABLE workflow_instances (
 
     completed_at TIMESTAMP,
 
-    FOREIGN KEY(workflow_template_id)
+    CONSTRAINT fk_workflow_instance_template
+        FOREIGN KEY (workflow_template_id)
         REFERENCES workflow_templates(workflow_template_id),
 
-    FOREIGN KEY(started_by)
-        REFERENCES users(user_id)
+    CONSTRAINT fk_workflow_instance_starter
+        FOREIGN KEY (started_by)
+        REFERENCES users(user_id),
+
+        CONSTRAINT chk_workflow_review_cycle_positive
+        CHECK (review_cycle > 0),
+
+        CONSTRAINT chk_redraft_base_version_nonnegative
+        CHECK (
+            redraft_base_version IS NULL
+            OR redraft_base_version >= 0
+        )
 );

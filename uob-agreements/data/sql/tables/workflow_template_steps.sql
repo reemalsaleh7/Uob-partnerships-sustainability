@@ -1,5 +1,4 @@
 CREATE TABLE workflow_template_steps (
-
     template_step_id BIGINT
         GENERATED ALWAYS AS IDENTITY
         PRIMARY KEY,
@@ -9,6 +8,8 @@ CREATE TABLE workflow_template_steps (
 
     step_order INTEGER
         NOT NULL,
+
+    step_key VARCHAR(50),
 
     approval_type workflow_approval_type
         NOT NULL,
@@ -26,15 +27,16 @@ CREATE TABLE workflow_template_steps (
         DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_template_steps_template
-        FOREIGN KEY(workflow_template_id)
-        REFERENCES workflow_templates(workflow_template_id),
+        FOREIGN KEY (workflow_template_id)
+        REFERENCES workflow_templates(workflow_template_id)
+        ON DELETE CASCADE,
 
     CONSTRAINT fk_template_steps_unit
-        FOREIGN KEY(required_unit_id)
+        FOREIGN KEY (required_unit_id)
         REFERENCES organizational_units(unit_id),
 
     CONSTRAINT fk_template_steps_position
-        FOREIGN KEY(required_position_id)
+        FOREIGN KEY (required_position_id)
         REFERENCES positions(position_id),
 
     CONSTRAINT uq_template_step_order

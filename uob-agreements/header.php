@@ -259,9 +259,31 @@ $isAdmin = str_contains($currentFilePath, '/admin/');
 $isPartnership = str_contains($currentFilePath, '/partnership/');
 
 $base = ($isAdmin || $isPartnership) ? '../' : '';
+$agreementWorkspaceEnabled = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN;
+$agreementCreatePath = $agreementWorkspaceEnabled
+  ? 'workspace/agreement-form.php'
+  : 'admin/add-agreement.php?lang=' . urlencode($lang);
+$agreementReviewPath = $agreementWorkspaceEnabled
+  ? 'workspace/agreements.php'
+  : 'admin/review-agreements.php?lang=' . urlencode($lang);
 
 $logoPath = $base . 'assets/image/THEM/uob_logo.png';
 $isLoggedIn = !empty($_SESSION['user_email']);
+$currentPage = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
+$homeActive = $currentPage === 'index.php' || $currentPage === '' ? ' active' : '';
+$agreementsActive = in_array(
+  $currentPage,
+  ['agreements.php', 'agreement-details.php'],
+  true
+) ? ' active' : '';
+$initiativesActive = in_array(
+  $currentPage,
+  ['initiatives.php', 'initiative-details.php', 'request-initiative.php'],
+  true
+) ? ' active' : '';
+$sdgActive = in_array($currentPage, ['sdg.php', 'sdg-goal.php'], true) ? ' active' : '';
+$partnershipActive = $isPartnership ? ' active' : '';
 
 
 $updatesCount = 0;
@@ -332,7 +354,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 
 <?php if (!empty($extraHead)) echo $extraHead; ?>
 
-<style>
+<<style>
 .updates-dot{
   position:absolute;
   top:4px;
@@ -344,13 +366,37 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
   display:inline-block;
   box-shadow:0 0 0 3px rgba(212,175,55,.18);
 }
+
 [dir="rtl"] .updates-dot{
   right:auto;
   left:-2px;
 }
+
+/* BRAND TITLE CONTROL */
+html body .uob-navbar .navbar-brand span {
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  color: #0b1f3a !important;
+  white-space: nowrap !important;
+}
+
+html body .uob-navbar .navbar-brand img {
+  height: 34px !important;
+  width: auto !important;
+}
+
 </style>
 </head>
 <body>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.body.childNodes.forEach(function (node) {
+    if (node.nodeType === 3 && node.textContent.trim() === '<') {
+      node.remove();
+    }
+  });
+});
+</script>
 
 <!-- Utility bar -->
 <div class="uob-utility-bar border-bottom">
@@ -382,28 +428,28 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav <?= $isRtl ? 'me-auto' : 'ms-auto' ?> mb-2 mb-lg-0 align-items-lg-center">
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $homeActive ?>" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
             <?= h(t('home')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $agreementsActive ?>" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
             <?= h(t('agreements')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $initiativesActive ?>" href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>">
             <?= h(t('initiatives')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $sdgActive ?>" href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>">
             <?= h(t('sdg')) ?>
           </a>
         </li>
 
          <li class="nav-item">
-            <a class="nav-link" href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>">
+            <a class="nav-link<?= $partnershipActive ?>" href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>">
               <?= $lang === 'ar' ? 'خريطة الاتفاقيات' : 'Partnership Map' ?>
            </a>
          </li>
@@ -441,7 +487,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
       <li><hr class="dropdown-divider"></li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/add-agreement.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementCreatePath) ?>">
           <?= $isRtl ? 'إضافة اتفاقية' : 'Add Agreement' ?>
         </a>
       </li>
@@ -459,7 +505,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
       </li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-agreements.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementReviewPath) ?>">
           <?= $isRtl ? 'مراجعة الاتفاقيات' : 'Review Agreements' ?>
         </a>
       </li>
@@ -470,7 +516,15 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 <?php endif; ?>
       </ul>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex flex-wrap gap-2 uob-nav-actions">
+        <?php if ($agreementWorkspaceEnabled): ?>
+          <a
+            href="<?= $base ?>workspace/agreements.php"
+            class="btn btn-primary btn-sm uob-workspace-link"
+          >
+            <?= $isRtl ? 'مساحة عمل الاتفاقيات' : 'Agreement Workspace' ?>
+          </a>
+        <?php endif; ?>
         <?php if (!$isLoggedIn): ?>
           <a href="<?= $base ?>login.php?lang=<?= h($lang) ?>" class="btn btn-outline-primary btn-sm"><?= h(t('login')) ?></a>
         <?php else: ?>
