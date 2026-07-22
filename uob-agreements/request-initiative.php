@@ -324,6 +324,68 @@ textarea.request-input{
   .request-top{flex-direction:column;}
   .request-btn{width:100%;}
 }
+/* INITIATIVE APPROVAL REQUEST PAGE COLOR */
+html body .request-initiative-hero,
+html body .initiative-request-hero,
+html body .approval-request-hero,
+html body .request-hero,
+html body .init-request-hero {
+  background: #b89a68 !important;
+  background-image:
+    linear-gradient(135deg, #8f6f3f 0%, #b89a68 55%, #8f6f3f 100%) !important;
+}
+
+html body .request-initiative-hero::before,
+html body .request-initiative-hero::after,
+html body .initiative-request-hero::before,
+html body .initiative-request-hero::after,
+html body .approval-request-hero::before,
+html body .approval-request-hero::after,
+html body .request-hero::before,
+html body .request-hero::after,
+html body .init-request-hero::before,
+html body .init-request-hero::after {
+  background: radial-gradient(circle, rgba(11,31,58,.16), transparent 68%) !important;
+}
+
+html body .request-initiative-hero h1,
+html body .request-initiative-hero p,
+html body .initiative-request-hero h1,
+html body .initiative-request-hero p,
+html body .approval-request-hero h1,
+html body .approval-request-hero p,
+html body .request-hero h1,
+html body .request-hero p,
+html body .init-request-hero h1,
+html body .init-request-hero p {
+  color: #ffffff !important;
+}
+
+/* REQUEST FORM ACTIVE ELEMENTS */
+html body .request-tab-btn.active,
+html body .initiative-request-tab.active,
+html body .approval-tab.active,
+html body .form-step.active {
+  color: #ffffff !important;
+  border-color: #8f6f3f !important;
+  background: linear-gradient(180deg, #b89a68, #8f6f3f) !important;
+  box-shadow: 0 14px 30px rgba(184,154,104,.28) !important;
+}
+
+html body .request-section-title,
+html body .initiative-request-section-title,
+html body .approval-section-title {
+  color: #7d5f36 !important;
+  background: linear-gradient(180deg, rgba(184,154,104,.14), rgba(184,154,104,.06)) !important;
+  border-color: rgba(184,154,104,.25) !important;
+}
+
+html body input:focus,
+html body select:focus,
+html body textarea:focus {
+  border-color: #b89a68 !important;
+  box-shadow: 0 0 0 .22rem rgba(184,154,104,.18) !important;
+}
 </style>
 
 <section class="request-hero">

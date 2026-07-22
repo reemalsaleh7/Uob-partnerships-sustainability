@@ -1,37 +1,71 @@
 <?php
+$embeddedMap = isset($_GET['embed']) && $_GET['embed'] === '1';
+
 $pageTitle = "خريطة الاتفاقيات";
 $hidePageHeader = true;
 $mainContainer = false;
 
-$extraCss = ['partnership/styles.css'];
-$extraHead = '
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-';
+if (!$embeddedMap) {
+  $extraCss = ['partnership/styles.css'];
+  $extraHead = '
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ';
 
-require_once __DIR__ . '/../header.php';
+  require_once __DIR__ . '/../header.php';
+}
 
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isRtl = ($lang === 'ar');
 
-function ph($value){
-  return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+if (!function_exists('ph')) {
+  function ph($value){
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+  }
 }
 
 $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
 ?>
-<div class="partnership-page-wrapper">
-  <section class="partnership-hero">
-  <div class="partnership-hero-inner">
-    <div class="partnership-hero-content">
-      <h1><?= ph($mapLabel) ?></h1>
-      <p>
-        <?= $isRtl
-          ? 'استعرض شبكة اتفاقيات جامعة البحرين حسب الدول والجهات الشريكة.'
-          : 'Explore University of Bahrain partnership agreements by country and partner institution.'
-        ?>
-      </p>
+<?php if ($embeddedMap): ?>
+<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  body {
+    margin: 0 !important;
+    background: #ffffff !important;
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
+  }
+
+  .partnership-hero {
+    display: none !important;
+  }
+
+  .partnership-page-wrapper {
+    background: #ffffff !important;
+    padding-top: 0 !important;
+  }
+</style>
+<?php endif; ?>
+<div class="partnership-page-wrapper" style="background:#ffffff !important;">
+
+  <section class="partnership-hero"
+    style="background:#ffffff !important; background-image:none !important; min-height:330px !important; padding:70px 0 45px !important;">
+
+    <div class="partnership-hero-inner"
+      style="background:#ffffff !important; background-image:none !important;">
+
+      <div class="partnership-hero-content"
+        style="text-align:center !important; margin:0 auto !important;">
+
+        <h1 style="color:#1a1a1a !important;">
+          <?= ph($mapLabel) ?>
+        </h1>
+
+        <p style="color:#b8860b !important;">
     </div>
   </div>
 </section>
@@ -707,8 +741,7 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
         }
 
         // Fetch data from local file inside this folder (no Node.js server needed)
-        const apiUrl = 'agreements-api.php';
-
+const apiUrl = 'agreements-api.php';
         fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
@@ -1659,4 +1692,4 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
     <script src="script.js"></script>
   </main>
   </div>
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php if (!$embeddedMap) require_once __DIR__ . '/../footer.php'; ?>

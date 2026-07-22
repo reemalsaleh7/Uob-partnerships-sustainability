@@ -322,7 +322,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-  <link href="<?= $base ?>css/style.css?v=3005" rel="stylesheet">
+  <link href="<?= $base ?>css/style.css?v=3006" rel="stylesheet">
 
   <?php if (!empty($extraCss)): ?>
   <?php foreach ($extraCss as $cssFile): ?>
@@ -362,7 +362,11 @@ html body .uob-navbar .navbar-brand img {
   height: 34px !important;
   width: auto !important;
 }
-
+html body .uob-navbar .navbar-brand .brand-title-move {
+  display: inline-block !important;
+  position: relative !important;
+  transform: translateX(90px) !important;
+}
 </style>
 </head>
 <body>
@@ -395,9 +399,8 @@ document.addEventListener('DOMContentLoaded', function () {
 <nav class="navbar navbar-expand-lg bg-white border-bottom uob-navbar">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
-      <img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto;">
-      <span class="fw-bold"><?= h(t('app_name')) ?></span>
-    </a>
+<img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto; position:relative; left: 90px;x;">
+<span class="fw-bold brand-title-move"><?= h(t('app_name')) ?></span>    </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
       <span class="navbar-toggler-icon"></span>
@@ -426,11 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </a>
         </li>
 
-         <li class="nav-item">
-            <a class="nav-link" href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>">
-              <?= $lang === 'ar' ? 'خريطة الاتفاقيات' : 'Partnership Map' ?>
-           </a>
-         </li>
+         
 
 
 <?php if ($isLoggedIn): ?>

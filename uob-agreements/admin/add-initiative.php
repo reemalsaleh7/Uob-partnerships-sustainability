@@ -791,6 +791,65 @@ textarea.init-input{
     width:100% !important;
   }
 }
+/* OLD + INITIATIVE PAGE IDENTITY COLOR */
+html body .init-admin-hero {
+  background: #b89a68 !important;
+  background-image:
+    linear-gradient(135deg, #8f6f3f 0%, #b89a68 55%, #8f6f3f 100%) !important;
+}
+
+html body .init-admin-hero::before {
+  background: radial-gradient(circle, rgba(11,31,58,.18), transparent 68%) !important;
+}
+
+html body .init-admin-hero::after {
+  background: radial-gradient(circle, rgba(11,31,58,.14), transparent 68%) !important;
+}
+
+html body .init-stat {
+  background: rgba(11,31,58,.20) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+}
+
+html body .init-stat span,
+html body .init-stat strong,
+html body .init-admin-hero h1 {
+  color: #ffffff !important;
+}
+
+/* ACTIVE TAB SAME INITIATIVE COLOR */
+html body .init-tab-btn.active {
+  color: #ffffff !important;
+  border-color: #8f6f3f !important;
+  background: linear-gradient(180deg, #b89a68, #8f6f3f) !important;
+  box-shadow: 0 14px 30px rgba(184,154,104,.28) !important;
+}
+
+html body .init-tab-btn:hover {
+  border-color: #b89a68 !important;
+  box-shadow: 0 10px 22px rgba(184,154,104,.16) !important;
+}
+
+html body .init-input:focus {
+  border-color: #b89a68 !important;
+  box-shadow: 0 0 0 .22rem rgba(184,154,104,.18) !important;
+}
+
+html body .init-section-title {
+  color: #7d5f36 !important;
+  background: linear-gradient(180deg, rgba(184,154,104,.14), rgba(184,154,104,.06)) !important;
+  border-color: rgba(184,154,104,.25) !important;
+}
+
+html body .init-radio-card:hover,
+html body .init-check-card:hover {
+  border-color: rgba(184,154,104,.55) !important;
+}
+
+html body .init-radio-card input,
+html body .init-check-card input {
+  accent-color: #8f6f3f !important;
+}
 </style>
 
 <section class="init-admin-hero">

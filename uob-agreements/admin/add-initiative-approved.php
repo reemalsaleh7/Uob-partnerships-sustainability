@@ -394,14 +394,16 @@ $selectedAgreementCode = $_POST['_agreement_code'] ?? $agreementPrefill;
    Premium Add Initiative Page
    ========================= */
 .init-admin-hero{
+ .init-admin-hero{
   position:relative;
   overflow:hidden;
   min-height:290px;
   background:
-    radial-gradient(800px 260px at 12% 10%, rgba(201,162,39,.28), transparent 60%),
-    radial-gradient(900px 320px at 88% 10%, rgba(255,255,255,.08), transparent 45%),
-    linear-gradient(135deg, #0b1f3a 0%, #102a4c 55%, #113c63 100%);
-  border-bottom:1px solid rgba(255,255,255,.08);
+    radial-gradient(800px 260px at 12% 10%, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(900px 320px at 88% 10%, rgba(255,255,255,.10), transparent 45%),
+    linear-gradient(135deg, #b89a68 0%, #a98755 55%, #87693e 100%);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
 }
 .init-admin-hero::before{
   content:"";
@@ -418,7 +420,7 @@ $selectedAgreementCode = $_POST['_agreement_code'] ?? $agreementPrefill;
   width:420px; height:420px;
   border-radius:50%;
   bottom:-180px; right:-100px;
-  background: radial-gradient(circle, rgba(42,169,255,.18), transparent 68%);
+background: radial-gradient(circle, rgba(255,255,255,.18), transparent 68%);
   animation:initFloatTwo 10s ease-in-out infinite;
 }
 @keyframes initFloatOne{
@@ -563,10 +565,9 @@ $selectedAgreementCode = $_POST['_agreement_code'] ?? $agreementPrefill;
   box-shadow:0 10px 22px rgba(2,8,23,.06);
 }
 .init-tab-btn.active{
-  color:#fff;
-  border-color:var(--uob-navy);
-  background:linear-gradient(180deg, var(--uob-navy), var(--uob-navy-2));
-  box-shadow:0 14px 30px rgba(11,31,58,.16);
+  color:#ffffff !important;
+  border-color:#8f6f3f !important;
+  background:linear-gradient(180deg, #b89a68, #8f6f3f) !important;
 }
 
 .init-tab-pane{
@@ -834,6 +835,35 @@ textarea.init-input{
   background:#c9a227;
   color:#fff;
   transform:translateY(-2px);
+}
+/* FORCE INITIATIVE HERO COLOR */
+html body .init-admin-hero {
+  background: #b89a68 !important;
+  background-image:
+    linear-gradient(135deg, #8f6f3f 0%, #b89a68 55%, #8f6f3f 100%) !important;
+}
+
+
+/* خلي الكلام واضح */
+html body .init-admin-hero h1,
+html body .init-admin-hero p,
+html body .init-admin-hero span,
+html body .init-admin-hero strong {
+  color: #ffffff !important;
+}
+
+/* بوكسات الإحصائيات */
+html body .init-stat {
+  background: rgba(11,31,58,.22) !important;
+  border: 1px solid rgba(255,255,255,.25) !important;
+}
+
+html body .init-stat span {
+  color: rgba(255,255,255,.85) !important;
+}
+
+html body .init-stat strong {
+  color: #ffffff !important;
 }
 
 </style>

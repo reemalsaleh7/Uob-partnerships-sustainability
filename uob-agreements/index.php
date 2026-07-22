@@ -390,55 +390,119 @@ height: clamp(430px, 52vw, 700px);
   </div>
 </section>
 
-<!-- SERVICES -->
-<!-- SERVICES -->
+<!-- SERVICES WITHOUT IMAGES -->
 <section class="landing-section landing-alt" id="services">
   <div class="container">
+
     <h2 class="landing-h2 text-center"><?= h(tl('الخدمات', 'Services')) ?></h2>
     <div class="landing-underline mx-auto"></div>
 
-    <div class="row g-4 mt-2">
-      <div class="col-md-4">
-        <a class="service-card" href="sdg.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-          <div class="service-media"
-               style="background-image: url('assets/image/THEM/sdg.png'); background-size: cover; background-position: center;">
-          </div>
-          <div class="service-body">
-            <h3><?= h(tl('عرض SDGs والأثر', 'SDG Reporting & Impact')) ?></h3>
-            <p><?= h(tl('صفحات منظمة لأهداف التنمية المستدامة وربطها بالمبادرات.', 'Structured SDG pages linked to initiatives and outcomes.')) ?></p>
-          </div>
-        </a>
-      </div>
+    <style>
+      .clean-services-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 28px;
+        margin-top: 35px;
+      }
 
-      <div class="col-md-4">
-        <a class="service-card" href="agreements.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-          <div class="service-media"
-               style="background-image: url('assets/image/THEM/Agreements-and-partnerships.png'); background-size: cover; background-position: center;">
-          </div>
-          <div class="service-body">
-            <h3><?= h(tl('دليل الاتفاقيات والشراكات', 'Partnerships & Agreements')) ?></h3>
-            <p><?= h(tl('مساحة مركزية لعرض الاتفاقيات ومذكرات التفاهم والجهات المتعاونة.', 'A centralized directory to publish and browse agreements and partners.')) ?></p>
-          </div>
-        </a>
-      </div>
+      .clean-service-card {
+        min-height: 310px;
+        background: #ffffff;
+        border: 1px solid rgba(230,235,242,.95);
+        border-radius: 24px;
+        padding: 38px 30px;
+        text-align: center;
+        text-decoration: none !important;
+        box-shadow: 0 14px 35px rgba(2,8,23,.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: .25s ease;
+      }
 
-      <div class="col-md-4">
-        <a class="service-card" href="initiatives.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-          <div class="service-media"
-               style="background-image: url('assets/image/THEM/Initiatives.png'); background-size: cover; background-position: center;">
-          </div>
-          <div class="service-body">
-            <h3><?= h(tl('مكتبة المبادرات', 'Initiatives Library')) ?></h3>
-            <p><?= h(tl('عرض المبادرات الأكاديمية ومشاريع الاستدامة مع تفاصيل وأدلة.', 'A curated catalogue of initiatives with clear details and evidence.')) ?></p>
-          </div>
-        </a>
-      </div>
+      .clean-service-card:hover {
+        transform: translateY(-7px);
+        box-shadow: 0 22px 50px rgba(2,8,23,.14);
+      }
+
+      .clean-service-icon {
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        background: #0b1f3a;
+        color: #faf8f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 950;
+        margin-bottom: 24px;
+        box-shadow: 0 12px 28px rgba(11,31,58,.20);
+      }
+
+      .clean-service-card h3 {
+        color: #0b1f3a;
+        font-size: 26px;
+        font-weight: 950;
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+
+      .clean-service-card p {
+        color: #334155;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.9;
+        margin: 0;
+      }
+
+      @media (max-width: 992px) {
+        .clean-services-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <div class="clean-services-grid">
+
+      <a class="clean-service-card" href="sdg.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
+        <div class="clean-service-icon">SDG</div>
+        <h3><?= h(tl('عرض SDGs والأثر', 'SDG Reporting & Impact')) ?></h3>
+        <p>
+          <?= h(tl(
+            'صفحات منظمة لأهداف التنمية المستدامة وربطها بالمبادرات والنتائج.',
+            'Structured SDG pages linked to initiatives, outcomes, and impact.'
+          )) ?>
+        </p>
+      </a>
+
+      <a class="clean-service-card" href="agreements.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
+        <div class="clean-service-icon">AGR</div>
+        <h3><?= h(tl('دليل الاتفاقيات والشراكات', 'Partnerships & Agreements')) ?></h3>
+        <p>
+          <?= h(tl(
+            'مساحة مركزية لعرض الاتفاقيات ومذكرات التفاهم والجهات المتعاونة.',
+            'A centralized directory to browse agreements, MoUs, and partners.'
+          )) ?>
+        </p>
+      </a>
+
+      <a class="clean-service-card" href="initiatives.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
+        <div class="clean-service-icon">INI</div>
+        <h3><?= h(tl('مكتبة المبادرات', 'Initiatives Library')) ?></h3>
+        <p>
+          <?= h(tl(
+            'عرض المبادرات الأكاديمية ومشاريع الاستدامة مع تفاصيل واضحة.',
+            'A curated catalogue of initiatives with clear details and evidence.'
+          )) ?>
+        </p>
+      </a>
+
     </div>
+
   </div>
 </section>
-
-
-
 <?php
 /* ========= charts aggregates (from agreements) ========= */
 $byType = [];
@@ -591,13 +655,18 @@ $chart_country_values = array_values($topCountries);
   const SDG_VALUES     = <?= json_encode($chart_sdg_values, JSON_UNESCAPED_UNICODE) ?>;
 </script>
 <!-- INSIGHTS (CHARTS) -->
-...
+
 </section>
 <!-- PARTNERS -->
-<section class="landing-section partners-logo-section" id="partners">
-  <a class="partners-view-all" href="partners.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>" title="<?= h(tl('عرض كل الشركاء', 'View all partners')) ?>">
-  ←
-</a>
+<section class="landing-section partners-logo-section" id="partners" style="position: relative !important;">
+
+  <a class="partners-view-all"
+     style="position: absolute !important; top: 330px !important; left: 55px !important;"
+     href="partners.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>"
+     title="<?= h(tl('عرض كل الشركاء', 'View all partners')) ?>">
+    ›
+  </a>
+
   <div class="container">
 
     <div class="partners-logo-head uob-reveal zoom">
@@ -615,80 +684,54 @@ $chart_country_values = array_values($topCountries);
     <div class="partners-marquee uob-reveal zoom">
       <div class="partners-marquee-track">
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner1.png" alt="Partner 1">
-        </div>
+        <a class="partner-logo-card" href="https://www.customs.gov.bh/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/الجمارك.png" alt="الجمارك">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner2.png" alt="Partner 2">
-        </div>
+        <a class="partner-logo-card" href="https://www.moo.gov.bh/moo/ar/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/وزارة النفط والبيئة.png" alt="وزارة النفط والبيئة">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner3.png" alt="Partner 3">
-        </div>
+        <a class="partner-logo-card" href="https://www.works.gov.bh/English/Pages/home2.aspx" target="_blank" rel="noopener">
+          <img src="assets/image/logo/وزارة الاشغال.png" alt="وزارة الاشغال">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner4.png" alt="Partner 4">
-        </div>
+        <a class="partner-logo-card" href="https://www.hw.ac.uk/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/Heriot Watt University.png" alt="Heriot Watt University">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner5.png" alt="Partner 5">
-        </div>
+        <a class="partner-logo-card" href="https://www.stc.com.bh/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/STC.png" alt="STC">
+        </a>
 
 
-        <!-- نفس اللوقوهات مكررة عشان يصير لوب ناعم -->
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner1.png" alt="Partner 1">
-        </div>
+        <!-- مكررين عشان الحركة تصير ناعمة -->
+        <a class="partner-logo-card" href="https://www.customs.gov.bh/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/الجمارك.png" alt="الجمارك">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner2.png" alt="Partner 2">
-        </div>
+        <a class="partner-logo-card" href="https://www.moo.gov.bh/moo/ar/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/وزارة النفط والبيئة.png" alt="وزارة النفط والبيئة">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner3.png" alt="Partner 3">
-        </div>
+        <a class="partner-logo-card" href="https://www.works.gov.bh/English/Pages/home2.aspx" target="_blank" rel="noopener">
+          <img src="assets/image/logo/وزارة الاشغال.png" alt="وزارة الاشغال">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner4.png" alt="Partner 4">
-        </div>
+        <a class="partner-logo-card" href="https://www.hw.ac.uk/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/Heriot Watt University.png" alt="Heriot Watt University">
+        </a>
 
-        <div class="partner-logo-card">
-          <img src="assets/image/partners/partner5.png" alt="Partner 5">
-        </div>
+        <a class="partner-logo-card" href="https://www.stc.com.bh/" target="_blank" rel="noopener">
+          <img src="assets/image/logo/STC.png" alt="STC">
+        </a>
 
       </div>
     </div>
 
   </div>
 </section>
-<!-- WORLD MAP (Countries) -->
-<section class="landing-section landing-green" id="world-map">
-  <div class="container">
-    <h2 class="landing-h2 text-center"><?= h(tl('خريطة الدول والشراكات', 'Countries & Partnerships Map')) ?></h2>
-    <div class="landing-underline mx-auto landing-underline-white"></div>
 
-    <div class="map-pro-wrap mt-4">
-      <div id="worldMap"></div>
-      <div class="map-pro-hint">
-        <?= h(tl('اضغط على أي دولة لعرض جميع الاتفاقيات والمبادرات الخاصة بها.', 'Click any country to view its agreements and initiatives.')) ?>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Modal -->
-<div class="modal fade" id="countryModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content" dir="<?= ($_SESSION['lang'] ?? 'ar') === 'ar' ? 'rtl' : 'ltr' ?>">
-      <div class="modal-header">
-        <h5 class="modal-title" id="countryModalTitle"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="countryModalBody"></div>
-    </div>
-  </div>
-</div>
 
 
 <!-- Leaflet (pretty tiles) -->

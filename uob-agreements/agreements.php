@@ -244,9 +244,55 @@ $aboutImg = 'assets/image/THEM/agreement1.png';
   display:flex !important;
   align-items:center !important;
 }
+/* AGREEMENTS HERO BUTTONS - LIKE HOME PAGE */
+.agreement-hero-actions {
+  margin-top: 18px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
 
+.agreement-hero-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 190px !important;
+  min-height: 50px !important;
+  padding: 10px 24px !important;
+  border-radius: 14px !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  text-decoration: none !important;
+  border: 0 !important;
+  box-shadow: 0 10px 24px rgba(2,8,23,.20) !important;
+  transition: .2s ease !important;
+}
+
+.agreement-btn-dark {
+  background: #0b1f3a !important;
+  color: #ffffff !important;
+}
+
+.agreement-btn-light {
+  background: #ffffff !important;
+  color: #0b1f3a !important;
+  border: 1px solid rgba(11,31,58,.20) !important;
+}
+
+.agreement-btn-dark:hover {
+  background: #102a4c !important;
+  color: #ffffff !important;
+}
+
+.agreement-btn-light:hover {
+  background: #f8fafc !important;
+  color: #0b1f3a !important;
+}
 
 </style>
+
 
 
 <section class="sdg-heroX">
@@ -279,14 +325,15 @@ $aboutImg = 'assets/image/THEM/agreement1.png';
         </div>
       </div>
 
-      <div class="landing-actions" style="margin-top:14px;">
-        <button type="button" class="hero-btn-init primary" id="openAgreementModal">
-            <?= h(tt('view_agreements')) ?>
-          </button>
+      <div class="agreement-hero-actions">
+  <button type="button" class="agreement-hero-btn agreement-btn-dark" id="openAgreementModal">
+    <?= h(tt('view_agreements')) ?>
+  </button>
 
-        <a class="btn btn-outline-primary" href="initiatives.php?lang=<?= h($lang) ?>"><?= h(tt('view_initiatives')) ?></a>
-        
-      </div>
+  <a class="agreement-hero-btn agreement-btn-light" href="initiatives.php?lang=<?= h($lang) ?>">
+    <?= h(tt('view_initiatives')) ?>
+  </a>
+</div>
     </div>
   </div>
 </section>
@@ -993,5 +1040,23 @@ $aboutImg = 'assets/image/THEM/agreement1.png';
   applyFilters();
 })();
 </script>
+<!-- AGREEMENTS MAP SECTION -->
+<section class="sdg-sectionX sdg-sectionX-alt" id="agreements-map">
+  <div class="container">
 
+    <div class="sdg-centerX">
+      <h2><?= h($isArabic ? 'خريطة الاتفاقيات' : 'Partnership Map') ?></h2>
+      <div class="sdg-lineX center"></div>
+    </div>
+
+    <div style="margin-top:30px; border-radius:24px; overflow:hidden; background:#ffffff; box-shadow:0 14px 35px rgba(2,8,23,.12);">
+      <iframe
+        src="partnership/partners.php?embed=1&lang=<?= h($lang) ?>"
+        style="width:100%; height:1150px; border:0; display:block;"
+        loading="lazy">
+      </iframe>
+    </div>
+
+  </div>
+</section>
 <?php require_once __DIR__ . '/footer.php'; ?>
