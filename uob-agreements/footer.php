@@ -51,6 +51,13 @@ $base = ($isAdmin || $isPartnership) ? '../' : '';
               SDGs | أهداف التنمية المستدامة
             </a>
           </li>
+          <?php if (!empty($agreementWorkspaceEnabled)): ?>
+            <li class="mb-2">
+              <a class="uob-footer-link" href="<?= $base ?>workspace/agreements.php">
+                Agreement Workspace | مساحة عمل الاتفاقيات
+              </a>
+            </li>
+          <?php endif; ?>
         </ul>
       </div>
 

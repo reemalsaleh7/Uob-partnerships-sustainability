@@ -1,5 +1,12 @@
 # SQL Database Changes Summary
 
+## 2026-07-21 — Agreement integration hardening
+
+- Added temporary account-lock expiry with a supporting partial index.
+- Repaired complete Agreement Creator, Agreement Approver, and System
+  Administrator permission grants for existing and fresh deployments.
+- Added release-readiness verification for authentication columns.
+
 ## Overview
 This document summarizes the database-related changes made during the review and cleanup pass.
 

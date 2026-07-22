@@ -28,7 +28,16 @@ class UserRepository {
 
     public function findByEmail(string $email): ?array {
         $stmt = $this->db->prepare(
-            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, last_login, is_active FROM users WHERE email = :email LIMIT 1"
+            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, locked_until, last_login, is_active FROM users WHERE email = :email LIMIT 1"
+        );
+        $stmt->execute(['email' => $email]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
+    public function findByEmailForUpdate(string $email): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT user_id, first_name, last_name, email, password_hash, failed_login_attempts, locked_until, last_login, is_active FROM users WHERE email = :email LIMIT 1 FOR UPDATE"
         );
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
@@ -44,6 +53,20 @@ class UserRepository {
         return $user ?: null;
     }
 
+    public function findProfileById(int $userId): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT user_id, university_id, first_name, last_name,
+                    email, phone, last_login, password_changed_at,
+                    is_active, created_at
+             FROM users
+             WHERE user_id = :user_id
+             LIMIT 1'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    }
+
     public function updateLastLogin(int $userId): void {
         $stmt = $this->db->prepare(
             "UPDATE users SET last_login = NOW() WHERE user_id = :user_id"
@@ -51,18 +74,40 @@ class UserRepository {
         $stmt->execute(['user_id' => $userId]);
     }
 
-    public function incrementFailedAttempts(int $userId): void {
+    public function recordFailedLogin(int $userId): void {
         $stmt = $this->db->prepare(
-            "UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE user_id = :user_id"
+            "UPDATE users
+             SET failed_login_attempts = failed_login_attempts + 1,
+                 locked_until = CASE
+                     WHEN failed_login_attempts + 1 >= 5
+                     THEN NOW() + INTERVAL '15 minutes'
+                     ELSE locked_until
+                 END
+             WHERE user_id = :user_id"
         );
         $stmt->execute(['user_id' => $userId]);
     }
 
     public function resetFailedAttempts(int $userId): void {
         $stmt = $this->db->prepare(
-            "UPDATE users SET failed_login_attempts = 0 WHERE user_id = :user_id"
+            "UPDATE users
+             SET failed_login_attempts = 0,
+                 locked_until = NULL
+             WHERE user_id = :user_id"
         );
         $stmt->execute(['user_id' => $userId]);
+    }
+
+    public function isActive(int $userId): bool {
+        $stmt = $this->db->prepare(
+            'SELECT is_active FROM users WHERE user_id = :user_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return in_array(
+            $stmt->fetchColumn(),
+            [true, 1, '1', 't', 'true'],
+            true
+        );
     }
 
     public function getRoles(int $userId): array {
@@ -102,5 +147,31 @@ class UserRepository {
         ");
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll();
+    }
+
+    public function createLegacyHandoff(
+        int $userId,
+        string $tokenHash,
+        DateTimeImmutable $expiresAt
+    ): void {
+        $delete = $this->db->prepare(
+            'DELETE FROM workspace_legacy_handoffs
+             WHERE user_id = :user_id
+               AND (used_at IS NOT NULL OR expires_at < NOW())'
+        );
+        $delete->execute(['user_id' => $userId]);
+
+        $insert = $this->db->prepare(
+            'INSERT INTO workspace_legacy_handoffs (
+                user_id, token_hash, expires_at
+             ) VALUES (
+                :user_id, :token_hash, :expires_at
+             )'
+        );
+        $insert->execute([
+            'user_id' => $userId,
+            'token_hash' => $tokenHash,
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+        ]);
     }
 }
