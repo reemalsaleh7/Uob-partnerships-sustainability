@@ -93,6 +93,21 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Re-authorize and stream one private document.                           |
 | `DELETE` | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete the actor's own still-manageable document.                       |
 | `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
+| `GET`    | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | List shared comments plus only the caller's private notes.              |
+| `POST`   | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | Add a field- or selected-text comment to the latest immutable version.  |
+| `PATCH`  | `/agreements/{id}/annotations/{annotation}/resolve` | `VIEW_AGREEMENT` | Resolve an authorized comment.                         |
+| `DELETE` | `/agreements/{id}/annotations/{annotation}` | `VIEW_AGREEMENT` | Delete the caller's own comment.                                |
+| `GET`    | `/agreements/{id}/review-context`     | `VIEW_AGREEMENT`   | Return unseen field changes since the caller's last viewed version.     |
+| `POST`   | `/agreements/{id}/viewed`             | `VIEW_AGREEMENT`   | Record the immutable version the caller has now reviewed.               |
+
+`PUT /agreements/{id}` requires a non-empty `change_summary` of at most
+1,000 characters. The summary is stored on the new immutable version and is
+shown beside every field changed by that revision.
+
+Private annotation content is filtered at the query boundary. It is returned
+only when `author_user_id` equals the authenticated user, including when the
+requesting account has the System Administrator role. Audit entries record
+private-note metadata but never copy the comment text.
 
 ### List active partners
 
@@ -189,6 +204,25 @@ The server snapshots scalar fields, partners, SDGs, rankings, contacts, executiv
 | `POST` | `/agreement-performance-reports/{id}/submit` | `MANAGE_AGREEMENT_REPORTS` | Validate evidence and submit for review. |
 | `POST` | `/agreement-performance-reports/{id}/review` | `REVIEW_AGREEMENT_REPORTS` | `ACCEPT` or `RETURN`; return comments are mandatory. |
 | `GET` | `/agreement-performance-dashboard?year=YYYY` | `VIEW_AGREEMENT_DASHBOARD` | Aggregate compliance, deadlines, accepted metrics, and program health. |
+
+Agreement creators with `MANAGE_AGREEMENT_REPORTS` may also use the performance
+dashboard. Their response is scoped to Agreements they created and includes
+`scope: "OWN_PORTFOLIO"`; approvers and administrators receive
+`scope: "INSTITUTIONAL"`.
+
+### Review timeline
+
+| Method | Endpoint | Permission | Purpose |
+|---|---|---|---|
+| `GET` | `/agreements/{id}/workflow-timeline` | `VIEW_AGREEMENT` plus record visibility | Latest workflow, ordered stages, current assigned office/reviewer, completed actors, and action history. |
+
+### Initiative portal handoff
+
+`POST /legacy-initiative-handoff` requires an authenticated workspace session
+and Initiative Creator authority. It returns a two-minute one-time token. The
+browser immediately sends that token to `uob-agreements/workspace-handoff.php`,
+which consumes it, opens the existing Initiative portal session, and redirects
+to the requested allow-listed Initiative page. The raw token is never stored.
 
 The annual period generator is CLI-only and is documented in
 `docs/agreement-performance-monitoring.md`.
