@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../services/PermissionService.php';
 require_once __DIR__ . '/../services/AuditService.php';
-
+require_once __DIR__ . '/../helpers/ApiSession.php';
 class AuthService {
     private UserRepository $userRepo;
     private PermissionService $permissionService;
@@ -50,7 +50,7 @@ class AuthService {
             $this->userRepo->updateLastLogin($userId);
             $this->auditService->logLogin($userId, ['email' => $user['email']]);
 
-            session_regenerate_id(true);
+            ApiSession::regenerate();
 
             $_SESSION['user_id'] = $userId;
             $_SESSION['email'] = $user['email'];
