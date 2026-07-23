@@ -203,7 +203,15 @@ FROM (VALUES
 ) AS v(email, position_name, unit_code)
 JOIN users u ON u.email = v.email
 JOIN positions p ON p.name = v.position_name
-JOIN organizational_units ou ON ou.code = v.unit_code;
+JOIN organizational_units ou ON ou.code = v.unit_code
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM user_positions existing
+    WHERE existing.position_id = p.position_id
+      AND existing.unit_id = ou.unit_id
+      AND existing.is_active = TRUE
+      AND p.is_unique = TRUE
+);
 
 INSERT INTO partners (organization_name, partner_type, country, email, is_active)
 SELECT v.organization_name, v.partner_type, v.country, v.email, TRUE
