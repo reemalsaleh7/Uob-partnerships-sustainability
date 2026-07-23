@@ -210,87 +210,183 @@ foreach ($allCountries as $country) {
   ];
 }
 
-/* ========= Hero image ========= */
-$heroImageRel = 'assets/image/THEM/home-header.png';
 ?>
+<style>
+  /* HERO VIDEO FOR WEBSITE */
+ .uob-hero-unified {
+  width: 100%;
+  padding: 0 0 100px;
+  background: #f7f9fd;
+  overflow: hidden;
+}
+  .uob-hero-unified .container {
+  position: relative;
+  max-width: 100%;
+  width: 100%;
+  padding: 0   ;
+  margin: 0;
+}
+
+  .uob-hero-video-box {
+    width: 100vw;
+height: clamp(430px, 52vw, 700px);
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    overflow: hidden;
+    background: #0b1f3a;
+  }
+
+  .uob-hero-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+.uob-hero-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: min(900px, 90%);
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  padding: 0 20px;
+  text-align: center;
+  box-shadow: none;
+  z-index: 5;
+}
+.uob-hero-card .landing-underline {
+  margin: 16px auto 0;
+}
+
+  .landing-hero-title {
+  color: #fdfdfd;
+  font-size: 60px;
+  font-weight: 950;
+  line-height: 1.35;
+  margin: 0;
+}
+
+  @media (max-width: 768px) {
+    .uob-hero-video-box {
+      height: 240px;
+    }
+
+    .uob-hero-card {
+      margin: 22px 16px 0;
+      padding: 22px;
+    }
+
+  .landing-hero-title {
+  color: #c9a227;
+  font-size: 52px;
+  font-weight: 950;
+  line-height: 1.25;
+  margin: 0;
+  text-shadow: 0 4px 18px rgba(0,0,0,.45);
+}
+
+  }
+  /* HERO BUTTONS */
+.hero-actions-main {
+  margin-top: 24px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.hero-btn-main {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 190px !important;
+  min-height: 50px !important;
+  padding: 10px 24px !important;
+  border-radius: 14px !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  text-decoration: none !important;
+  box-shadow: 0 10px 24px rgba(2,8,23,.20) !important;
+  transition: .2s ease !important;
+}
+
+/* استعراض الاتفاقيات: كحلي والكلام أبيض */
+.hero-btn-agreements {
+  background: #0b1f3a !important;
+  color: #ffffff !important;
+  border: 1px solid #0b1f3a !important;
+}
+
+/* استعراض المبادرات: أبيض والكلام كحلي */
+.hero-btn-initiatives {
+  background: #ffffff !important;
+  color: #0b1f3a !important;
+  border: 1px solid #ffffff !important;
+}
+
+.hero-btn-agreements:hover {
+  background: #102a4c !important;
+  color: #ffffff !important;
+}
+
+.hero-btn-initiatives:hover {
+  background: #f8fafc !important;
+  color: #0b1f3a !important;
+}
+</style>
 
 <!-- HERO -->
-<section class="landing-hero">
-   <div 
-      class="landing-hero-media"
-      style="
-      background-image:url('<?= h($heroImageRel) ?>');
-      background-size:cover;
-      background-position:85% center !important;
-      background-repeat:no-repeat;
-      ">
-    </div>
-  <div class="landing-hero-overlay"></div>
+<section class="uob-hero-unified">
 
-  <div class="container landing-hero-content">
-    <div class="landing-hero-card">
+  <div class="container">
+
+    <div class="uob-hero-video-box">
+      <video class="uob-hero-video" autoplay muted loop playsinline>
+<source src="assets/video/hero-video (3).mp4" type="video/mp4">
+      </video>
+    </div>
+
+    <div class="uob-hero-card">
       <h1 class="landing-hero-title">
-        <?= h(tl('الشراكات والاستدامة  - جامعة البحرين', 'University of Bahrain Partnerships & Sustainability ')) ?>
+        <?= h(tl('بوابة الشراكات والاستدامة في جامعة البحرين', 'University of Bahrain Partnerships and Sustainability Portal')) ?>
       </h1>
+
       <div class="landing-underline"></div>
-      
+<div class="hero-actions-main">
+  <a class="hero-btn-main hero-btn-agreements" href="agreements.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
+    <?= h(tl('استعراض الاتفاقيات', 'Browse Agreements')) ?>
+  </a>
 
-      <div class="d-flex flex-wrap gap-2 mt-3">
-        <a class="btn btn-primary" href="agreements.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-          <?= h(tl('استعراض الاتفاقيات', 'Browse Agreements')) ?>
-        </a>
-        <a class="btn btn-outline-primary" href="initiatives.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-          <?= h(tl('استعراض المبادرات', 'Browse Initiatives')) ?>
-        </a>
-      </div>
+  <a class="hero-btn-main hero-btn-initiatives" href="initiatives.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
+    <?= h(tl('استعراض المبادرات', 'Browse Initiatives')) ?>
+  </a>
+</div>
 
-      <div class="landing-kpis mt-4">
-        <div class="landing-kpi">
-          <div class="kpi-num"><?= (int)$totalAgreements ?></div>
-          <div class="kpi-lbl"><?= h(tl('إجمالي الاتفاقيات', 'Total Agreements')) ?></div>
-        </div>
-        <div class="landing-kpi">
-          <div class="kpi-num"><?= (int)$totalAgreementsActive ?></div>
-          <div class="kpi-lbl"><?= h(tl('الاتفاقيات السارية', 'Active Agreements')) ?></div>
-        </div>
-        <div class="landing-kpi">
-          <div class="kpi-num"><?= (int)$totalInitiatives ?></div>
-          <div class="kpi-lbl"><?= h(tl('المبادرات', 'Initiatives')) ?></div>
-        </div>
-        <div class="landing-kpi">
-          <div class="kpi-num"><?= (int)$totalPartners ?></div>
-          <div class="kpi-lbl"><?= h(tl('جهات متعاونة', 'Partners')) ?></div>
-        </div>
-      </div>
-    </div>
-  </div>
 </section>
 
 <!-- ABOUT -->
 <section class="landing-section" id="about">
   <div class="container">
-    <div class="landing-split">
-      <div class="landing-media-box">
-            <div class="landing-media-box about-photo">
-              <div class="about-photo-frame">
-               <img src="assets/image/hero/IMG-20240612-WA0005.jpg" alt="جامعة البحرين">
-               </div>
-            </div>
-      </div>
 
-      <div class="landing-text">
+<div class="landing-text about-text-only uob-reveal zoom">
         <h2 class="landing-h2"><?= h(tl('عن البوابة', 'About the Portal')) ?></h2>
-        <div class="landing-underline"></div>
-        <p class="landing-p">
-          <?= h(tl(
-            'بوابة الاستدامة والشراكات في جامعة البحرين هي منصة رسمية لعرض الشراكات والاتفاقيات والمبادرات الأكاديمية المرتبطة بالاستدامة. تساعد البوابة على تنظيم البيانات، رفع الشفافية، وتسهيل الوصول للمعلومات للطلبة والجهات المعنية.',
-            'The portal is the official hub for showcasing UOB partnerships, agreements, and sustainability initiatives. It supports transparency, structured documentation, and meaningful collaboration.'
-          )) ?>
-        </p>
 
-        
-      </div>
+      <div class="landing-underline"></div>
+
+      <p class="landing-p">
+        <?= h(tl(
+          'بوابة الاستدامة والشراكات في جامعة البحرين هي منصة رسمية لعرض الشراكات والاتفاقيات والمبادرات الأكاديمية المرتبطة بالاستدامة. تساعد البوابة على تنظيم البيانات، رفع الشفافية، وتسهيل الوصول للمعلومات للطلبة والجهات المعنية.',
+          'The portal is the official hub for showcasing UOB partnerships, agreements, and sustainability initiatives. It supports transparency, structured documentation, and meaningful collaboration.'
+        )) ?>
+      </p>
     </div>
+
   </div>
 </section>
 
@@ -494,8 +590,78 @@ $chart_country_values = array_values($topCountries);
   const SDG_LABELS     = <?= json_encode($chart_sdg_labels, JSON_UNESCAPED_UNICODE) ?>;
   const SDG_VALUES     = <?= json_encode($chart_sdg_values, JSON_UNESCAPED_UNICODE) ?>;
 </script>
+<!-- INSIGHTS (CHARTS) -->
+...
+</section>
+<!-- PARTNERS -->
+<section class="landing-section partners-logo-section" id="partners">
+  <a class="partners-view-all" href="partners.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>" title="<?= h(tl('عرض كل الشركاء', 'View all partners')) ?>">
+  ←
+</a>
+  <div class="container">
+
+    <div class="partners-logo-head uob-reveal zoom">
+      <h2 class="landing-h2"><?= h(tl('شركاؤنا', 'Our Partners')) ?></h2>
+      <div class="landing-underline"></div>
+
+      <p class="partners-logo-sub">
+        <?= h(tl(
+          'نفخر بشراكاتنا مع مؤسسات أكاديمية وحكومية ومهنية تدعم التعاون والاستدامة.',
+          'We are proud of our partnerships with academic, government, and professional organizations that support collaboration and sustainability.'
+        )) ?>
+      </p>
+    </div>
+
+    <div class="partners-marquee uob-reveal zoom">
+      <div class="partners-marquee-track">
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner1.png" alt="Partner 1">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner2.png" alt="Partner 2">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner3.png" alt="Partner 3">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner4.png" alt="Partner 4">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner5.png" alt="Partner 5">
+        </div>
 
 
+        <!-- نفس اللوقوهات مكررة عشان يصير لوب ناعم -->
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner1.png" alt="Partner 1">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner2.png" alt="Partner 2">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner3.png" alt="Partner 3">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner4.png" alt="Partner 4">
+        </div>
+
+        <div class="partner-logo-card">
+          <img src="assets/image/partners/partner5.png" alt="Partner 5">
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
 <!-- WORLD MAP (Countries) -->
 <section class="landing-section landing-green" id="world-map">
   <div class="container">

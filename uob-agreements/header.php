@@ -341,7 +341,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 
 <?php if (!empty($extraHead)) echo $extraHead; ?>
 
-<style>
+<<style>
 .updates-dot{
   position:absolute;
   top:4px;
@@ -353,10 +353,38 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
   display:inline-block;
   box-shadow:0 0 0 3px rgba(212,175,55,.18);
 }
+
 [dir="rtl"] .updates-dot{
   right:auto;
   left:-2px;
 }
+
+/* BRAND TITLE CONTROL */
+html body .uob-navbar .navbar-brand span {
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  color: #0b1f3a !important;
+  white-space: nowrap !important;
+}
+
+html body .uob-navbar .navbar-brand img {
+  height: 34px !important;
+  width: auto !important;
+}
+
+</style>
+</head>
+<body>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.body.childNodes.forEach(function (node) {
+    if (node.nodeType === 3 && node.textContent.trim() === '<') {
+      node.remove();
+    }
+  });
+});
+</script>
+
 /* Notification Bell Styles */
 .notification-bell {
     position: relative;

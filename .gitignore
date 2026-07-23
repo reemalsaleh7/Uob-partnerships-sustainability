@@ -1,0 +1,6 @@
+/config/database.local.php
+/storage/private/agreement-documents/**
+/storage/private/lifecycle-request-documents/**
+!/storage/private/web.config
+!/storage/private/**/.gitkeep
+
