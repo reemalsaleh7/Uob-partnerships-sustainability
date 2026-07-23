@@ -4,7 +4,16 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-
+// Get unread notification count for the bell
+$unreadCount = 0;
+if (isset($_SESSION['user_email'])) {
+    require_once __DIR__ . '/services/NotificationService.php';
+    $notifService = new NotificationService();
+    $userId = $notifService->getUserIdByEmail($_SESSION['user_email']);
+    if ($userId) {
+        $unreadCount = $notifService->getUnreadCount($userId);
+    }
+}
 /** Language (session + ?lang=ar/en) */
 $supportedLang = ['ar', 'en'];
 if (isset($_GET['lang'])) {
@@ -321,7 +330,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="<?= $base ?>css/style.css?v=3005" rel="stylesheet">
 
   <?php if (!empty($extraCss)): ?>
@@ -376,6 +385,180 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+/* Notification Bell Styles */
+.notification-bell {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #e74c3c;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border: 2px solid white;
+}
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.notification-bell .fa-bell {
+    font-size: 20px;
+    color: #333;
+}
+/* Toast Notification Styles */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    width: 100%;
+}
+
+/* RTL (Arabic) - Top Left */
+[dir="rtl"] .toast-container {
+    left: 20px;
+    right: auto;
+}
+
+/* LTR (English) - Top Right */
+[dir="ltr"] .toast-container {
+    right: 20px;
+    left: auto;
+}
+
+.toast-notification {
+    background: #0b1f3a;
+    color: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    border-right: 5px solid #c9a227;
+    animation: slideIn 0.5s ease, fadeOut 0.5s ease 4.5s forwards;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 380px;
+}
+
+/* RTL (Arabic) - Slide from Left */
+[dir="rtl"] .toast-notification {
+    border-right: none;
+    border-left: 5px solid #c9a227;
+    animation: slideInLeft 0.5s ease, fadeOutLeft 0.5s ease 4.5s forwards;
+}
+
+/* LTR (English) - Slide from Right */
+[dir="ltr"] .toast-notification {
+    border-right: 5px solid #c9a227;
+    border-left: none;
+    animation: slideInRight 0.5s ease, fadeOutRight 0.5s ease 4.5s forwards;
+}
+
+.toast-notification .toast-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.toast-notification .toast-content {
+    flex: 1;
+}
+
+.toast-notification .toast-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #fff;
+}
+
+.toast-notification .toast-message {
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.4;
+}
+
+.toast-notification .toast-time {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+.toast-notification .toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.6;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+.toast-notification .toast-close:hover {
+    opacity: 1;
+}
+
+/* Slide Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutRight {
+    to {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+}
+
+@keyframes fadeOutLeft {
+    to {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+}
+</style>
+</head>
+<body>
+<!-- Toast Notification Container -->
+<div id="toastContainer" class="toast-container"></div>
 <!-- Utility bar -->
 <div class="uob-utility-bar border-bottom">
   <div class="container d-flex align-items-center gap-3 py-2">
@@ -434,6 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <?php if ($isLoggedIn): ?>
+  <!-- DEBUG: isLoggedIn=<?= $isLoggedIn ? 'true' : 'false' ?>, unreadCount=<?= $unreadCount ?>, updatesCount=<?= $updatesCount ?> -->
   <li class="nav-item">
     <a class="nav-link position-relative" href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>">
       <?= $isRtl ? 'المستجدات' : 'Updates' ?>
@@ -442,8 +626,36 @@ document.addEventListener('DOMContentLoaded', function () {
       <?php endif; ?>
     </a>
   </li>
-<?php endif; ?>
 
+  <!-- 🔔 Notification Bell -->
+<li class="nav-item" style="display:flex; align-items:center;">
+    <a class="nav-link position-relative" href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>" 
+       style="font-size:22px; padding:0 10px; display:flex; align-items:center; gap:2px;">
+        🔔
+        <?php if ($unreadCount > 0): ?>
+            <span class="badge" style="
+                position:absolute;
+                top:-5px;
+                right:-5px;
+                background:#e74c3c;
+                color:white;
+                font-size:11px;
+                font-weight:bold;
+                min-width:20px;
+                height:20px;
+                border-radius:50%;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                padding:0 5px;
+                border:2px solid white;
+            ">
+                <?= min($unreadCount, 99) ?>
+            </span>
+        <?php endif; ?>
+    </a>
+</li>
+<?php endif; ?>
 
 <?php if (($_SESSION['user_email'] ?? '') === 'admin@uob.edu.bh'): ?>
   <li class="nav-item dropdown">
