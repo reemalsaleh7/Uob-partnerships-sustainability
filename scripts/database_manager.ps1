@@ -212,11 +212,25 @@ function Invoke-PsqlCapture {
     param([string]$Sql)
 
     $arguments = (Get-ConnectionArguments) + @('-q', '-A', '-t', '-c', $Sql)
-    $output = & $script:Psql @arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        # PostgreSQL writes informational NOTICE messages to stderr. Windows
+        # PowerShell must not turn those into terminating PowerShell errors;
+        # psql's process exit code remains the source of truth.
+        $ErrorActionPreference = 'Continue'
+        $output = & $script:Psql @arguments 2>&1
+        $psqlExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($psqlExitCode -ne 0) {
         throw ($output -join [Environment]::NewLine)
     }
-    return @($output | ForEach-Object { $_.ToString().Trim() } | Where-Object { $_ -ne '' })
+    return @(
+        $output |
+            ForEach-Object { $_.ToString().Trim() } |
+            Where-Object { $_ -ne '' -and $_ -notmatch '^(NOTICE|DETAIL|HINT):' }
+    )
 }
 
 function Invoke-PsqlFile {
@@ -227,8 +241,18 @@ function Invoke-PsqlFile {
     }
 
     $arguments = (Get-ConnectionArguments) + @('-f', $Path)
-    & $script:Psql @arguments
-    if ($LASTEXITCODE -ne 0) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & $script:Psql @arguments 2>&1
+        $psqlExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    foreach ($line in $output) {
+        Write-Host $line
+    }
+    if ($psqlExitCode -ne 0) {
         throw "SQL installation failed: $Path"
     }
 }
@@ -754,8 +778,18 @@ try {
 
     if ($CheckOnly) {
         Write-Host ""
+        Write-Host 'Checking optional local development data...' -ForegroundColor Cyan
+        $optionalInspection = @(Inspect-Steps -Steps @(Get-OptionalDevelopmentSteps))
+        $optionalMissing = @($optionalInspection | Where-Object { -not $_.Installed })
+
+        Write-Host ""
         if ($missing.Count -eq 0 -and $script:PhpReady) {
-            Write-Result OK 'Nothing is missing.'
+            Write-Result OK 'All required database features are installed.'
+            if ($optionalMissing.Count -gt 0) {
+                Write-Result INFO 'Optional development users/showcase data are not fully installed. Choose option 3 to add them.'
+            } else {
+                Write-Result OK 'Optional development users and showcase data are installed.'
+            }
             exit 0
         }
         if ($missing.Count -gt 0) {
