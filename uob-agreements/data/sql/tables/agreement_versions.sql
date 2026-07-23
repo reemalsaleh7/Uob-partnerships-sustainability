@@ -19,10 +19,6 @@ CREATE TABLE agreement_versions (
     change_summary TEXT,
 
 
-    agreement_snapshot JSONB
-        NOT NULL,
-
-
     created_by BIGINT
         NOT NULL,
 

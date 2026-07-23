@@ -31,8 +31,6 @@ if ($uri === '/login' && $method === 'POST') {
     $controller->logout();
 } elseif ($uri === '/me' && $method === 'GET') {
     $controller->me();
-} elseif ($uri === '/legacy-initiative-handoff' && $method === 'POST') {
-    $controller->legacyInitiativeHandoff();
 } else {
     header("HTTP/1.1 404 Not Found");
     echo json_encode(['error' => 'Route not found']);

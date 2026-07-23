@@ -22,7 +22,6 @@ CREATE TYPE organizational_unit_type AS ENUM (
 CREATE TYPE agreement_status AS ENUM (
     'DRAFT',
     'UNDER_REVIEW',
-    'REVISION_REQUIRED',
     'APPROVED',
     'ACTIVE',
     'REJECTED',
@@ -57,7 +56,6 @@ CREATE TYPE workflow_step_status AS ENUM (
     'PENDING',
     'IN_PROGRESS',
     'APPROVED',
-    'CHANGES_REQUESTED',
     'REJECTED',
     'SKIPPED'
 );
@@ -71,12 +69,6 @@ CREATE TYPE workflow_approval_type AS ENUM (
 CREATE TYPE workflow_action_type AS ENUM (
     'SUBMITTED',
     'APPROVED',
-    'CHANGES_REQUESTED',
-    'ROUTED_TO_VP',
-    'ROUTED_TO_CREATOR',
-    'ROUTED_TO_LEGAL',
-    'ROUTED_TO_FINANCE',
-    'RESUBMITTED',
     'REJECTED',
     'REDRAFTED',
     'COMPLETED'
@@ -106,7 +98,6 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     last_login TIMESTAMP,
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
-    locked_until TIMESTAMP,
     password_changed_at TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -244,10 +235,6 @@ CREATE TABLE agreement_versions (
     version_number INTEGER NOT NULL,
     document_path TEXT,
     change_summary TEXT,
-
-
-    agreement_snapshot JSONB
-        NOT NULL,
     created_by BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_versions_agreement FOREIGN KEY(agreement_id) REFERENCES agreements(agreement_id) ON DELETE CASCADE,
@@ -339,69 +326,17 @@ CREATE TABLE workflow_template_steps (
 );
 
 CREATE TABLE workflow_instances (
-    workflow_instance_id BIGINT
-        GENERATED ALWAYS AS IDENTITY
-        PRIMARY KEY,
-
-    workflow_template_id BIGINT
-        NOT NULL,
-
-    entity_type VARCHAR(50)
-        NOT NULL,
-
-    entity_id BIGINT
-        NOT NULL,
-
-    current_step INTEGER
-        NOT NULL
-        DEFAULT 1,
-
-    -- NULL: Initial VP has not decided.
-    -- FALSE: Legal review only.
-    -- TRUE: Legal and Finance reviews.
-    finance_review_required BOOLEAN,
-
-    -- Starts at 1 and increases after each redraft
-    -- is resubmitted for another review.
-    review_cycle INTEGER
-        NOT NULL
-        DEFAULT 1,
-
-    -- Latest Agreement version at the time it was returned
-    -- to the creator. Resubmission requires a newer version.
-    redraft_base_version INTEGER,
-
-    status workflow_status
-        NOT NULL
-        DEFAULT 'IN_PROGRESS',
-
-    started_by BIGINT
-        NOT NULL,
-
-    started_at TIMESTAMP
-        NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
-
+    workflow_instance_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    workflow_template_id BIGINT NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id BIGINT NOT NULL,
+    current_step INTEGER NOT NULL DEFAULT 1,
+    status workflow_status NOT NULL DEFAULT 'IN_PROGRESS',
+    started_by BIGINT NOT NULL,
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP,
-
-    CONSTRAINT fk_workflow_instance_template
-        FOREIGN KEY (workflow_template_id)
-        REFERENCES workflow_templates(
-            workflow_template_id
-        ),
-
-    CONSTRAINT fk_workflow_instance_starter
-        FOREIGN KEY (started_by)
-        REFERENCES users(user_id),
-
-    CONSTRAINT chk_workflow_review_cycle_positive
-        CHECK (review_cycle > 0),
-
-    CONSTRAINT chk_redraft_base_version_nonnegative
-    CHECK (
-        redraft_base_version IS NULL
-        OR redraft_base_version >= 0
-    )
+    FOREIGN KEY(workflow_template_id) REFERENCES workflow_templates(workflow_template_id),
+    FOREIGN KEY(started_by) REFERENCES users(user_id)
 );
 
 CREATE TABLE workflow_instance_steps (
@@ -449,26 +384,13 @@ CREATE TABLE audit_logs (
 CREATE TABLE agreement_documents (
     document_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     agreement_id BIGINT NOT NULL,
-    agreement_version_id BIGINT,
-    file_name VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255),
     file_path TEXT,
-    storage_key TEXT,
-    mime_type VARCHAR(150),
-    file_size_bytes BIGINT,
-    sha256_checksum CHAR(64),
-    document_type VARCHAR(100) NOT NULL DEFAULT 'OTHER',
-    uploaded_by BIGINT NOT NULL,
-    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    document_type VARCHAR(100),
+    uploaded_by BIGINT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(agreement_id) REFERENCES agreements(agreement_id) ON DELETE CASCADE,
-    FOREIGN KEY(agreement_version_id) REFERENCES agreement_versions(version_id) ON DELETE RESTRICT,
-    FOREIGN KEY(uploaded_by) REFERENCES users(user_id),
-    CONSTRAINT chk_agreement_document_size
-        CHECK (file_size_bytes IS NULL OR file_size_bytes > 0),
-    CONSTRAINT chk_agreement_document_checksum
-        CHECK (
-            sha256_checksum IS NULL
-            OR sha256_checksum ~ '^[0-9a-f]{64}$'
-        )
+    FOREIGN KEY(uploaded_by) REFERENCES users(user_id)
 );
 
 CREATE TABLE workflow_history (
@@ -699,29 +621,3 @@ CREATE INDEX idx_workflow_instance_steps_status ON workflow_instance_steps(statu
 CREATE UNIQUE INDEX uq_active_position_assignment
 ON user_positions(position_id, unit_id)
 WHERE is_active = TRUE;
-
--- Apply the backward-compatible comprehensive Agreement extension.
--- Kept as an include so this consolidated deployment entry point and the
--- modular deployment script execute the same idempotent migration.
-\ir migrations/20260721_comprehensive_agreement_fields.sql
-
--- Preserve provenance and idempotency for controlled historical imports.
-\ir migrations/20260721_legacy_agreement_import_tracking.sql
-
--- Add the governed amendment, renewal, and termination request workflow.
-\ir migrations/20260721_agreement_lifecycle_workflow.sql
-
--- Add private, version-linked lifecycle-request documents.
-\ir migrations/20260721_secure_lifecycle_request_documents.sql
-
--- Link approved renewal/amendment requests to finalized successor Agreements.
-\ir migrations/20260721_lifecycle_successor_agreements.sql
-
--- Finalized signing and date-controlled operational statuses.
-\ir migrations/20260721_agreement_operational_status.sql
-
--- Annual reports, executive-program progress, KPI results, and dashboards.
-\ir migrations/20260721_agreement_performance_monitoring.sql
-
--- Authentication, session, and release-integration hardening.
-\ir migrations/20260721_agreement_integration_hardening.sql

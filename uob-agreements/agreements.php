@@ -8,13 +8,11 @@ $hidePageHeader = true;
 $mainContainer = false;
 require_once __DIR__ . '/header.php';
 
+$agreements = readAgreements(true);
+
 /* ======= language ======= */
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isArabic = ($lang === 'ar');
-
-// The public catalogue is now sourced exclusively from approved/active
-// PostgreSQL Agreements. Draft and workflow records cannot enter this list.
-$agreements = readPublishedAgreements($lang);
 
 $T = [
   'ar' => [
@@ -136,10 +134,7 @@ if ($q !== '') {
 
 /* ======= urls ======= */
 $listUrl = 'agreements.php?lang=' . urlencode($lang);
-$addUrl  = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
-  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN
-    ? 'workspace/agreement-form.php'
-    : 'admin/add-agreement.php?lang=' . urlencode($lang);
+$addUrl  = 'admin/add-agreement.php?lang=' . urlencode($lang);
 
 /* ======= stats ======= */
 $totalAgreements = count($agreements);
@@ -148,8 +143,8 @@ $activeAgreements = 0;
 $countries = [];
 $partners  = [];
 foreach ($agreements as $a) {
-  $statusCode = trim((string)($a['status_code'] ?? ''));
-  if ($statusCode === 'ACTIVE') $activeAgreements++;
+  $status = trim((string)($a['status']?? ''));
+  if ($status === 'سارية') $activeAgreements++;
 
   $c = trim((string)($a['country']?? ''));
   if ($c !== '' && $c !== 'دولية') $countries[$c] = true;

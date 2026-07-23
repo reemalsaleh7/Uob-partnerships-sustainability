@@ -36,9 +36,6 @@ CREATE TABLE users (
         INTEGER NOT NULL
         DEFAULT 0,
 
-    locked_until
-        TIMESTAMP,
-
     password_changed_at
         TIMESTAMP,
 

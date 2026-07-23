@@ -51,13 +51,6 @@ $base = ($isAdmin || $isPartnership) ? '../' : '';
               SDGs | أهداف التنمية المستدامة
             </a>
           </li>
-          <?php if (!empty($agreementWorkspaceEnabled)): ?>
-            <li class="mb-2">
-              <a class="uob-footer-link" href="<?= $base ?>workspace/agreements.php">
-                Agreement Workspace | مساحة عمل الاتفاقيات
-              </a>
-            </li>
-          <?php endif; ?>
         </ul>
       </div>
 
@@ -197,6 +190,206 @@ $base = ($isAdmin || $isPartnership) ? '../' : '';
   next && next.addEventListener('click', ()=> jump(1));
 })();
 </script>
+  <!-- Toast Notification System -->
+<script>
+// ============================================
+// Toast Notification System
+// ============================================
 
+const ToastManager = {
+    container: null,
+    lang: 'ar', // Default to Arabic
+    
+    init() {
+        this.container = document.getElementById('toastContainer');
+        if (!this.container) {
+            this.container = document.createElement('div');
+            this.container.id = 'toastContainer';
+            this.container.className = 'toast-container';
+            document.body.appendChild(this.container);
+        }
+        
+        // Detect language from HTML lang attribute
+        this.lang = document.documentElement.lang || 'ar';
+    },
+    
+    show(titleAr, titleEn, messageAr, messageEn, type = 'system', duration = 5000) {
+        this.init();
+        
+        // Choose language based on page language
+        const isArabic = this.lang === 'ar';
+        const title = isArabic ? titleAr : titleEn;
+        const message = isArabic ? messageAr : messageEn;
+        
+        const icons = {
+            'system': '🔔',
+            'workflow': '📋',
+            'approval': '✅',
+            'rejected': '❌',
+            'success': '✅',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+        };
+        
+        const icon = icons[type] || '🔔';
+        const time = new Date().toLocaleTimeString();
+        const isRtl = document.documentElement.dir === 'rtl';
+        
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        toast.innerHTML = `
+            ${isRtl ? `
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                    <div class="toast-time">${time}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+                <div class="toast-icon">${icon}</div>
+            ` : `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                    <div class="toast-time">${time}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `}
+        `;
+        
+        this.container.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, duration);
+        
+        toast.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                toast.remove();
+            }
+        });
+    },
+    
+    // Convenience methods
+    test() {
+        this.show(
+            '📌 اختبار الإشعارات',           // Arabic Title
+            '📌 Notification Test',          // English Title
+            'تم تشغيل نظام الإشعارات بنجاح!', // Arabic Message
+            'Notification system started successfully!', // English Message
+            'system',
+            5000
+        );
+    },
+    
+    system(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'system', duration);
+    },
+    
+    workflow(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'workflow', duration);
+    },
+    
+    approval(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'approval', duration);
+    },
+    
+    success(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'success', duration);
+    },
+    
+    warning(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'warning', duration);
+    },
+    
+    info(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'info', duration);
+    },
+    
+    rejected(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
+        this.show(titleAr, titleEn, messageAr, messageEn, 'rejected', duration);
+    }
+};
+
+// Make available globally
+window.ToastManager = ToastManager;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    ToastManager.init();
+});
+
+// Show test toast after 2 seconds
+setTimeout(() => {
+    ToastManager.test();
+}, 2000);
+// ============================================
+// Check for New Notifications (Polling)
+// ============================================
+
+let lastCheckTime = Math.floor(Date.now() / 1000);
+let isChecking = false;
+
+function checkForNewNotifications() {
+    if (isChecking) return;
+    isChecking = true;
+    
+    const url = `/Uob-partnerships-sustainability/uob-agreements/api/check_notifications.php?last_check=${lastCheckTime}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_new && data.notification) {
+                ToastManager.show(
+                    data.notification.title_ar,
+                    data.notification.title_en,
+                    data.notification.message_ar,
+                    data.notification.message_en,
+                    data.notification.type,
+                    6000
+                );
+                
+                if (data.notification.timestamp) {
+                    lastCheckTime = data.notification.timestamp;
+                }
+                
+                updateBellCount();
+            }
+            isChecking = false;
+        })
+        .catch(error => {
+            console.error('Error checking notifications:', error);
+            isChecking = false;
+        });
+}
+
+function updateBellCount() {
+    fetch(`/Uob-partnerships-sustainability/uob-agreements/api/get_unread_count.php`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.count !== undefined) {
+                const badge = document.querySelector('.badge');
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        })
+        .catch(error => console.error('Error updating bell count:', error));
+}
+
+// Check every 30 seconds
+setInterval(checkForNewNotifications, 30000);
+
+// Initial check after 3 seconds
+setTimeout(checkForNewNotifications, 3000);
+</script>
 </body>
+
 </html>

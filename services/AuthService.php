@@ -3,7 +3,6 @@ require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../services/PermissionService.php';
 require_once __DIR__ . '/../services/AuditService.php';
 require_once __DIR__ . '/../helpers/ApiSession.php';
-
 class AuthService {
     private UserRepository $userRepo;
     private PermissionService $permissionService;
@@ -22,34 +21,18 @@ class AuthService {
             return ['success' => false, 'error' => 'Invalid credentials'];
         }
 
+        $userId = (int) ($user['user_id'] ?? 0);
+        $failedAttempts = (int) ($user['failed_login_attempts'] ?? 0);
+
+        if ($failedAttempts >= 5) {
+            return ['success' => false, 'error' => 'Account temporarily locked.'];
+        }
+
         $this->userRepo->beginTransaction();
 
         try {
-            $user = $this->userRepo->findByEmailForUpdate($email);
-            if (!$user) {
-                $this->userRepo->rollBack();
-                return ['success' => false, 'error' => 'Invalid credentials'];
-            }
-
-            $userId = (int) ($user['user_id'] ?? 0);
-            $lockedUntil = $user['locked_until'] ?? null;
-            if (
-                is_string($lockedUntil)
-                && strtotime($lockedUntil) > time()
-            ) {
-                $this->userRepo->rollBack();
-                return [
-                    'success' => false,
-                    'error' => 'Account temporarily locked. Try again later.',
-                ];
-            }
-
-            if ($lockedUntil !== null) {
-                $this->userRepo->resetFailedAttempts($userId);
-            }
-
             if (!password_verify($password, $user['password_hash'])) {
-                $this->userRepo->recordFailedLogin($userId);
+                $this->userRepo->incrementFailedAttempts($userId);
                 $this->userRepo->commit();
                 return ['success' => false, 'error' => 'Invalid credentials'];
             }
@@ -75,7 +58,6 @@ class AuthService {
                 $user['first_name'] ?? '',
                 $user['last_name'] ?? '',
             ])));
-            ApiSession::markAuthenticated();
 
             $this->userRepo->commit();
 
@@ -107,62 +89,13 @@ class AuthService {
 
         $userId = (int) ($_SESSION['user_id'] ?? 0);
 
-        $profile = $this->userRepo->findProfileById($userId) ?? [];
-
         return [
             'user_id' => $userId,
-            'university_id' => $profile['university_id'] ?? null,
-            'first_name' => $profile['first_name'] ?? null,
-            'last_name' => $profile['last_name'] ?? null,
-            'email' => $profile['email'] ?? ($_SESSION['email'] ?? null),
-            'phone' => $profile['phone'] ?? null,
-            'full_name' => trim(implode(' ', array_filter([
-                $profile['first_name'] ?? null,
-                $profile['last_name'] ?? null,
-            ]))) ?: ($_SESSION['full_name'] ?? null),
-            'last_login' => $profile['last_login'] ?? null,
-            'password_changed_at' => $profile['password_changed_at'] ?? null,
-            'account_created_at' => $profile['created_at'] ?? null,
-            'is_active' => (bool) ($profile['is_active'] ?? true),
+            'email' => $_SESSION['email'] ?? null,
+            'full_name' => $_SESSION['full_name'] ?? null,
             'roles' => $this->permissionService->getRoleNames($userId),
             'permissions' => $this->permissionService->getPermissionCodes($userId),
             'positions' => $this->userRepo->getActivePositions($userId),
-        ];
-    }
-
-    public function createLegacyInitiativeHandoff(): array {
-        if (!$this->isAuthenticated()) {
-            throw new DomainException('Not authenticated');
-        }
-
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-        if (
-            !$this->permissionService->hasPermission(
-                $userId,
-                'CREATE_INITIATIVE'
-            )
-            && !in_array(
-                'Initiative Creator',
-                $this->permissionService->getRoleNames($userId),
-                true
-            )
-        ) {
-            throw new DomainException(
-                'Your role cannot create Initiative requests'
-            );
-        }
-
-        $token = bin2hex(random_bytes(32));
-        $expiresAt = new DateTimeImmutable('+2 minutes');
-        $this->userRepo->createLegacyHandoff(
-            $userId,
-            hash('sha256', $token),
-            $expiresAt
-        );
-
-        return [
-            'token' => $token,
-            'expires_at' => $expiresAt->format(DATE_ATOM),
         ];
     }
 }

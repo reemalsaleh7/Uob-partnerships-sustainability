@@ -2,14 +2,6 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $currentAdminPage = basename($_SERVER['PHP_SELF']);
-$agreementAdminUrl = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
-  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN
-    ? '../workspace/agreements.php'
-    : 'agreements.php';
-$agreementWorkflowUrl = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
-  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN
-    ? '../workspace/workflow-inbox.php'
-    : 'review-agreements.php';
 
 $adminLinks = [
   [
@@ -24,13 +16,8 @@ $adminLinks = [
   ],
   [
     'title' => 'إدارة الاتفاقيات',
-    'href'  => $agreementAdminUrl,
+    'href'  => 'agreements.php',
     'match' => ['agreements.php', 'add-agreement.php', 'edit-agreement.php']
-  ],
-  [
-    'title' => 'مهام الاتفاقيات',
-    'href'  => $agreementWorkflowUrl,
-    'match' => []
   ],
   [
     'title' => 'إدارة المبادرات',
@@ -56,15 +43,15 @@ $adminLinks = [
     gap:12px;
     align-items:center;
     justify-content:flex-start;
-    background:#fff;
-    border:1px solid #e6ebf2;
-    border-radius:18px;
+    background: linear-gradient(135deg, #0b1f3a 0%, #17345c 100%);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
     padding: 14px;
-    box-shadow:0 12px 30px rgba(2,8,23,.07);
+    box-shadow: 0 14px 30px rgba(11,31,58,.12);
   }
 
   .admin-topbar-title{
-    color:#0b1f3a;
+    color:#fff;
     font-weight:800;
     font-size:1rem;
     margin-inline-end:10px;
@@ -88,14 +75,14 @@ $adminLinks = [
     border-radius:14px;
     text-decoration:none;
     font-weight:700;
-    background:#f8fafc;
-    color:#0b1f3a;
-    border:1px solid #e6ebf2;
+    background: rgba(255,255,255,.08);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.12);
     transition: all .25s ease;
   }
 
   .admin-topbar-link:hover{
-    background:#f2f5fb;
+    background:#fff;
     color:#0b1f3a;
     transform: translateY(-2px);
   }
@@ -104,7 +91,7 @@ $adminLinks = [
     background: linear-gradient(135deg, #c9a227 0%, #e6c35a 100%);
     color:#0b1f3a;
     border-color: transparent;
-    box-shadow:0 8px 18px rgba(201,162,39,.22);
+    box-shadow: 0 10px 22px rgba(201,162,39,.28);
   }
 
   @media (max-width: 768px){

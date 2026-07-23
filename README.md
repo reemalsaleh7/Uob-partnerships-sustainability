@@ -2,19 +2,6 @@
 
 A web platform for the University of Bahrain to manage and display partnerships, agreements, initiatives, and sustainability-related activities.
 
-## Local database configuration
-
-Copy `config/database.local.example.php` to `config/database.local.php` and set
-the PostgreSQL password. The local file is ignored by Git. Production may use
-the `UOB_DB_HOST`, `UOB_DB_PORT`, `UOB_DB_NAME`, `UOB_DB_USER`, and
-`UOB_DB_PASSWORD` environment variables instead.
-
-Before releasing Agreement changes, run:
-
-```powershell
-& "C:\xampp\php\php.exe" .\scripts\run_agreement_acceptance_suite.php
-```
-
 ## Project Description
 
 This portal provides a centralized platform to organize and present University of Bahrain partnerships and sustainability impact. It allows users to browse agreements, view initiatives, explore SDGs, and access partnership information in a structured and user-friendly way.
