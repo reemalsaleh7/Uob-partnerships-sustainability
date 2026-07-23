@@ -4,7 +4,16 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-
+// Get unread notification count for the bell
+$unreadCount = 0;
+if (isset($_SESSION['user_email'])) {
+    require_once __DIR__ . '/services/NotificationService.php';
+    $notifService = new NotificationService();
+    $userId = $notifService->getUserIdByEmail($_SESSION['user_email']);
+    if ($userId) {
+        $unreadCount = $notifService->getUnreadCount($userId);
+    }
+}
 /** Language (session + ?lang=ar/en) */
 $supportedLang = ['ar', 'en'];
 if (isset($_GET['lang'])) {
@@ -347,6 +356,42 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 [dir="rtl"] .updates-dot{
   right:auto;
   left:-2px;
+}
+/* Notification Bell Styles */
+.notification-bell {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #e74c3c;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.notification-bell .fa-bell {
+    font-size: 20px;
+    color: #333;
 }
 </style>
 </head>
