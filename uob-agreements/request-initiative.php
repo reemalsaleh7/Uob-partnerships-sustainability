@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -17,6 +18,29 @@ require_once __DIR__ . '/header.php';
 
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isArabic = ($lang === 'ar');
+
+$relatedAgreement = null;
+$relatedAgreementId = filter_var(
+  $_POST['related_agreement_id'] ?? $_GET['agreement_id'] ?? null,
+  FILTER_VALIDATE_INT,
+  ['options' => ['min_range' => 1]]
+);
+
+if ($relatedAgreementId !== false && $relatedAgreementId !== null) {
+  $agreementStatement = Database::connect()->prepare(
+    "SELECT a.agreement_id, a.agreement_code, a.title, a.objectives,
+            STRING_AGG(p.organization_name, ', ' ORDER BY p.organization_name) AS partner_names
+     FROM agreements a
+     LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
+     LEFT JOIN partners p ON p.partner_id = ap.partner_id
+     WHERE a.agreement_id = :agreement_id
+       AND a.status = 'ACTIVE'
+     GROUP BY a.agreement_id, a.agreement_code, a.title, a.objectives
+     LIMIT 1"
+  );
+  $agreementStatement->execute(['agreement_id' => (int) $relatedAgreementId]);
+  $relatedAgreement = $agreementStatement->fetch() ?: null;
+}
 
 
 $structureFile = __DIR__ . '/data/UOB_Colleges_Departments.csv';
@@ -98,6 +122,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $requestId = 'REQ-' . date('YmdHis');
 
+    $storedDescription = $description;
+    if ($relatedAgreement) {
+      $reference = trim((string) ($relatedAgreement['agreement_code'] ?? ''));
+      if ($reference === '') {
+        $reference = '#' . (string) $relatedAgreement['agreement_id'];
+      }
+      $storedDescription = sprintf(
+        "Related active Agreement: %s - %s\n\n%s",
+        $reference,
+        (string) $relatedAgreement['title'],
+        $description
+      );
+    }
+
     $fp = fopen($file, 'a');
     fputcsv($fp, [
       $requestId,
@@ -108,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $department,
       $title,
       $type,
-      $description,
+      $storedDescription,
       $expectedDate,
       'pending',
       '',
@@ -251,6 +289,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   color:var(--uob-navy);
   font-size:15px;
   font-weight:950;
+}
+
+.request-agreement-context{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:22px;
+  padding:18px;
+  color:#0f2744;
+  background:#edf5ff;
+  border:1px solid #cfe0f7;
+  border-radius:18px;
+}
+
+.request-agreement-context strong,
+.request-agreement-context span,
+.request-agreement-context small{
+  display:block;
+}
+
+.request-agreement-context strong{
+  font-size:17px;
+  font-weight:950;
+}
+
+.request-agreement-context span{
+  margin-top:4px;
+  color:#335170;
+  font-weight:850;
+}
+
+.request-agreement-context small{
+  margin-top:7px;
+  color:#64748b;
+  line-height:1.6;
 }
 
 .request-label{
@@ -448,6 +522,28 @@ html body textarea:focus {
   </div>
 
   <form method="post">
+    <?php if ($relatedAgreement): ?>
+      <input type="hidden" name="related_agreement_id" value="<?= (int) $relatedAgreement['agreement_id'] ?>">
+      <div class="request-agreement-context">
+        <div>
+          <small><?= $isArabic ? 'المبادرة مبنية على اتفاقية نشطة' : 'Initiative partnership context' ?></small>
+          <strong><?= h($relatedAgreement['title'] ?? '') ?></strong>
+          <span>
+            <?= h($relatedAgreement['agreement_code'] ?? ('#' . $relatedAgreement['agreement_id'])) ?>
+            <?php if (!empty($relatedAgreement['partner_names'])): ?>
+              · <?= h($relatedAgreement['partner_names']) ?>
+            <?php endif; ?>
+          </span>
+          <?php if (!empty($relatedAgreement['objectives'])): ?>
+            <small><?= h($relatedAgreement['objectives']) ?></small>
+          <?php endif; ?>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" href="workspace/agreements.php">
+          <?= $isArabic ? 'تغيير الاتفاقية' : 'Change Agreement' ?>
+        </a>
+      </div>
+    <?php endif; ?>
+
     <div class="request-section-title">
       <?= $isArabic ? 'بيانات مقدم الطلب والمبادرة' : 'Applicant and Initiative Information' ?>
     </div>

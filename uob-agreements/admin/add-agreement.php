@@ -3,6 +3,13 @@ session_start();
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 
+if (AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN) {
+  header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+  header('Pragma: no-cache');
+  header('Location: ../workspace/agreement-form.php', true, 302);
+  exit;
+}
+
 if (($_SESSION['user_email'] ?? '') !== 'admin@uob.edu.bh') {
   header('Location: ../index.php?lang=' . urlencode($_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar')));
   exit;

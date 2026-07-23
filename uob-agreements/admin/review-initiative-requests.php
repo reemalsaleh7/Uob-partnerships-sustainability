@@ -206,7 +206,6 @@ sort($allDepartments);
 ?>
 
 <style>
-<style>
 /* REVIEW INITIATIVE REQUESTS - CLEAN ADMIN DESIGN */
 
 :root {
@@ -219,11 +218,12 @@ sort($allDepartments);
 }
 
 /* HERO */
+
 .admin-table-hero {
   position: relative;
-  background:
-    radial-gradient(900px 260px at 15% 0%, rgba(201,162,39,.22), transparent 60%),
-    linear-gradient(135deg, #0b1f3a 0%, #123e63 100%);
+  background: #b89a68 !important;
+  background-image:
+    linear-gradient(135deg, #8f6f3f 0%, #b89a68 55%, #8f6f3f 100%) !important;
   color: #ffffff;
   padding: 58px 22px 95px;
   overflow: hidden;
@@ -253,6 +253,7 @@ sort($allDepartments);
   font-weight: 800;
   line-height: 1.9;
 }
+
 
 /* STATS */
 .admin-stats-grid {
@@ -688,13 +689,17 @@ sort($allDepartments);
   }
 }
 
+
 @media (max-width: 520px) {
   .admin-stats-grid {
     grid-template-columns: 1fr;
   }
 }
+
+
+
 </style>
-</style>
+
 
 <section class="admin-table-hero">
   <div class="admin-table-hero-inner">

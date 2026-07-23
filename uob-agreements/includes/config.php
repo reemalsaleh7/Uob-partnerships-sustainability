@@ -13,6 +13,11 @@ define('DATA_DIR', __DIR__ . '/../data');
 
 define('AGREEMENTS_CSV', DATA_DIR . '/agreements.csv');
 
+// Agreement administration now runs through the authenticated PostgreSQL
+// workspace. Keep this as a rollout switch until the legacy Agreement pages
+// have completed production acceptance testing.
+define('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN', true);
+
 // ✅ فقط هذا نستخدمه للمبادرات
 define('INITIATIVES_MASTER', DATA_DIR . '/initiatives_master.csv');
 

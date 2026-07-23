@@ -259,9 +259,31 @@ $isAdmin = str_contains($currentFilePath, '/admin/');
 $isPartnership = str_contains($currentFilePath, '/partnership/');
 
 $base = ($isAdmin || $isPartnership) ? '../' : '';
+$agreementWorkspaceEnabled = defined('AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN')
+  && AGREEMENT_WORKSPACE_REPLACES_LEGACY_ADMIN;
+$agreementCreatePath = $agreementWorkspaceEnabled
+  ? 'workspace/agreement-form.php'
+  : 'admin/add-agreement.php?lang=' . urlencode($lang);
+$agreementReviewPath = $agreementWorkspaceEnabled
+  ? 'workspace/agreements.php'
+  : 'admin/review-agreements.php?lang=' . urlencode($lang);
 
 $logoPath = $base . 'assets/image/THEM/uob_logo.png';
 $isLoggedIn = !empty($_SESSION['user_email']);
+$currentPage = basename(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
+$homeActive = $currentPage === 'index.php' || $currentPage === '' ? ' active' : '';
+$agreementsActive = in_array(
+  $currentPage,
+  ['agreements.php', 'agreement-details.php'],
+  true
+) ? ' active' : '';
+$initiativesActive = in_array(
+  $currentPage,
+  ['initiatives.php', 'initiative-details.php', 'request-initiative.php'],
+  true
+) ? ' active' : '';
+$sdgActive = in_array($currentPage, ['sdg.php', 'sdg-goal.php'], true) ? ' active' : '';
+$partnershipActive = $isPartnership ? ' active' : '';
 
 
 $updatesCount = 0;
@@ -332,7 +354,7 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 
 <?php if (!empty($extraHead)) echo $extraHead; ?>
 
-<<style>
+<style>
 .updates-dot{
   position:absolute;
   top:4px;
@@ -352,10 +374,13 @@ $langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryA
 
 /* BRAND TITLE CONTROL */
 html body .uob-navbar .navbar-brand span {
-  font-size: 1rem !important;
+  font-size: .92rem !important;
   font-weight: 950 !important;
   color: #0b1f3a !important;
   white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
 }
 
 html body .uob-navbar .navbar-brand img {
@@ -365,7 +390,47 @@ html body .uob-navbar .navbar-brand img {
 html body .uob-navbar .navbar-brand .brand-title-move {
   display: inline-block !important;
   position: relative !important;
-  transform: translateX(90px) !important;
+  transform: translateX(96px) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
+}
+/* MOVE NAV ACTION BUTTONS - KEEP SAME SIZE */
+html body .uob-nav-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+
+  position: relative !important;
+  transform: translateX(-80px) !important;
+}
+
+/* خليه ذهبي مو أصفر */
+html body .uob-nav-actions .uob-workspace-link {
+  background: linear-gradient(135deg, #b89a68 0%, #b89a68 55%, #b89a68 100%) !important;
+  border-color: #b89a68 !important;
+  box-shadow: none !important;
+
+}
+
+/* تسجيل الخروج رمادي بدون تغيير الحجم */
+html body .uob-nav-actions a[href*="logout.php"],
+html body .uob-nav-actions a[href*="login.php"] {
+  width: 150px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #eef2f6 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+  color: #0b1f3a !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
 }
 </style>
 </head>
@@ -399,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <nav class="navbar navbar-expand-lg bg-white border-bottom uob-navbar">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
-<img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto; position:relative; left: 90px;x;">
+<img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto; position:relative; left:90px;">
 <span class="fw-bold brand-title-move"><?= h(t('app_name')) ?></span>    </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -409,28 +474,28 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="collapse navbar-collapse" id="mainNav">
       <ul class="navbar-nav <?= $isRtl ? 'me-auto' : 'ms-auto' ?> mb-2 mb-lg-0 align-items-lg-center">
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $homeActive ?>" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
             <?= h(t('home')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $agreementsActive ?>" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
             <?= h(t('agreements')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $initiativesActive ?>" href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>">
             <?= h(t('initiatives')) ?>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>">
+          <a class="nav-link<?= $sdgActive ?>" href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>">
             <?= h(t('sdg')) ?>
           </a>
         </li>
 
+ 
          
-
 
 <?php if ($isLoggedIn): ?>
   <li class="nav-item">
@@ -464,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <li><hr class="dropdown-divider"></li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/add-agreement.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementCreatePath) ?>">
           <?= $isRtl ? 'إضافة اتفاقية' : 'Add Agreement' ?>
         </a>
       </li>
@@ -482,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function () {
       </li>
 
       <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-agreements.php?lang=<?= h($lang) ?>">
+        <a class="dropdown-item" href="<?= h($base . $agreementReviewPath) ?>">
           <?= $isRtl ? 'مراجعة الاتفاقيات' : 'Review Agreements' ?>
         </a>
       </li>
@@ -493,7 +558,15 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php endif; ?>
       </ul>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex flex-wrap gap-2 uob-nav-actions">
+        <?php if ($agreementWorkspaceEnabled): ?>
+          <a
+            href="<?= $base ?>workspace/agreements.php"
+            class="btn btn-primary btn-sm uob-workspace-link"
+          >
+            <?= $isRtl ? 'مساحة عمل الاتفاقيات' : 'Agreement Workspace' ?>
+          </a>
+        <?php endif; ?>
         <?php if (!$isLoggedIn): ?>
           <a href="<?= $base ?>login.php?lang=<?= h($lang) ?>" class="btn btn-outline-primary btn-sm"><?= h(t('login')) ?></a>
         <?php else: ?>
