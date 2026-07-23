@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
-
+<style>
 /* Notification Bell Styles */
 .notification-bell {
     position: relative;

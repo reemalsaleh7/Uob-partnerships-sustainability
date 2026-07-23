@@ -14,16 +14,20 @@ param(
 $ErrorActionPreference = 'Stop'
 $script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $script:SqlRoot = Join-Path $script:RepoRoot 'uob-agreements\data\sql'
+$script:MigrationRoot = Join-Path $script:SqlRoot 'migrations'
 $script:Psql = $null
 $script:Php = $null
 $script:TrackingAvailable = $false
 $script:PhpIniChanged = $false
 $script:PhpReady = $false
 $script:OriginalPgPassword = $env:PGPASSWORD
+$script:OptionalMigrationNames = @(
+    '20260722_workspace_showcase_data.sql'
+)
 
 function Write-Result {
     param(
-        [ValidateSet('OK', 'MISSING', 'FIXED', 'INFO', 'WARNING')]
+        [ValidateSet('OK', 'MISSING', 'FIXED', 'INFO', 'WARNING', 'ERROR')]
         [string]$State,
         [string]$Message
     )
@@ -33,6 +37,7 @@ function Write-Result {
         'FIXED' { 'Green' }
         'MISSING' { 'Yellow' }
         'WARNING' { 'Yellow' }
+        'ERROR' { 'Red' }
         default { 'Cyan' }
     }
 
@@ -257,6 +262,55 @@ function Invoke-PsqlFile {
     }
 }
 
+function Invoke-TrackedMigrationFile {
+    param(
+        [string]$Path,
+        [string]$Name,
+        [string]$Checksum
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "Migration file is missing: $Path"
+    }
+
+    $content = Get-Content -LiteralPath $Path -Raw
+    if ($content -match '(?im)^[ \t]*(BEGIN|START[ \t]+TRANSACTION|COMMIT|ROLLBACK)[ \t]*;') {
+        throw "Automatic migration $Name contains transaction control. Remove BEGIN/COMMIT/ROLLBACK; the database manager wraps the migration and its tracking record in one transaction."
+    }
+    if ($content -match 'UOB_MIGRATION_TODO') {
+        throw "Automatic migration $Name still contains its TODO marker. Add the SQL change and remove UOB_MIGRATION_TODO before running it."
+    }
+
+    $safeName = Escape-SqlLiteral -Value $Name
+    $safeChecksum = Escape-SqlLiteral -Value $Checksum
+    $trackingSql = @"
+INSERT INTO schema_migrations (
+    migration_name, checksum_sha256, installation_method
+)
+VALUES ('$safeName', '$safeChecksum', 'applied');
+"@
+
+    $arguments = (Get-ConnectionArguments) + @(
+        '--single-transaction',
+        '-f', $Path,
+        '-c', $trackingSql
+    )
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & $script:Psql @arguments 2>&1
+        $psqlExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    foreach ($line in $output) {
+        Write-Host $line
+    }
+    if ($psqlExitCode -ne 0) {
+        throw "Migration failed and was rolled back: $Name"
+    }
+}
+
 function Connect-Database {
     $testArguments = (Get-ConnectionArguments) + @('-q', '-A', '-t', '-c', 'SELECT 1;')
     $previousErrorActionPreference = $ErrorActionPreference
@@ -422,12 +476,71 @@ INSERT INTO schema_migrations (
     migration_name, checksum_sha256, installation_method
 )
 VALUES ('$safeName', '$safeChecksum', '$safeMethod')
-ON CONFLICT (migration_name) DO UPDATE
-SET checksum_sha256 = EXCLUDED.checksum_sha256,
-    installation_method = EXCLUDED.installation_method,
-    applied_at = CURRENT_TIMESTAMP;
+ON CONFLICT (migration_name) DO NOTHING;
 "@
     [void](Invoke-PsqlCapture -Sql $sql)
+}
+
+function Get-AutomaticMigrationSteps {
+    param([object[]]$KnownSteps)
+
+    if (-not (Test-Path -LiteralPath $script:MigrationRoot -PathType Container)) {
+        throw "Migration directory is missing: $script:MigrationRoot"
+    }
+
+    $knownMigrationNames = @(
+        $KnownSteps |
+            Where-Object { $_.RelativePath -like 'migrations\*.sql' } |
+            ForEach-Object { Split-Path -Leaf $_.RelativePath }
+    )
+
+    $steps = @()
+    $files = Get-ChildItem -LiteralPath $script:MigrationRoot -File -Filter '*.sql' |
+        Sort-Object Name
+
+    foreach ($file in $files) {
+        if ($script:OptionalMigrationNames -contains $file.Name) {
+            continue
+        }
+        if ($knownMigrationNames -contains $file.Name) {
+            continue
+        }
+        if ($file.Name -notmatch '^\d{8}_\d{6}_[a-z0-9][a-z0-9_]*\.sql$') {
+            throw "New migration '$($file.Name)' has an unsafe name. Create it with new-database-migration.cmd so ordering is deterministic."
+        }
+
+        $steps += [pscustomobject]@{
+            Name = $file.Name
+            Description = "Pending migration: $($file.Name)"
+            RelativePath = "migrations\$($file.Name)"
+            CheckSql = $null
+            AutoDiscovered = $true
+        }
+    }
+
+    return $steps
+}
+
+function Test-MigrationRegistryConsistency {
+    if (-not $script:TrackingAvailable) {
+        return
+    }
+
+    $output = Invoke-PsqlCapture -Sql @'
+SELECT migration_name
+FROM schema_migrations
+WHERE migration_name LIKE '%.sql'
+ORDER BY migration_name;
+'@
+
+    $available = @(
+        Get-ChildItem -LiteralPath $script:MigrationRoot -File -Filter '*.sql' |
+            ForEach-Object { $_.Name }
+    )
+    $missingFiles = @($output | Where-Object { $available -notcontains $_ })
+    if ($missingFiles.Count -gt 0) {
+        throw "Applied migration file(s) are missing from this checkout: $($missingFiles -join ', '). Pull the complete branch before continuing."
+    }
 }
 
 function New-DatabaseBackup {
@@ -652,19 +765,36 @@ function Inspect-Steps {
     $results = @()
     foreach ($step in $Steps) {
         $checksum = Get-FileChecksum -RelativePath $step.RelativePath
-        $installed = Test-Feature -CheckSql $step.CheckSql
         $record = Get-TrackingRecord -Name $step.Name
+        $isAutomatic = ($step.PSObject.Properties.Name -contains 'AutoDiscovered' -and $step.AutoDiscovered)
+        $installed = if ($isAutomatic) {
+            $null -ne $record
+        } else {
+            Test-Feature -CheckSql $step.CheckSql
+        }
+        $fileName = Split-Path -Leaf $step.RelativePath
+        $isImmutableMigration = (
+            $step.RelativePath -like 'migrations\*.sql' -and
+            $script:OptionalMigrationNames -notcontains $fileName
+        )
+        $fileChanged = ($null -ne $record -and $record.Checksum -ne $checksum)
+        $drifted = ($fileChanged -and $isImmutableMigration)
 
         $results += [pscustomobject]@{
             Step = $step
             Checksum = $checksum
             Installed = $installed
             Record = $record
+            Drifted = $drifted
         }
 
-        if ($installed) {
-            if ($record -and $record.Checksum -ne $checksum) {
-                Write-Result WARNING "$($step.Description) is installed, but its SQL file changed after it was recorded."
+        if ($drifted) {
+            Write-Result ERROR "$($step.Name) was changed after it was recorded. Restore the file and add a new migration."
+        } elseif ($fileChanged) {
+            Write-Result WARNING "$($step.Description) uses repeatable setup SQL that changed after its previous run."
+        } elseif ($installed) {
+            if ($isAutomatic) {
+                Write-Result OK "Applied migration: $($step.Name)"
             } elseif ($record) {
                 Write-Result OK $step.Description
             } else {
@@ -683,6 +813,9 @@ function Install-Steps {
     Ensure-TrackingTable
     foreach ($item in $Inspection) {
         $step = $item.Step
+        if ($item.Drifted) {
+            throw "Migration checksum mismatch: $($step.Name). Applied migrations are immutable; restore it and create a new migration."
+        }
         if ($item.Installed) {
             if (-not $item.Record) {
                 Save-TrackingRecord -Name $step.Name -Checksum $item.Checksum -Method baseline
@@ -693,13 +826,18 @@ function Install-Steps {
         Write-Host ""
         Write-Host "Installing: $($step.Description)" -ForegroundColor Cyan
         $path = Join-Path $script:SqlRoot $step.RelativePath
-        Invoke-PsqlFile -Path $path
+        $isAutomatic = ($step.PSObject.Properties.Name -contains 'AutoDiscovered' -and $step.AutoDiscovered)
+        if ($isAutomatic) {
+            Invoke-TrackedMigrationFile -Path $path -Name $step.Name -Checksum $item.Checksum
+        } else {
+            Invoke-PsqlFile -Path $path
 
-        if (-not (Test-Feature -CheckSql $step.CheckSql)) {
-            throw "Installation completed without satisfying the feature check: $($step.Description)"
+            if (-not (Test-Feature -CheckSql $step.CheckSql)) {
+                throw "Installation completed without satisfying the feature check: $($step.Description)"
+            }
+
+            Save-TrackingRecord -Name $step.Name -Checksum $item.Checksum -Method applied
         }
-
-        Save-TrackingRecord -Name $step.Name -Checksum $item.Checksum -Method applied
         Write-Result FIXED $step.Description
     }
 }
@@ -712,8 +850,21 @@ function Show-FinalSummary {
     Write-Host '------------------'
     $failed = @()
     foreach ($step in $Steps) {
-        if (Test-Feature -CheckSql $step.CheckSql) {
-            Write-Result OK $step.Description
+        $isAutomatic = ($step.PSObject.Properties.Name -contains 'AutoDiscovered' -and $step.AutoDiscovered)
+        if ($isAutomatic) {
+            $checksum = Get-FileChecksum -RelativePath $step.RelativePath
+            $record = Get-TrackingRecord -Name $step.Name
+            $valid = ($null -ne $record -and $record.Checksum -eq $checksum)
+        } else {
+            $valid = Test-Feature -CheckSql $step.CheckSql
+        }
+
+        if ($valid) {
+            if ($isAutomatic) {
+                Write-Result OK "Applied migration: $($step.Name)"
+            } else {
+                Write-Result OK $step.Description
+            }
         } else {
             Write-Result MISSING $step.Description
             $failed += $step
@@ -765,7 +916,9 @@ try {
     Test-CoreSchema
     Test-TrackingTable
 
-    $steps = @(Get-DatabaseSteps)
+    $legacySteps = @(Get-DatabaseSteps)
+    $steps = @($legacySteps)
+    $steps += @(Get-AutomaticMigrationSteps -KnownSteps $legacySteps)
     if ($IncludeDevelopmentData) {
         $steps += @(Get-OptionalDevelopmentSteps)
     }
@@ -773,8 +926,15 @@ try {
     Write-Host ""
     Write-Host 'Checking database features...' -ForegroundColor Cyan
     $inspection = @(Inspect-Steps -Steps $steps)
+    $drifted = @($inspection | Where-Object { $_.Drifted })
     $missing = @($inspection | Where-Object { -not $_.Installed })
     $untracked = @($inspection | Where-Object { $_.Installed -and -not $_.Record })
+
+    if ($drifted.Count -gt 0) {
+        throw "$($drifted.Count) applied migration file(s) changed after installation. Restore those files and express every new database change in a new migration."
+    }
+
+    Test-MigrationRegistryConsistency
 
     if ($CheckOnly) {
         Write-Host ""
