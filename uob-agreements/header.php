@@ -659,12 +659,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
  
          
-         <li class="nav-item">
-            <a class="nav-link" href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>">
-              <?= $lang === 'ar' ? 'خريطة الاتفاقيات' : 'Partnership Map' ?>
-           </a>
-         </li>
-
+       
 
 <?php if ($isLoggedIn): ?>
   <!-- DEBUG: isLoggedIn=<?= $isLoggedIn ? 'true' : 'false' ?>, unreadCount=<?= $unreadCount ?>, updatesCount=<?= $updatesCount ?> -->
