@@ -19,7 +19,7 @@ class NotificationService {
         try {
             $host = 'localhost';
             $port = '5432';
-            $dbname = 'postgres';
+            $dbname = 'UOB_Partnership_and_Initiative';
             $user = 'postgres';
             $password = 'fatema_fruit_20&04';
             
@@ -48,62 +48,44 @@ class NotificationService {
     }
     
     public function createNotification(array $data): ?int {
-        if (!$this->db) return null;
-        
-        try {
-            $userId = $data['user_id'] ?? null;
-            if (!$userId && !empty($data['email'])) {
-                $userId = $this->getUserIdByEmail($data['email']);
-            }
-            if (!$userId) return null;
-            
-            // Convert boolean values properly
-            $actionRequired = isset($data['action_required']) ? (bool)$data['action_required'] : true;
-            
-            $sql = "INSERT INTO notifications (
-                        user_id, notification_type,
-                        title_ar, title_en, message_ar, message_en,
-                        workflow_instance_id, workflow_step_id, workflow_history_id,
-                        entity_type, entity_id, entity_code,
-                        priority, action_required, action_url,
-                        is_read, is_archived, is_deleted
-                    ) VALUES (
-                        :user_id, :notification_type,
-                        :title_ar, :title_en, :message_ar, :message_en,
-                        :workflow_instance_id, :workflow_step_id, :workflow_history_id,
-                        :entity_type, :entity_id, :entity_code,
-                        :priority, :action_required, :action_url,
-                        false, false, false
-                    ) RETURNING notification_id";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                ':user_id' => $userId,
-                ':notification_type' => $data['notification_type'] ?? 'SYSTEM',
-                ':title_ar' => $data['title_ar'] ?? $data['title'] ?? '',
-                ':title_en' => $data['title_en'] ?? $data['title'] ?? '',
-                ':message_ar' => $data['message_ar'] ?? $data['message'] ?? '',
-                ':message_en' => $data['message_en'] ?? $data['message'] ?? '',
-                ':workflow_instance_id' => $data['workflow_instance_id'] ?? null,
-                ':workflow_step_id' => $data['workflow_step_id'] ?? null,
-                ':workflow_history_id' => $data['workflow_history_id'] ?? null,
-                ':entity_type' => $data['entity_type'] ?? null,
-                ':entity_id' => $data['entity_id'] ?? null,
-                ':entity_code' => $data['entity_code'] ?? null,
-                ':priority' => $data['priority'] ?? 'NORMAL',
-                ':action_required' => $actionRequired,
-                ':action_url' => $data['action_url'] ?? null
-            ]);
-            
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ? (int)$result['notification_id'] : null;
-            
-        } catch (PDOException $e) {
-            error_log("Notification creation error: " . $e->getMessage());
-            echo "❌ Database error: " . $e->getMessage() . "<br>";
-            return null;
+    if (!$this->db) return null;
+    
+    try {
+        $userId = $data['user_id'] ?? null;
+        if (!$userId && !empty($data['email'])) {
+            $userId = $this->getUserIdByEmail($data['email']);
         }
+        if (!$userId) return null;
+        
+        // SIMPLE INSERT - Direct values, no boolean issues
+        $sql = "INSERT INTO notifications (
+                    user_id, title_ar, title_en, 
+                    message_ar, message_en,
+                    action_required, is_read, is_archived, is_deleted
+                ) VALUES (
+                    :user_id, :title_ar, :title_en, 
+                    :message_ar, :message_en,
+                    TRUE, FALSE, FALSE, FALSE
+                ) RETURNING notification_id";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':title_ar' => $data['title_ar'] ?? $data['title'] ?? '',
+            ':title_en' => $data['title_en'] ?? $data['title'] ?? '',
+            ':message_ar' => $data['message_ar'] ?? $data['message'] ?? '',
+            ':message_en' => $data['message_en'] ?? $data['message'] ?? ''
+        ]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? (int)$result['notification_id'] : null;
+        
+    } catch (PDOException $e) {
+        error_log("Notification creation error: " . $e->getMessage());
+        echo "❌ Database error: " . $e->getMessage() . "<br>";
+        return null;
     }
+}
     
     public function createBulkNotifications(array $users, array $data): array {
         $notificationIds = [];
@@ -136,7 +118,7 @@ class NotificationService {
                 $sql .= " AND n.is_read = FALSE";
             }
             
-            $sql .= " ORDER BY n.priority DESC, n.created_at DESC LIMIT :limit";
+            $sql .= " ORDER BY n.is_read ASC, n.created_at DESC LIMIT :limit";
             
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
