@@ -100,12 +100,11 @@ function initiativeStatusClass($status) {
 ?>
 
 <style>
-.admin-init-hero{
-  background:
-    radial-gradient(850px 280px at 12% 5%, rgba(201,162,39,.28), transparent 60%),
-    linear-gradient(135deg,#0b1f3a 0%,#102a4c 55%,#113c63 100%);
-  color:#fff;
-  padding:54px 20px 78px;
+.admin-init-hero {
+  background: #b89a68 !important;
+  background-image:
+    linear-gradient(135deg, #8f6f3f 0%, #b89a68 55%, #8f6f3f 100%) !important;
+  color: #ffffff !important;
 }
 .admin-init-hero-inner{
   max-width:1220px;
@@ -128,26 +127,31 @@ function initiativeStatusClass($status) {
 }
 .admin-init-stats{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
+  grid-template-columns:repeat(2, 220px);
+  gap:10px;
+  justify-content:end;
 }
+
 .admin-init-stat{
   border:1px solid rgba(255,255,255,.16);
   background:rgba(255,255,255,.12);
-  border-radius:22px;
-  padding:17px 18px;
+  border-radius:18px;
+  padding:12px 14px;
   cursor:pointer;
+  min-height:105px;
 }
+
 .admin-init-stat span{
   display:block;
   color:rgba(255,255,255,.72);
-  font-size:13px;
+  font-size:12px;
   font-weight:850;
 }
+
 .admin-init-stat strong{
   display:block;
   color:#fff;
-  font-size:30px;
+  font-size:26px;
   font-weight:950;
   margin-top:4px;
 }
@@ -197,8 +201,11 @@ function initiativeStatusClass($status) {
   border:1px solid #d9e6f7;
 }
 .admin-init-tab.active{
-  background:#0b1f3a;
+  background:#b89a68;
   color:#fff;
+}
+.admin-init-tab:hover{
+  color:#b89a68;
 }
 .admin-init-tools{
   padding:18px 24px;
@@ -235,7 +242,7 @@ function initiativeStatusClass($status) {
 .admin-init-table thead th{
   position:sticky;
   top:0;
-  background:#0b1f3a;
+background:#b89a68;
   color:#fff;
   padding:14px;
   font-size:13px;
@@ -451,11 +458,11 @@ function initiativeStatusClass($status) {
     </div>
 
     <div class="admin-init-tabs">
-      <a class="admin-init-tab <?= $tab==='new'?'active':'' ?>" href="?tab=new&lang=<?= h($lang) ?>">🆕 جديدة</a>
-      <a class="admin-init-tab <?= $tab==='approved'?'active':'' ?>" href="?tab=approved&lang=<?= h($lang) ?>">✅ المقبولة</a>
-      <a class="admin-init-tab <?= $tab==='rejected'?'active':'' ?>" href="?tab=rejected&lang=<?= h($lang) ?>">❌ المرفوضة</a>
-      <a class="admin-init-tab <?= $tab==='notes'?'active':'' ?>" href="?tab=notes&lang=<?= h($lang) ?>">📝 فيها ملاحظات</a>
-      <a class="admin-init-tab <?= $tab==='all'?'active':'' ?>" href="?tab=all&lang=<?= h($lang) ?>">📋 الكل</a>
+      <a class="admin-init-tab <?= $tab==='new'?'active':'' ?>" href="?tab=new&lang=<?= h($lang) ?>">جديدة</a>
+      <a class="admin-init-tab <?= $tab==='approved'?'active':'' ?>" href="?tab=approved&lang=<?= h($lang) ?>">المقبولة</a>
+      <a class="admin-init-tab <?= $tab==='rejected'?'active':'' ?>" href="?tab=rejected&lang=<?= h($lang) ?>">المرفوضة</a>
+      <a class="admin-init-tab <?= $tab==='notes'?'active':'' ?>" href="?tab=notes&lang=<?= h($lang) ?>">فيها ملاحظات</a>
+      <a class="admin-init-tab <?= $tab==='all'?'active':'' ?>" href="?tab=all&lang=<?= h($lang) ?>"> الكل</a>
     </div>
 
     <div class="admin-init-tools">

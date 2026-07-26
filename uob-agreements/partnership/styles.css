@@ -1,10 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
-.partnership-page-wrapper * {
-    box-sizing: border-box;
-}
-
-:root {
+.partnership-page-wrapper {
     --primary-color: #003366;
     --secondary-color: #b8860b;
     --accent-color: #F5F5DC;
@@ -14,7 +10,6 @@
     --light-gray: #f5f7fa;
     --border-color: #ddd;
 
-    /* #729279e6 Green */
     --sage-green: #84A98C;
     --beige: #bfa386;
 
@@ -22,30 +17,37 @@
     --gradient-gold: linear-gradient(135deg, #B8860B 0%, #d9b049 100%);
     --gradient-green: linear-gradient(135deg, #84A98C 0%, #52796F 100%);
     --gradient-beige: linear-gradient(135deg, #c9b299 0%, #967d62 100%);
-}
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    font-family: Georgia, 'Times New Roman', serif;
-}
-
-body,
-p,
-span {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-body {
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
     line-height: 1.6;
     color: var(--text-dark);
     background-color: var(--background);
 }
 
-.container {
+.partnership-page-wrapper * {
+    box-sizing: border-box;
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
+}
+
+.partnership-page-wrapper h1,
+.partnership-page-wrapper h2,
+.partnership-page-wrapper h3,
+.partnership-page-wrapper h4,
+.partnership-page-wrapper h5,
+.partnership-page-wrapper h6,
+.partnership-page-wrapper p,
+.partnership-page-wrapper span,
+.partnership-page-wrapper button,
+.partnership-page-wrapper input,
+.partnership-page-wrapper select,
+.partnership-page-wrapper textarea,
+.partnership-page-wrapper label,
+.partnership-page-wrapper a {
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
+}
+
+/* مهم: لا تخلي .container عام */
+.partnership-page-wrapper .container {
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -2608,3 +2610,4 @@ html[dir="ltr"] .partnership-hero-content {
   height: 12px !important;
   flex-shrink: 0 !important;
 }
+
