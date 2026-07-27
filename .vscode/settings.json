@@ -6,8 +6,8 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "Local PostgreSQL",
-            "database": "User",
+            "name": "Local PostgresSQL",
+            "database": "UOB_Partnership_and_Initiative",
             "username": "postgres"
         }
     ]

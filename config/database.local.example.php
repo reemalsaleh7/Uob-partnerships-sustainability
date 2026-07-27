@@ -7,5 +7,5 @@ return [
     'port' => '5432',
     'dbname' => 'UOB_Partnership_and_Initiative',
     'user' => 'postgres',
-    'password' => 'CHANGE_ME',
+    'password' => 'MySecurePassword123',
 ];
