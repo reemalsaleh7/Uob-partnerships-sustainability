@@ -534,12 +534,9 @@ function Test-ApplicationDatabaseConfiguration {
             throw 'config/database.php did not connect even with verified UOB_DB_* settings. Ensure it loads config/database.local.php and gives UOB_DB_* variables precedence.'
         }
 
-        Write-Result MISSING (
-            'Application database credentials are missing or incorrect. '
-            + 'Copy config\database.local.example.php to '
-            + 'config\database.local.php and enter this database connection.'
-        )
-    } finally {
+        Write-Result MISSING 'Application database credentials are missing or incorrect. Copy config\database.local.example.php to config\database.local.php and enter this database connection.'
+} finally {
+
         foreach ($name in $environmentNames) {
             [Environment]::SetEnvironmentVariable(
                 $name,
