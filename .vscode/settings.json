@@ -8,7 +8,7 @@
             "askForPassword": true,
             "driver": "PostgreSQL",
             "name": "Local PostgreSQL",
-            "database": "UOB_Partnership_and_Initiative",
+            "database": "User",
             "username": "postgres"
         }
     ]

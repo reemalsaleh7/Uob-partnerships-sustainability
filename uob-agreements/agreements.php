@@ -218,7 +218,7 @@ usort($latest, function($a, $b){
 $latest = array_slice($latest, 0, 3);
 
 /* ======= images ======= */
-$heroBg  = 'assets/image/THEM/agreements.png';
+$heroBg  = 'assets/image/THEM/agreements (3).png';
 $aboutImg = 'assets/image/THEM/agreement1.png';
 ?>
 
@@ -290,7 +290,19 @@ $aboutImg = 'assets/image/THEM/agreement1.png';
   background: #f8fafc !important;
   color: #0b1f3a !important;
 }
+html body .sdg-heroX{
+  min-height:710px !important;
+  padding:0 !important;
+}
 
+html body .sdg-heroX .sdg-heroX-bg{
+  height:100% !important;
+  min-height:710px !important;
+}
+
+html body .sdg-heroX-container{
+  min-height:710px !important;
+}
 </style>
 
 
