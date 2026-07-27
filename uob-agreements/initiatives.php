@@ -285,7 +285,7 @@ function listMedia2(string $dirAbs, array $exts): array {
   return $out;
 }
 /* ======= hero image ======= */
-$heroImageUrl = 'assets/image/THEM/initinesheader.png';
+$heroImageUrl = 'assets/image/THEM/initiatives (2).png';
 
 /* ======= sorted items ======= */
 $sliderItems = array_values($all);
@@ -544,8 +544,57 @@ $gallerySlides = array_map(function($file){
   .initGalleryMedia{min-height:260px;}
   .initGalleryContent{padding:22px;}
 }
+.latest-clean-slider{position:relative;min-height:330px;margin-top:34px;}
+.latest-clean-slide{display:none;grid-template-columns:280px 1fr;background:#fff;border:1px solid #e5edf6;border-radius:24px;overflow:hidden;text-decoration:none;box-shadow:0 16px 38px rgba(2,8,23,.08);}
+.latest-clean-slide.active{display:grid;}
+.latest-clean-image{background:#e5e7eb;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:20px;min-height:330px;}
+.latest-clean-content{padding:42px;text-align:right;}
+.latest-clean-content span{color:#b89a68;font-weight:950;font-size:14px;}
+.latest-clean-content h3{color:#0b1f3a;font-size:34px;font-weight:950;line-height:1.5;margin:10px 0 18px;}
+.latest-clean-content p{color:#334155;font-weight:850;line-height:1.9;font-size:17px;margin:0;}
+.latest-clean-content b{color:#0b1f3a;}
+
+@media(max-width:800px){
+  .latest-clean-slide{grid-template-columns:1fr;}
+  .latest-clean-image{min-height:180px;}
+  .latest-clean-content{padding:28px;}
+}
 
 
+
+html body .sdg-heroX-overlay{
+  background: transparent !important;
+}
+
+
+html body .sdg-heroX-overlay{
+  background:transparent !important;
+}
+.latest-section-bg{
+  background:#b89a68 !important;
+  padding-top:90px !important;
+  padding-bottom:85px !important;
+  overflow:hidden !important;
+  
+}
+
+
+.latest-clean-slider{
+  margin-bottom:0 !important;
+}
+.latest-section-bg .sdg-centerX h2{
+  color:#ffffff !important;
+}
+
+.latest-section-bg .sdg-lineX.center{
+  background:#ffffff !important;
+}
+.uob-reveal,
+.uob-reveal.in{
+  opacity:1 !important;
+  transform:none !important;
+  transition:none !important;
+}
 </style>
 
 <section class="sdg-heroX">
@@ -607,48 +656,80 @@ $gallerySlides = array_map(function($file){
 </section>
 <section class="sdg-sectionX sdg-sectionX-alt">
   <div class="container">
-    <div class="sdg-aboutX about-initiatives-only">
 
-      <div class="sdg-aboutX-content uob-reveal right">
-        <h2><?= h(tt('about_title')) ?></h2>
-        <div class="sdg-lineX center"></div>
-        <p><?= h(tt('about_desc')) ?></p>
-      </div>
+    <div style="
+      width:100% !important;
+      max-width:900px !important;
+      margin:0 auto !important;
+      text-align:center !important;
+      display:block !important;
+      direction:rtl !important;
+    ">
+
+      <h2 style="
+        margin:0 auto !important;
+        max-width:760px !important;
+        color:#0b1f3a !important;
+        font-size:42px !important;
+        font-weight:950 !important;
+        line-height:1.25 !important;
+        text-align:center !important;
+      ">
+        <?= h(tt('about_title')) ?>
+      </h2>
+
+<div class="sdg-lineX center" style="margin:22px auto 30px !important; background:#b89a68 !important;"></div>
+
+      <p style="
+        max-width:820px !important;
+        margin:0 auto !important;
+        color:#0b1f3a !important;
+        font-size:20px !important;
+        font-weight:850 !important;
+        line-height:1.9 !important;
+        text-align:center !important;
+      ">
+        <?= h(tt('about_desc')) ?>
+      </p>
 
     </div>
+
   </div>
 </section>
-
-<section class="sdg-sectionX">
-  <div class="container">
+<section class="sdg-sectionX latest-section-bg">
+    <div class="container">
     <div class="sdg-centerX">
       <h2><?= h(tt('latest_initiatives')) ?></h2>
-      <div class="sdg-lineX center"></div>
+      <div class="sdg-lineX center" style="background:#f6f9fc !important;"></div>
     </div>
 
-    <div class="sdg-servicesX">
+    <div class="latest-clean-slider">
       <?php foreach ($latest as $index => $it): ?>
         <?php
           $title = trim((string)($it['title'] ?? ''));
           $unitVal = trim((string)($it['entity'] ?? ''));
           $typeVal = trim((string)($it['type'] ?? ''));
-          $sdgVal = trim((string)(
-         ($it['sdg_primary'] ?? '') . ' | ' . ($it['sdg_secondary'] ?? '')));
           $dateVal = trim((string)($it['start_date'] ?? ''));
           $id = trim((string)($it['id'] ?? ''));
-          $img = $latestImages[$index] ?? $latestImages[0];
         ?>
-        <a class="sdg-serviceX uob-reveal" href="initiative-details.php?id=<?= urlencode($id) ?>&lang=<?= urlencode($lang) ?>">
-          <img src="<?= h($img) ?>" alt="<?= h(tt('initiative_image_alt')) ?>">
-          <div class="body">
+
+        <a class="latest-clean-slide <?= $index === 0 ? 'active' : '' ?>"
+           href="initiative-details.php?id=<?= urlencode($id) ?>&lang=<?= urlencode($lang) ?>">
+
+          <div class="latest-clean-image">
+            <?= $isArabic ? 'الصورة غير متوفرة' : 'Image not available' ?>
+          </div>
+
+          <div class="latest-clean-content">
+            <span><?= $isArabic ? 'مبادرة' : 'Initiative' ?></span>
             <h3><?= h($title ?: '—') ?></h3>
-            <p style="margin-top:10px;">
+            <p>
               <b><?= h(tt('unit_label')) ?>:</b> <?= h($unitVal ?: '—') ?><br>
               <b><?= h(tt('type_label')) ?>:</b> <?= h($typeVal ?: '—') ?><br>
-              <b><?= h(tt('sdg_label')) ?>:</b> <?= h($sdgVal ?: '—') ?><br>
               <b><?= h(tt('date_label')) ?>:</b> <?= h($dateVal ?: '—') ?>
             </p>
           </div>
+
         </a>
       <?php endforeach; ?>
     </div>
@@ -1207,6 +1288,19 @@ $gallerySlides = array_map(function($file){
   });
 
   applyFilters();
+})();
+</script>
+<script>
+(function(){
+  const slides = document.querySelectorAll('.latest-clean-slide');
+  if (slides.length < 2) return;
+
+  let i = 0;
+  setInterval(() => {
+    slides[i].classList.remove('active');
+    i = (i + 1) % slides.length;
+    slides[i].classList.add('active');
+  }, 5000);
 })();
 </script>
 
