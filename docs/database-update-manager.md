@@ -14,8 +14,8 @@ The menu provides:
 1. **Check only** — reports environment and database gaps without changing
    anything.
 2. **Install missing required updates** — backs up the database, enables
-   XAMPP's bundled `pdo_pgsql` extension when required, installs only failed
-   database features, and verifies the result.
+   XAMPP's bundled `pdo_pgsql`, `fileinfo`, and `zip` extensions when required,
+   installs only failed database features, and verifies the result.
 3. **Install updates plus local demo users and showcase data** — performs the
    required update and also installs the development accounts and `DEMO-*`
    Agreements. Use this only on a local development database.
@@ -27,6 +27,9 @@ The manager:
 - Finds the standard XAMPP PHP and PostgreSQL 17 paths automatically.
 - Prompts for the PostgreSQL password once.
 - Never drops or recreates the database.
+- Verifies that the PHP application can connect through `config/database.php`;
+  this catches hardcoded credentials, ignored local configuration, and a wrong
+  application password before any migration is installed.
 - Checks actual tables, columns, enum values, permissions, and workflow stages;
   it does not guess from filenames.
 - Creates `schema_migrations` and adopts features that were installed before
@@ -40,6 +43,9 @@ The manager:
 - Creates a custom-format backup in
   `Documents\UOB-Database-Backups` before the first database change.
 - Stops immediately when a required SQL file or core table is missing.
+- Treats the development fixtures as repeatable local setup. Existing
+  development users are reconciled by `university_id` or email, their rows are
+  preserved, and their required roles and positions are verified.
 
 Command-line examples:
 
@@ -61,9 +67,26 @@ Command-line examples:
   -Port 5432
 ```
 
-If the manager enables `pdo_pgsql`, restart Apache after it completes.
+Before the first run on a new checkout, create the ignored application
+configuration:
+
+```powershell
+Copy-Item .\config\database.local.example.php .\config\database.local.php
+notepad .\config\database.local.php
+```
+
+Set the same PostgreSQL host, port, database, user, and password that the
+manager will use. The manager validates this file without printing the
+password. Never commit `config/database.local.php`.
+
+If the manager enables any PHP extension, restart Apache after it completes.
 
 Do not select the development-data option for a production database.
+
+The development seed intentionally stops without changing accounts when the
+expected university ID and expected email belong to two different user rows.
+That ambiguous case requires a deliberate data repair; the seed will never
+delete or silently merge those accounts.
 
 ## Team workflow for every new database change
 
