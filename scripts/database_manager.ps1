@@ -20,6 +20,7 @@ $script:Php = $null
 $script:TrackingAvailable = $false
 $script:PhpIniChanged = $false
 $script:PhpReady = $false
+$script:ApplicationConfigReady = $false
 $script:OriginalPgPassword = $env:PGPASSWORD
 $script:OptionalMigrationNames = @(
     '20260722_workspace_showcase_data.sql'
@@ -156,14 +157,43 @@ function Test-AndRepairPhp {
         return
     }
 
+    $requiredExtensions = @(
+        [pscustomobject]@{
+            Module = 'pdo_pgsql'
+            IniName = 'pdo_pgsql'
+            DllName = 'php_pdo_pgsql.dll'
+        },
+        [pscustomobject]@{
+            Module = 'fileinfo'
+            IniName = 'fileinfo'
+            DllName = 'php_fileinfo.dll'
+        },
+        [pscustomobject]@{
+            Module = 'zip'
+            IniName = 'zip'
+            DllName = 'php_zip.dll'
+        }
+    )
+
     $modules = Get-PhpModules
-    if ($modules -contains 'pdo_pgsql') {
+    $missing = @(
+        $requiredExtensions |
+            Where-Object { $modules -notcontains $_.Module }
+    )
+
+    foreach ($extension in $requiredExtensions) {
+        if ($modules -contains $extension.Module) {
+            Write-Result OK "PHP extension $($extension.Module) is enabled."
+        } else {
+            Write-Result MISSING "PHP extension $($extension.Module) is disabled."
+        }
+    }
+
+    if ($missing.Count -eq 0) {
         $script:PhpReady = $true
-        Write-Result OK 'PHP extension pdo_pgsql is enabled.'
         return
     }
 
-    Write-Result MISSING 'PHP extension pdo_pgsql is disabled.'
     if ($CheckOnly) {
         return
     }
@@ -178,27 +208,49 @@ function Test-AndRepairPhp {
     }
 
     $phpDirectory = Split-Path -Parent $script:Php
-    $driverDll = Join-Path $phpDirectory 'ext\php_pdo_pgsql.dll'
-    if (-not (Test-Path -LiteralPath $driverDll -PathType Leaf)) {
-        throw "XAMPP's PostgreSQL driver is missing: $driverDll"
+    foreach ($extension in $missing) {
+        $extensionDll = Join-Path $phpDirectory "ext\$($extension.DllName)"
+        if (-not (Test-Path -LiteralPath $extensionDll -PathType Leaf)) {
+            throw "XAMPP's $($extension.Module) extension is missing: $extensionDll"
+        }
     }
 
     $backupPath = '{0}.uob-backup-{1}' -f $iniPath, (Get-Date -Format 'yyyyMMdd-HHmmss')
     Copy-Item -LiteralPath $iniPath -Destination $backupPath
 
-    $changed = Enable-PhpExtension -IniPath $iniPath -ExtensionName 'pdo_pgsql'
-    if (Test-Path -LiteralPath (Join-Path $phpDirectory 'ext\php_pgsql.dll')) {
-        $changed = (Enable-PhpExtension -IniPath $iniPath -ExtensionName 'pgsql') -or $changed
+    $changed = $false
+    foreach ($extension in $missing) {
+        if (
+            Enable-PhpExtension `
+                -IniPath $iniPath `
+                -ExtensionName $extension.IniName
+        ) {
+            $changed = $true
+        }
+    }
+
+    if (
+        ($missing | Where-Object { $_.Module -eq 'pdo_pgsql' }) -and
+        (Test-Path -LiteralPath (Join-Path $phpDirectory 'ext\php_pgsql.dll'))
+    ) {
+        if (Enable-PhpExtension -IniPath $iniPath -ExtensionName 'pgsql') {
+            $changed = $true
+        }
     }
 
     $modules = Get-PhpModules
-    if (-not ($modules -contains 'pdo_pgsql')) {
-        throw "pdo_pgsql is still unavailable. Restore $backupPath and inspect the PHP startup warnings."
+    $stillMissing = @(
+        $requiredExtensions |
+            Where-Object { $modules -notcontains $_.Module }
+    )
+    if ($stillMissing.Count -gt 0) {
+        $names = $stillMissing.Module -join ', '
+        throw "$names is still unavailable. Restore $backupPath and inspect the PHP startup warnings."
     }
 
     $script:PhpReady = $true
     $script:PhpIniChanged = $changed
-    Write-Result FIXED "Enabled pdo_pgsql in $iniPath (backup: $backupPath)."
+    Write-Result FIXED "Enabled required PHP extensions in $iniPath (backup: $backupPath)."
 }
 
 function Get-ConnectionArguments {
@@ -359,6 +411,145 @@ function Connect-Database {
     Write-Result OK "Connected to $Database."
 }
 
+function Invoke-ApplicationDatabaseProbe {
+    $configPath = Join-Path $script:RepoRoot 'config\database.php'
+    if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+        throw "Application database configuration is missing: $configPath"
+    }
+
+    $probeCode = @'
+<?php
+
+$path = getenv('UOB_CONFIG_PROBE_PATH');
+require $path;
+$database = Database::connect()->query('SELECT current_database()')->fetchColumn();
+echo $database;
+'@
+
+    $probePath = [IO.Path]::Combine(
+        [IO.Path]::GetTempPath(),
+        ('uob-database-probe-{0}.php' -f [guid]::NewGuid().ToString('N'))
+    )
+    $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+    [IO.File]::WriteAllText($probePath, $probeCode, $utf8WithoutBom)
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & $script:Php $probePath 2>&1
+        $probeExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        Remove-Item -LiteralPath $probePath -Force -ErrorAction SilentlyContinue
+    }
+
+    $lastLine = if ($output) {
+        ($output | Select-Object -Last 1).ToString().Trim()
+    } else {
+        ''
+    }
+
+    return [pscustomobject]@{
+        Success = (
+            $probeExitCode -eq 0 -and
+            ($lastLine -eq $Database)
+        )
+        Output = @($output)
+    }
+}
+
+function Test-ApplicationDatabaseConfiguration {
+    if (-not $script:Php -or -not $script:PhpReady) {
+        return
+    }
+
+    $configPath = Join-Path $script:RepoRoot 'config\database.php'
+    $examplePath = Join-Path $script:RepoRoot 'config\database.local.example.php'
+    if (-not (Test-Path -LiteralPath $examplePath -PathType Leaf)) {
+        throw "Safe local database configuration example is missing: $examplePath"
+    }
+
+    $environmentNames = @(
+        'UOB_CONFIG_PROBE_PATH',
+        'UOB_DB_HOST',
+        'UOB_DB_PORT',
+        'UOB_DB_NAME',
+        'UOB_DB_USER',
+        'UOB_DB_PASSWORD'
+    )
+    $originalValues = @{}
+    foreach ($name in $environmentNames) {
+        $originalValues[$name] = [Environment]::GetEnvironmentVariable(
+            $name,
+            'Process'
+        )
+    }
+
+    try {
+        [Environment]::SetEnvironmentVariable(
+            'UOB_CONFIG_PROBE_PATH',
+            $configPath,
+            'Process'
+        )
+
+        $actualProbe = Invoke-ApplicationDatabaseProbe
+        if ($actualProbe.Success) {
+            $script:ApplicationConfigReady = $true
+            Write-Result OK 'Application database configuration connected successfully.'
+            return
+        }
+
+        # Prove that database.php honors the supported UOB_DB_* overrides. This
+        # distinguishes a missing local secret from a hardcoded/broken loader.
+        [Environment]::SetEnvironmentVariable(
+            'UOB_DB_HOST',
+            $DatabaseHost,
+            'Process'
+        )
+        [Environment]::SetEnvironmentVariable(
+            'UOB_DB_PORT',
+            $Port.ToString(),
+            'Process'
+        )
+        [Environment]::SetEnvironmentVariable(
+            'UOB_DB_NAME',
+            $Database,
+            'Process'
+        )
+        [Environment]::SetEnvironmentVariable(
+            'UOB_DB_USER',
+            $DbUser,
+            'Process'
+        )
+        if ($env:PGPASSWORD) {
+            [Environment]::SetEnvironmentVariable(
+                'UOB_DB_PASSWORD',
+                $env:PGPASSWORD,
+                'Process'
+            )
+        }
+
+        $overrideProbe = Invoke-ApplicationDatabaseProbe
+        if (-not $overrideProbe.Success) {
+            throw 'config/database.php did not connect even with verified UOB_DB_* settings. Ensure it loads config/database.local.php and gives UOB_DB_* variables precedence.'
+        }
+
+        Write-Result MISSING (
+            'Application database credentials are missing or incorrect. '
+            + 'Copy config\database.local.example.php to '
+            + 'config\database.local.php and enter this database connection.'
+        )
+    } finally {
+        foreach ($name in $environmentNames) {
+            [Environment]::SetEnvironmentVariable(
+                $name,
+                $originalValues[$name],
+                'Process'
+            )
+        }
+    }
+}
+
 function Test-Feature {
     param([string]$CheckSql)
 
@@ -476,7 +667,11 @@ INSERT INTO schema_migrations (
     migration_name, checksum_sha256, installation_method
 )
 VALUES ('$safeName', '$safeChecksum', '$safeMethod')
-ON CONFLICT (migration_name) DO NOTHING;
+ON CONFLICT (migration_name) DO UPDATE
+SET
+    checksum_sha256 = EXCLUDED.checksum_sha256,
+    installation_method = EXCLUDED.installation_method,
+    applied_at = CURRENT_TIMESTAMP;
 "@
     [void](Invoke-PsqlCapture -Sql $sql)
 }
@@ -748,7 +943,95 @@ function Get-OptionalDevelopmentSteps {
             Name = 'development-seed'
             Description = 'Local development users, positions, and partners'
             RelativePath = 'seed\seed_dev.sql'
-            CheckSql = "SELECT (SELECT count(*) FROM users WHERE email IN ('dev.admin@uob.test','dev.president@uob.test','dev.vp@uob.test','dev.dean@uob.test','dev.head@uob.test','dev.faculty@uob.test','dev.legal@uob.test','dev.finance@uob.test') AND is_active) = 8;"
+            CheckSql = @"
+WITH expected_users(university_id, email) AS (
+    VALUES
+        ('DEV-ADMIN-001', 'dev.admin@uob.test'),
+        ('DEV-PRES-001', 'dev.president@uob.test'),
+        ('DEV-VP-001', 'dev.vp@uob.test'),
+        ('DEV-DEAN-001', 'dev.dean@uob.test'),
+        ('DEV-HEAD-001', 'dev.head@uob.test'),
+        ('DEV-FAC-001', 'dev.faculty@uob.test'),
+        ('DEV-LEGAL-001', 'dev.legal@uob.test'),
+        ('DEV-FIN-001', 'dev.finance@uob.test')
+),
+expected_positions(email, position_name, unit_code) AS (
+    VALUES
+        ('dev.admin@uob.test', 'System Administrator', 'UOB'),
+        ('dev.president@uob.test', 'President', 'PRES'),
+        ('dev.vp@uob.test', 'Vice President', 'VP'),
+        ('dev.dean@uob.test', 'Dean', 'CIT'),
+        ('dev.head@uob.test', 'Department Head', 'CS'),
+        ('dev.faculty@uob.test', 'Faculty Member', 'CS'),
+        ('dev.legal@uob.test', 'Legal Reviewer', 'LEGAL'),
+        ('dev.finance@uob.test', 'Finance Reviewer', 'FIN')
+),
+expected_roles(email, role_name) AS (
+    VALUES
+        ('dev.admin@uob.test', 'System Administrator'),
+        ('dev.president@uob.test', 'Agreement Creator'),
+        ('dev.president@uob.test', 'Agreement Approver'),
+        ('dev.president@uob.test', 'Initiative Approver'),
+        ('dev.vp@uob.test', 'Agreement Creator'),
+        ('dev.vp@uob.test', 'Agreement Approver'),
+        ('dev.vp@uob.test', 'Initiative Approver'),
+        ('dev.dean@uob.test', 'Agreement Creator'),
+        ('dev.dean@uob.test', 'Initiative Approver'),
+        ('dev.legal@uob.test', 'Agreement Approver'),
+        ('dev.finance@uob.test', 'Agreement Approver'),
+        ('dev.head@uob.test', 'Initiative Creator'),
+        ('dev.head@uob.test', 'Initiative Approver'),
+        ('dev.faculty@uob.test', 'Initiative Creator')
+),
+expected_partners(organization_name) AS (
+    VALUES
+        ('Bahrain Institute of Technology'),
+        ('Gulf Research Centre'),
+        ('Future Skills Foundation')
+)
+SELECT
+    NOT EXISTS (
+        SELECT 1
+        FROM expected_users expected
+        LEFT JOIN users u
+          ON u.university_id = expected.university_id
+         AND u.email = expected.email
+         AND u.is_active = TRUE
+        WHERE u.user_id IS NULL
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM expected_positions expected
+        LEFT JOIN users u ON u.email = expected.email
+        LEFT JOIN positions p ON p.name = expected.position_name
+        LEFT JOIN organizational_units ou ON ou.code = expected.unit_code
+        LEFT JOIN user_positions up
+          ON up.user_id = u.user_id
+         AND up.position_id = p.position_id
+         AND up.unit_id = ou.unit_id
+         AND up.is_active = TRUE
+         AND (up.end_date IS NULL OR up.end_date >= CURRENT_DATE)
+        WHERE up.user_position_id IS NULL
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM expected_roles expected
+        LEFT JOIN users u ON u.email = expected.email
+        LEFT JOIN roles r ON r.role_name = expected.role_name
+        LEFT JOIN user_roles ur
+          ON ur.user_id = u.user_id
+         AND ur.role_id = r.role_id
+        WHERE ur.user_id IS NULL
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM expected_partners expected
+        LEFT JOIN partners p
+          ON p.organization_name = expected.organization_name
+         AND p.is_active = TRUE
+        WHERE p.partner_id IS NULL
+    );
+"@
         },
         [pscustomobject]@{
             Name = '20260722_workspace_showcase_data.sql'
@@ -819,6 +1102,14 @@ function Install-Steps {
         if ($item.Installed) {
             if (-not $item.Record) {
                 Save-TrackingRecord -Name $step.Name -Checksum $item.Checksum -Method baseline
+            } elseif ($item.Record.Checksum -ne $item.Checksum) {
+                # Immutable migrations with changed checksums are rejected
+                # above. Reaching this branch means the file is repeatable
+                # setup SQL, so record the version that was just verified.
+                Save-TrackingRecord `
+                    -Name $step.Name `
+                    -Checksum $item.Checksum `
+                    -Method $item.Record.Method
             }
             continue
         }
@@ -913,6 +1204,7 @@ try {
     Resolve-Tools
     Test-AndRepairPhp
     Connect-Database
+    Test-ApplicationDatabaseConfiguration
     Test-CoreSchema
     Test-TrackingTable
 
@@ -943,7 +1235,11 @@ try {
         $optionalMissing = @($optionalInspection | Where-Object { -not $_.Installed })
 
         Write-Host ""
-        if ($missing.Count -eq 0 -and $script:PhpReady) {
+        if (
+            $missing.Count -eq 0 -and
+            $script:PhpReady -and
+            $script:ApplicationConfigReady
+        ) {
             Write-Result OK 'All required database features are installed.'
             if ($optionalMissing.Count -gt 0) {
                 Write-Result INFO 'Optional development users/showcase data are not fully installed. Choose option 3 to add them.'
@@ -956,10 +1252,17 @@ try {
             Write-Result MISSING "$($missing.Count) database feature(s) need installation."
         }
         if (-not $script:PhpReady) {
-            Write-Result MISSING 'The PHP PostgreSQL driver needs installation.'
+            Write-Result MISSING 'One or more required PHP extensions need installation.'
+        }
+        if ($script:PhpReady -and -not $script:ApplicationConfigReady) {
+            Write-Result MISSING 'The application database credentials need configuration.'
         }
         Write-Host 'Run database-manager.cmd and choose option 2 or 3 to install them.'
         exit 2
+    }
+
+    if ($script:PhpReady -and -not $script:ApplicationConfigReady) {
+        throw 'Database updates were not started because the application database credentials are not configured. Copy config\database.local.example.php to config\database.local.php, set the password, and rerun the manager.'
     }
 
     if ($missing.Count -eq 0 -and $untracked.Count -eq 0) {
