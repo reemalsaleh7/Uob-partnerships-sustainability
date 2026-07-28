@@ -481,6 +481,21 @@
         partners() {
             return request('/partners');
         },
+        createPartner(data) {
+            return request('/partners', {
+                method: 'POST',
+                body: jsonBody(data)
+            });
+        },
+        extractAgreementClauses(file) {
+            const body = new FormData();
+            body.append('file', file);
+
+            return request('/agreement-document-extraction', {
+                method: 'POST',
+                body
+            });
+        },
         agreement(id) {
             return request(`/agreements/${encodeURIComponent(id)}`);
         },

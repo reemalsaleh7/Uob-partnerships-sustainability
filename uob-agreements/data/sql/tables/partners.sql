@@ -33,6 +33,8 @@ CREATE TABLE partners (
 
     address TEXT,
 
+    profile TEXT,
+
 
     website VARCHAR(255),
 

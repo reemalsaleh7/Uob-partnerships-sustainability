@@ -77,6 +77,17 @@ class AgreementValidator {
         if (empty(self::partnerIds($data))) {
             $errors[] = 'At least one partner is required before submission';
         }
+        if (
+            strtoupper(trim((string) ($data['geographic_scope'] ?? '')))
+            === 'INTERNATIONAL'
+        ) {
+            foreach (($data['partners'] ?? []) as $partner) {
+                if (trim((string) ($partner['country'] ?? '')) === '') {
+                    $errors[] = 'Every international partner must have a country before submission';
+                    break;
+                }
+            }
+        }
 
         return array_merge($errors, self::validateContent($data));
     }
@@ -155,6 +166,27 @@ class AgreementValidator {
                 && !filter_var((string) $contact['email'], FILTER_VALIDATE_EMAIL)
             ) {
                 $errors[] = 'A contact email address is invalid';
+                break;
+            }
+        }
+
+        foreach (($data['executive_programs'] ?? []) as $program) {
+            $programStart = self::dateValue($program['start_date'] ?? null);
+            $programEnd = self::dateValue($program['end_date'] ?? null);
+            if (($program['start_date'] ?? null) && !$programStart) {
+                $errors[] = 'An executive programme start date is invalid';
+                break;
+            }
+            if (($program['end_date'] ?? null) && !$programEnd) {
+                $errors[] = 'An executive programme end date is invalid';
+                break;
+            }
+            if (
+                $programStart
+                && $programEnd
+                && $programEnd < $programStart
+            ) {
+                $errors[] = 'An executive programme end date cannot be earlier than its start date';
                 break;
             }
         }

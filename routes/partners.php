@@ -16,6 +16,8 @@ $uri = '/' . ltrim((string) $uri, '/');
 
 if ($method === 'GET' && $uri === '/partners') {
     $controller->index();
+} elseif ($method === 'POST' && $uri === '/partners') {
+    $controller->create();
 }
 
 header('HTTP/1.1 404 Not Found');

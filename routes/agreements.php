@@ -28,6 +28,8 @@ $uri = '/' . ltrim($uri, '/');
 
 if ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
+} elseif ($method === 'POST' && $uri === '/agreement-document-extraction') {
+    $controller->extractClauseDocument();
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {
     $controller->annotations((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {

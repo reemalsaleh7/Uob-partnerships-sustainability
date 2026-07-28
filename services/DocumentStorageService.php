@@ -25,15 +25,37 @@ class DocumentStorageService
             'application/x-zip-compressed',
             'application/octet-stream',
         ],
+        'jpg' => [
+            'image/jpeg',
+        ],
+        'jpeg' => [
+            'image/jpeg',
+        ],
+        'png' => [
+            'image/png',
+        ],
+        'webp' => [
+            'image/webp',
+        ],
+        'mp4' => [
+            'video/mp4',
+            'application/mp4',
+            'application/octet-stream',
+        ],
     ];
 
     private string $storageRoot;
+    private bool $allowMedia;
 
-    public function __construct(?string $storageRoot = null)
+    public function __construct(
+        ?string $storageRoot = null,
+        bool $allowMedia = false
+    )
     {
         $this->storageRoot = $storageRoot
             ?? dirname(__DIR__)
                 . '/storage/private/agreement-documents';
+        $this->allowMedia = $allowMedia;
     }
 
     public function store(array $uploadedFile): array
@@ -64,9 +86,14 @@ class DocumentStorageService
             pathinfo($originalName, PATHINFO_EXTENSION)
         );
 
-        if (!array_key_exists($extension, self::ALLOWED_EXTENSIONS)) {
+        if (
+            !array_key_exists($extension, self::ALLOWED_EXTENSIONS)
+            || (!$this->allowMedia && $this->isMediaExtension($extension))
+        ) {
             throw new InvalidArgumentException(
-                'Only PDF, DOC, and DOCX files are allowed'
+                $this->allowMedia
+                    ? 'Only PDF, DOC, DOCX, JPG, PNG, WebP, and MP4 files are allowed'
+                    : 'Only PDF, DOC, and DOCX files are allowed'
             );
         }
 
@@ -175,9 +202,18 @@ class DocumentStorageService
             && unlink($absolutePath);
     }
 
-    public static function allowedExtensions(): array
+    public static function allowedExtensions(bool $includeMedia = false): array
     {
-        return array_keys(self::ALLOWED_EXTENSIONS);
+        return array_values(array_filter(
+            array_keys(self::ALLOWED_EXTENSIONS),
+            static fn (string $extension): bool =>
+                $includeMedia
+                || !in_array(
+                    $extension,
+                    ['jpg', 'jpeg', 'png', 'webp', 'mp4'],
+                    true
+                )
+        ));
     }
 
     private function pathForNewKey(string $storageKey): string
@@ -194,7 +230,7 @@ class DocumentStorageService
     private function isValidStorageKey(string $storageKey): bool
     {
         return preg_match(
-            '#^\d{4}/\d{2}/[a-f0-9]{64}\.(pdf|doc|docx)$#',
+            '#^\d{4}/\d{2}/[a-f0-9]{64}\.(pdf|doc|docx|jpg|jpeg|png|webp|mp4)$#',
             $storageKey
         ) === 1;
     }
@@ -229,6 +265,15 @@ class DocumentStorageService
         return $normalized;
     }
 
+    private function isMediaExtension(string $extension): bool
+    {
+        return in_array(
+            $extension,
+            ['jpg', 'jpeg', 'png', 'webp', 'mp4'],
+            true
+        );
+    }
+
     private function detectMimeType(string $path): string
     {
         if (!class_exists('finfo')) {
@@ -261,14 +306,27 @@ class DocumentStorageService
             );
         }
 
-        $signature = fread($handle, 8);
+        $signature = fread($handle, 16);
         fclose($handle);
 
         $valid = match ($extension) {
             'pdf' => str_starts_with((string) $signature, '%PDF-'),
-            'doc' => (string) $signature
-                === "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1",
+            'doc' => str_starts_with(
+                (string) $signature,
+                "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
+            ),
             'docx' => str_starts_with((string) $signature, "PK\x03\x04"),
+            'jpg', 'jpeg' => str_starts_with(
+                (string) $signature,
+                "\xFF\xD8\xFF"
+            ),
+            'png' => str_starts_with(
+                (string) $signature,
+                "\x89PNG\r\n\x1A\n"
+            ),
+            'webp' => str_starts_with((string) $signature, 'RIFF')
+                && substr((string) $signature, 8, 4) === 'WEBP',
+            'mp4' => substr((string) $signature, 4, 4) === 'ftyp',
             default => false,
         };
 

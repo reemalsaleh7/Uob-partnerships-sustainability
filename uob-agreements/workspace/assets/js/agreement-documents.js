@@ -30,7 +30,9 @@
 
     const typeLabels = {
         AGREEMENT_DRAFT: 'Agreement draft',
+        GOVERNANCE_CLAUSES: 'Governance / MOU clauses',
         SUPPORTING: 'Supporting document',
+        MEDIA: 'Supporting media',
         LEGAL_REVIEW: 'Legal review document',
         FINANCE_REVIEW: 'Finance review document',
         SIGNED_AGREEMENT: 'Final signed Agreement',

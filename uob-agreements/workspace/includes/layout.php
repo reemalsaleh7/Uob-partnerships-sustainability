@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 function workspaceHeader(
     string $title,
-    string $activePage = ''
+    string $activePage = '',
+    array $styles = []
 ): void {
     $GLOBALS['workspace_is_login_page'] = $activePage === '';
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
@@ -14,6 +15,11 @@ function workspaceHeader(
     $bodyClass = $isLoginPage
         ? 'workspace-body workspace-login-body'
         : 'workspace-body';
+    $extraStyles = '';
+    foreach ($styles as $style) {
+        $safeStyle = htmlspecialchars((string) $style, ENT_QUOTES, 'UTF-8');
+        $extraStyles .= "    <link href=\"{$safeStyle}\" rel=\"stylesheet\">\n";
+    }
 
     echo <<<HTML
 <!doctype html>
@@ -32,7 +38,8 @@ function workspaceHeader(
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-    <link href="assets/css/workspace.css?v=20260722-showcase-data" rel="stylesheet">
+{$extraStyles}
+    <link href="assets/css/workspace.css?v=20260728-guided-form" rel="stylesheet">
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -175,7 +182,7 @@ HTML;
 
     echo <<<HTML
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260722-showcase-data"></script>
+    <script src="assets/js/api-client.js?v=20260728-guided-form"></script>
 HTML;
 
     foreach ($scripts as $script) {

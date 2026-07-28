@@ -22,7 +22,7 @@ This model consolidates the four official University of Bahrain cooperation form
 | Arabic title | `agreements.title_ar` | Bilingual forms | Optional while drafting; used by the Arabic public page when present. |
 | Cooperation type | `agreements.agreement_type` | Request form, legacy form, CSV | Cooperation Framework, MOU, Cooperation Agreement, Research Agreement, or Other. |
 | Partner scope | `agreements.geographic_scope` | Request form | `LOCAL` or `INTERNATIONAL`. |
-| Partner organizations | `agreement_partners` | Forms and CSV | Multiple partners are supported. Partner type, country, website, city, logo, and coordinates stay in `partners`. |
+| Partner organizations | `agreement_partners` | Forms and CSV | Multiple partners are supported. Partner type, country, website, brief profile, city, logo, and coordinates stay in `partners`. |
 | Summary/profile | `agreements.description` | Request form and CSV | Required before submission; approved summary may be public. |
 | Start/end dates | `agreements.start_date`, `end_date` | Request, lifecycle, legacy form, CSV | Both required before submission; end cannot precede start. |
 | Signing/effective dates | `agreements.signing_date`, `effective_date` | MOU | Optional until known. |
@@ -65,11 +65,49 @@ This model consolidates the four official University of Bahrain cooperation form
 These values describe the organization and are not duplicated in every Agreement:
 
 - Organization name and type.
-- Country, city, address, website, email, and phone.
+- Country, city, address, website, brief organization profile, email, and phone.
 - Logo URL.
 - Latitude and longitude used by the public partnership map.
 
-The comprehensive migration adds city, logo, latitude, and longitude to `partners`. The Agreement form displays active partner data but does not silently rewrite the shared partner profile.
+The comprehensive migration adds city, logo, latitude, and longitude to
+`partners`; the guided-form migration adds the reusable brief profile. The
+Agreement form searches the active University partner directory and displays
+the selected organizations as removable cards with their country, website, and
+profile. A creator may add a missing partner through a validated, audited
+directory action. A matching existing name/country is selected instead of
+duplicated, and the form never silently rewrites an existing shared profile.
+
+## Guided form behavior
+
+- Nine sections render as accessible disclosure panels. Only the first opens
+  initially; required sections advance when complete, while Open all and
+  Collapse all remain available.
+- Collapsed required sections retain a visible Complete, Not started, or Needs
+  attention status. The first invalid section reopens on save.
+- Project and executive-programme dates use one range-calendar control each
+  while persisting the established start/end columns.
+- Project start means planned activity delivery. Effective date means the date
+  an approved and signed Agreement becomes operational/legal and is the date
+  used by status activation.
+- Automatic-renewal fields appear only when enabled. Non-renewal notice prevents
+  the next automatic term; termination notice ends the current term early and
+  therefore remains a separate field.
+- Only QS World University Rankings remains selectable in the form. Historical
+  THE Impact and UI GreenMetric values remain readable for compatibility but
+  are no longer offered for new edits.
+- Every SDG displays its official short title and an explanatory hover/focus
+  hint.
+- Governance/MOU DOCX files can be inspected before save. Suggested structured
+  clauses are copied only into empty fields, retain their detected Arabic or
+  English language and direction, and require user review. PDF/DOC files remain
+  securely uploadable but are not automatically extracted.
+- Executive-programme suggestions use only values already entered in the
+  Agreement and never overwrite populated programme fields. Applicant identity
+  comes from the authenticated account.
+- Governance files and optional JPG, PNG, WebP, or MP4 supporting media are
+  queued until the Agreement draft/version has been saved, then use the existing
+  private document store, checksum, version link, access controls, and audit
+  trail.
 
 ## System-derived workflow fields
 

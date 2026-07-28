@@ -411,7 +411,8 @@ class AgreementRepository {
         $partnerStatement = $this->db->prepare('
             SELECT
                 p.partner_id, p.organization_name, p.partner_type, p.country,
-                p.city, p.website, p.logo_url, p.latitude, p.longitude
+                p.city, p.profile, p.website, p.logo_url,
+                p.latitude, p.longitude
             FROM agreement_partners ap
             JOIN partners p ON p.partner_id = ap.partner_id
             WHERE ap.agreement_id = :agreement_id

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/AgreementService.php';
 require_once __DIR__ . '/../services/AgreementAnnotationService.php';
+require_once __DIR__ . '/../services/AgreementClauseExtractionService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
@@ -9,10 +10,12 @@ require_once __DIR__ . '/../helpers/Response.php';
 class AgreementController {
     private AgreementService $agreementService;
     private AgreementAnnotationService $annotationService;
+    private AgreementClauseExtractionService $clauseExtractionService;
 
     public function __construct() {
         $this->agreementService = new AgreementService();
         $this->annotationService = new AgreementAnnotationService();
+        $this->clauseExtractionService = new AgreementClauseExtractionService();
     }
 
     public function index(): void {
@@ -306,6 +309,26 @@ class AgreementController {
         }
 
         Response::success($result);
+    }
+
+    public function extractClauseDocument(): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('CREATE_AGREEMENT');
+
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            Response::error('Choose an Agreement document to extract', 422);
+        }
+
+        try {
+            Response::success(
+                $this->clauseExtractionService->extract($_FILES['file'])
+            );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
     }
 
     public function documents(int $agreementId): void {

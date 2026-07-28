@@ -12,6 +12,7 @@ require_once __DIR__ . '/../services/ApprovalService.php';
 require_once __DIR__ . '/../services/PermissionService.php';
 require_once __DIR__ . '/../services/DocumentStorageService.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
+require_once __DIR__ . '/../repositories/PartnerRepository.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
     private ApprovalService $approvalService;
@@ -22,6 +23,7 @@ class AgreementService {
     private PermissionService $permissionService;
     private WorkflowRepository $workflowRepo;
     private DocumentStorageService $documentStorage;
+    private PartnerRepository $partnerRepo;
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
@@ -32,11 +34,15 @@ class AgreementService {
         $this->approvalService = new ApprovalService();
         $this->permissionService = new PermissionService();
         $this->workflowRepo = new WorkflowRepository();
-        $this->documentStorage = new DocumentStorageService();
+        $this->partnerRepo = new PartnerRepository();
+        $this->documentStorage = new DocumentStorageService(null, true);
     }
 
     public function createAgreement(array $data): array {
-        $errors = AgreementValidator::validateCreate($data);
+        $errors = array_merge(
+            AgreementValidator::validateCreate($data),
+            $this->validatePartnerSelection($data)
+        );
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
@@ -66,7 +72,10 @@ class AgreementService {
     }
 
     public function updateAgreement(int $agreementId, array $data): array {
-        $errors = AgreementValidator::validateUpdate($data);
+        $errors = array_merge(
+            AgreementValidator::validateUpdate($data),
+            $this->validatePartnerSelection($data)
+        );
         $changeSummary = trim((string) ($data['change_summary'] ?? ''));
         $changeSummaryLength = function_exists('mb_strlen')
             ? mb_strlen($changeSummary, 'UTF-8')
@@ -403,7 +412,9 @@ class AgreementService {
         $normalizedType = strtoupper(trim($documentType));
         $allowedTypes = [
             'AGREEMENT_DRAFT',
+            'GOVERNANCE_CLAUSES',
             'SUPPORTING',
+            'MEDIA',
             'LEGAL_REVIEW',
             'FINANCE_REVIEW',
             'SIGNED_AGREEMENT',
@@ -558,7 +569,7 @@ class AgreementService {
                 'max_file_size_bytes' =>
                     DocumentStorageService::MAX_FILE_SIZE_BYTES,
                 'allowed_extensions' =>
-                    DocumentStorageService::allowedExtensions(),
+                    DocumentStorageService::allowedExtensions(true),
             ],
         ];
     }
@@ -835,5 +846,50 @@ class AgreementService {
             }
         }
         return $content;
+    }
+
+    private function validatePartnerSelection(array $data): array
+    {
+        if (
+            !array_key_exists('partner_ids', $data)
+            && !array_key_exists('partner_id', $data)
+        ) {
+            return [];
+        }
+
+        $partnerIds = $data['partner_ids'] ?? [];
+        if (!is_array($partnerIds)) {
+            $partnerIds = [];
+        }
+        if ($partnerIds === [] && !empty($data['partner_id'])) {
+            $partnerIds = [$data['partner_id']];
+        }
+        $partnerIds = array_values(array_unique(array_filter(
+            array_map('intval', $partnerIds),
+            static fn (int $partnerId): bool => $partnerId > 0
+        )));
+        if ($partnerIds === []) {
+            return [];
+        }
+
+        $partners = $this->partnerRepo->findActiveByIds($partnerIds);
+        if (count($partners) !== count($partnerIds)) {
+            return ['One or more selected partners are unavailable'];
+        }
+
+        if (
+            strtoupper(trim((string) ($data['geographic_scope'] ?? '')))
+            === 'INTERNATIONAL'
+        ) {
+            foreach ($partners as $partner) {
+                if (trim((string) ($partner['country'] ?? '')) === '') {
+                    return [
+                        'Every international partner must have a country in its directory profile',
+                    ];
+                }
+            }
+        }
+
+        return [];
     }
 }

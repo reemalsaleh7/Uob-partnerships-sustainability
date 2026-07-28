@@ -5,6 +5,7 @@ declare(strict_types=1);
 $quick = in_array('--quick', $argv, true);
 $tests = [
     'DatabaseManagerSmokeTest.php',
+    'AgreementFormExperienceSmokeTest.php',
     'ApiBoundarySmokeTest.php',
     'AuthenticationHardeningSmokeTest.php',
     'AgreementReleaseReadinessSmokeTest.php',
