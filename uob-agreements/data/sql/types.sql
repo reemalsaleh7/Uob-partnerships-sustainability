@@ -1,6 +1,7 @@
 -- ==========================================================
 -- University Partnerships & Initiatives System
 -- PostgreSQL Custom Types
+-- Updated for the Initiative module integration
 -- ==========================================================
 
 -- ==========================================================
@@ -21,6 +22,7 @@ CREATE TYPE organizational_unit_type AS ENUM (
 CREATE TYPE agreement_status AS ENUM (
     'DRAFT',
     'UNDER_REVIEW',
+    'REVISION_REQUIRED',
     'APPROVED',
     'ACTIVE',
     'REJECTED',
@@ -41,6 +43,7 @@ CREATE TYPE agreement_relationship_type AS ENUM (
 CREATE TYPE initiative_status AS ENUM (
     'DRAFT',
     'UNDER_REVIEW',
+    'REVISION_REQUIRED',
     'APPROVED',
     'ACTIVE',
     'REJECTED',
@@ -58,6 +61,7 @@ CREATE TYPE workflow_status AS ENUM (
 CREATE TYPE workflow_step_status AS ENUM (
     'PENDING',
     'IN_PROGRESS',
+    'CHANGES_REQUESTED',
     'APPROVED',
     'REJECTED',
     'SKIPPED'
@@ -73,6 +77,10 @@ CREATE TYPE workflow_action_type AS ENUM (
     'SUBMITTED',
     'APPROVED',
     'REJECTED',
+    'CHANGES_REQUESTED',
+    'ROUTED_TO_CREATOR',
+    'ROUTED_TO_VP',
+    'RESUBMITTED',
     'REDRAFTED',
     'COMPLETED'
 );
