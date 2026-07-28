@@ -481,6 +481,14 @@
         partners() {
             return request('/partners');
         },
+        partnerAgreementContext(id, excludeAgreementId = null) {
+            const query = excludeAgreementId
+                ? `?exclude_agreement_id=${encodeURIComponent(excludeAgreementId)}`
+                : '';
+            return request(
+                `/partners/${encodeURIComponent(id)}/agreement-context${query}`
+            );
+        },
         createPartner(data) {
             return request('/partners', {
                 method: 'POST',

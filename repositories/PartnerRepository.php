@@ -32,7 +32,10 @@ class PartnerRepository
             ORDER BY organization_name, partner_id
         ');
 
-        return $statement->fetchAll();
+        return array_map(
+            [self::class, 'normalizePartnerRow'],
+            $statement->fetchAll()
+        );
     }
 
     public function findActiveByIds(array $partnerIds): array
@@ -58,7 +61,10 @@ class PartnerRepository
         );
         $statement->execute($ids);
 
-        return $statement->fetchAll();
+        return array_map(
+            [self::class, 'normalizePartnerRow'],
+            $statement->fetchAll()
+        );
     }
 
     public function findActiveDuplicate(
@@ -86,7 +92,7 @@ class PartnerRepository
                     OR LOWER(COALESCE(country, \'\')) = LOWER(TRIM(:country_match))
               )
               AND (
-                    :exclude_partner_id_empty IS NULL
+                    CAST(:exclude_partner_id_empty AS BIGINT) IS NULL
                     OR partner_id <> :exclude_partner_id_match
               )
             ORDER BY partner_id
@@ -101,7 +107,7 @@ class PartnerRepository
         ]);
         $partner = $statement->fetch();
 
-        return $partner ?: null;
+        return $partner ? self::normalizePartnerRow($partner) : null;
     }
 
     public function create(array $data): array
@@ -147,7 +153,7 @@ class PartnerRepository
             throw new RuntimeException('The partner could not be created');
         }
 
-        return $partner;
+        return self::normalizePartnerRow($partner);
     }
 
     public function findActiveById(int $partnerId): ?array
@@ -172,7 +178,49 @@ class PartnerRepository
         $statement->execute(['partner_id' => $partnerId]);
         $partner = $statement->fetch();
 
-        return $partner ?: null;
+        return $partner ? self::normalizePartnerRow($partner) : null;
+    }
+
+    public function findAgreementContext(
+        int $partnerId,
+        ?int $excludeAgreementId = null
+    ): array {
+        $sql = '
+            SELECT
+                a.agreement_id,
+                a.title,
+                a.status,
+                a.created_by,
+                a.start_date,
+                a.end_date,
+                a.updated_at
+            FROM agreement_partners ap
+            JOIN agreements a ON a.agreement_id = ap.agreement_id
+            WHERE ap.partner_id = :partner_id
+        ';
+        $parameters = ['partner_id' => $partnerId];
+        if ($excludeAgreementId !== null) {
+            $sql .= ' AND a.agreement_id <> :exclude_agreement_id';
+            $parameters['exclude_agreement_id'] = $excludeAgreementId;
+        }
+        $sql .= "
+            ORDER BY
+                CASE a.status
+                    WHEN 'ACTIVE' THEN 1
+                    WHEN 'APPROVED' THEN 2
+                    WHEN 'UNDER_REVIEW' THEN 3
+                    WHEN 'REVISION_REQUIRED' THEN 4
+                    WHEN 'DRAFT' THEN 5
+                    WHEN 'EXPIRED' THEN 6
+                    ELSE 7
+                END,
+                a.updated_at DESC,
+                a.agreement_id DESC
+        ";
+        $statement = $this->db->prepare($sql);
+        $statement->execute($parameters);
+
+        return $statement->fetchAll();
     }
 
     public function update(int $partnerId, array $data): array
@@ -211,6 +259,31 @@ class PartnerRepository
         $partner = $statement->fetch();
         if (!$partner) {
             throw new DomainException('Partner organization not found');
+        }
+
+        return self::normalizePartnerRow($partner);
+    }
+
+    private static function normalizePartnerRow(array $partner): array
+    {
+        $value = strtoupper(trim((string) ($partner['partner_type'] ?? '')));
+        $compact = preg_replace('/[^A-Z0-9]+/', '_', $value);
+        $aliases = [
+            'PUBLIC' => 'PUBLIC_GOVERNMENT',
+            'GOVERNMENT' => 'PUBLIC_GOVERNMENT',
+            'GOVERNMENT_ORGANIZATION' => 'PUBLIC_GOVERNMENT',
+            'PUBLIC_GOVERNMENT' => 'PUBLIC_GOVERNMENT',
+            'COMPANY' => 'PRIVATE',
+            'PRIVATE' => 'PRIVATE',
+            'UNIVERSITY' => 'ACADEMIC',
+            'RESEARCH_CENTER' => 'ACADEMIC',
+            'RESEARCH_CENTRE' => 'ACADEMIC',
+            'ACADEMIC' => 'ACADEMIC',
+            'NONPROFIT' => 'NON_PROFIT',
+            'NON_PROFIT' => 'NON_PROFIT',
+        ];
+        if (isset($aliases[$compact])) {
+            $partner['partner_type'] = $aliases[$compact];
         }
 
         return $partner;

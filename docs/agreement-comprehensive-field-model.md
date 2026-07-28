@@ -57,8 +57,8 @@ This model consolidates the four official University of Bahrain cooperation form
 | Record | Table | Fields covered |
 | --- | --- | --- |
 | Coordinators and signatories | `agreement_contacts` | UOB/partner party, coordinator/signatory role, name, job title, email, phone, optional partner association. Covers MOU Article 4, applicant/signature rows, and partner contacts. |
-| Executive programs | `agreement_executive_programs` | Program title, implementing entity, description, objectives, outputs/outcomes, dates, and applicant. Covers the complete proposed executive-program form. |
-| Outcome metrics | `agreement_metrics` | Planned value, actual value, and notes for students exchanged, faculty exchanged, and joint programs. Covers the corresponding CSV reporting fields. |
+| Executive programs | `agreement_executive_programs` | One or more programs, each with title, implementing entity, description, objectives, outputs/outcomes, dates, and applicant. Covers the complete proposed executive-program form. |
+| Outcome metrics | `agreement_metrics` | Planned value, actual value, and notes for students exchanged, students trained, faculty exchanged, and joint programs. Covers the corresponding CSV reporting fields. |
 
 ## Partner-owned fields
 
@@ -72,26 +72,42 @@ These values describe the organization and are not duplicated in every Agreement
 The comprehensive migration adds city, logo, latitude, and longitude to
 `partners`; the guided-form migration adds the reusable brief profile. The
 Agreement form searches the active University partner directory and displays
-the selected organizations as removable cards with their country, website, and
-profile. A creator may add a missing partner or explicitly edit an existing
-selected profile. Both actions are validated and audited because a directory
-profile is shared by future Agreements. A matching existing name/country is
-selected instead of duplicated. Partner country and one of the four current
-organization types are required; older directory profiles show a correction
-warning and can be updated inline. The server derives local or international
-scope, which is shown beside the selected-partner count rather than as a
-separate user decision.
+the selected organization as a removable card with its country, website, and
+profile. Each Agreement has exactly one partner, and selecting another directory
+result replaces the previous selection. A creator may add a missing partner or
+explicitly edit an existing selected profile. Both actions are validated and
+audited because a directory profile is shared by future Agreements. A matching
+existing name/country is selected instead of duplicated. Partner country and one
+of the four current organization types are required. Legacy type labels are
+normalized to Public/government, Private, Academic, or Non-profit at the
+repository boundary. The server derives local or international scope, which is
+shown beside the selected partner rather than as a separate user decision.
+Before accepting the selection, the form checks Agreement history for that
+partner. A draft, returned, under-review, approved, or active Agreement blocks a
+second Agreement. Approved/active matches direct the creator to a preselected
+amendment lifecycle request; the creator's own unfinished draft links back to
+that draft. An expired Agreement does not block creation: the form shows a
+notice, links to the historical record, and can copy its reusable content into
+empty fields while leaving new dates and existing user input untouched. The
+same uniqueness rule is enforced by the Agreement service so it cannot be
+bypassed with a direct API request. Create/update transactions also take a
+partner-scoped PostgreSQL advisory lock and repeat the uniqueness check, closing
+the race where two requests try to create a current Agreement simultaneously.
 
 ## Guided form behavior
 
 - Ten sections render as accessible disclosure panels. Only the first opens
   initially; required sections advance when complete, while Open all and
   Collapse all remain available.
+- The former percentage bar is a clickable ten-step timeline. Each step shows
+  complete, current, or needs-attention state and opens and scrolls to its
+  corresponding form section.
 - Collapsed required sections retain a visible Complete, Not started, or Needs
   attention status. The first invalid section reopens on save.
-- Project and executive-programme dates use one range-calendar control each,
-  while displaying and persisting the established start and end fields
-  separately.
+- Project duration displays separate start and end fields with only “to”
+  between them. Clicking either field opens the same range calendar and updates
+  both values. Each executive programme uses the same one-calendar range
+  behavior while persisting its start and end values separately.
 - Project start means planned activity delivery. Effective date means the date
   an approved and signed Agreement becomes operational/legal and is the date
   used by status activation.
@@ -115,9 +131,11 @@ separate user decision.
   mandatory Legal Office workflow step provide the legal-review boundary.
 - Executive-programme suggestions cover the programme title, implementing
   entity, description, objectives, expected outputs, start date, end date, and
-  authenticated applicant. A local preview shows every suggestion, populated
-  programme fields are never overwritten, and applying suggestions does not
-  move focus to the beginning of the form.
+  authenticated applicant. At least one complete programme is required, and
+  creators can add or remove further programme cards. A local preview shows
+  every suggestion, populated programme fields are never overwritten, the
+  suggestions apply to empty fields across all programme cards, and applying
+  them does not move focus to the beginning of the form.
 - Governance files and optional JPG, PNG, WebP, or MP4 supporting media are
   queued until the Agreement draft/version has been saved, then use the existing
   private document store, checksum, version link, access controls, and audit
@@ -152,7 +170,7 @@ The existing `agreement_relationships`, `agreement_actions`, workflow engine, ve
 ## Validation and versioning
 
 - Draft creation remains backward compatible with the former four-field API.
-- Formal submission now requires partners with complete countries, server-derived geographic scope, duration, description, need/justification, objectives, expected value, collaboration areas, implementation methods, and an attached governance/MOU DOCX document.
+- Formal submission now requires exactly one partner with a complete country, server-derived geographic scope, duration, description, need/justification, objectives, expected value, collaboration areas, implementation methods, at least one complete executive programme, and an attached governance/MOU DOCX document.
 - Commitment descriptions become required only when their corresponding flag is enabled.
 - Every save snapshots scalar and repeating child data in `agreement_versions.agreement_snapshot`.
 - Reviewers and the public catalogue receive only the fields allowed by their existing record-visibility or publication rules.

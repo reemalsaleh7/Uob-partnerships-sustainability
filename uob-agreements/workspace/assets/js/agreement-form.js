@@ -28,6 +28,9 @@
         partnerEditorTitle: document.querySelector('[data-partner-editor-title]'),
         partnerEditorHelp: document.querySelector('[data-partner-editor-help]'),
         derivedPartnerScope: document.querySelector('[data-derived-partner-scope]'),
+        partnerAgreementContext: document.querySelector(
+            '[data-partner-agreement-context]'
+        ),
         save: document.getElementById('save-agreement'),
         saveLabel: document.querySelector('[data-save-label]'),
         saveSpinner: document.querySelector('[data-save-spinner]'),
@@ -35,7 +38,7 @@
         changeReasonSection: document.querySelector('[data-change-reason-section]'),
         changeSummary: document.getElementById('change_summary'),
         progressLabel: document.querySelector('[data-progress-label]'),
-        progressBar: document.querySelector('[data-progress-bar]'),
+        stepTimeline: document.querySelector('[data-step-timeline]'),
         extractClauses: document.querySelector('[data-extract-clauses]'),
         extractLabel: document.querySelector('[data-extract-label]'),
         extractSpinner: document.querySelector('[data-extract-spinner]'),
@@ -43,6 +46,9 @@
         programSuggestionText: document.querySelector('[data-program-suggestion-text]'),
         programSuggestionList: document.querySelector('[data-program-suggestion-list]'),
         programSuggestionFeedback: document.querySelector('[data-program-suggestion-feedback]'),
+        programList: document.querySelector('[data-program-list]'),
+        programTemplate: document.getElementById('executive-program-template'),
+        programError: document.querySelector('[data-program-error]'),
         mediaFileList: document.querySelector('[data-media-file-list]')
     };
 
@@ -54,10 +60,13 @@
         user: null,
         partners: new Map(),
         selectedPartnerIds: new Set(),
+        partnerAgreementContext: null,
+        partnerContextRequest: 0,
         editingPartnerId: null,
         hasGovernanceDocument: false,
         autoAdvancedSections: new Set(),
-        programSuggestions: {}
+        programSuggestions: {},
+        nextProgramIndex: 0
     };
 
     const scalarFields = [
@@ -337,8 +346,9 @@
             });
         }
 
-        elements.selectedPartnerCount.textContent =
-            `${selected.length} selected`;
+        elements.selectedPartnerCount.textContent = selected.length === 1
+            ? '1 selected'
+            : 'None selected';
         elements.derivedPartnerScope.textContent = derivedPartnerScopeLabel();
         elements.partnerError.classList.toggle(
             'd-none',
@@ -350,6 +360,234 @@
         updateAllSectionStatuses();
     }
 
+    function agreementContextLink(label, href, className) {
+        const link = document.createElement('a');
+        link.className = className;
+        link.href = href;
+        link.textContent = label;
+        return link;
+    }
+
+    function renderPartnerAgreementContext() {
+        const panel = elements.partnerAgreementContext;
+        const context = state.partnerAgreementContext;
+        panel.replaceChildren();
+        panel.classList.toggle('d-none', !context);
+        panel.classList.remove('is-blocking', 'is-reference');
+        if (!context) return;
+
+        if (context.checking) {
+            panel.textContent =
+                'Checking this partner’s existing Agreement history…';
+            return;
+        }
+
+        const blocking = context.blocking_agreement;
+        if (context.blocked && blocking) {
+            panel.classList.add('is-blocking');
+            const message = document.createElement('p');
+            message.className = 'mb-2';
+            if (blocking.can_amend) {
+                message.textContent =
+                    'This partner already has a valid Agreement. Create an amendment request instead of a second Agreement.';
+            } else if (blocking.can_resume) {
+                message.textContent =
+                    'You already have an unfinished Agreement for this partner. Continue that Agreement instead of creating another.';
+            } else {
+                message.textContent =
+                    'An Agreement for this partner is already in progress. A second Agreement cannot be created.';
+            }
+            panel.appendChild(message);
+
+            if (blocking.agreement_id && blocking.can_amend) {
+                panel.appendChild(agreementContextLink(
+                    'Request amendment',
+                    `lifecycle-form.php?agreement_id=${encodeURIComponent(blocking.agreement_id)}&type=AMENDMENT`,
+                    'btn btn-sm btn-primary'
+                ));
+            } else if (blocking.agreement_id && blocking.can_resume) {
+                panel.appendChild(agreementContextLink(
+                    'Continue existing Agreement',
+                    `agreement-form.php?id=${encodeURIComponent(blocking.agreement_id)}`,
+                    'btn btn-sm btn-primary'
+                ));
+            }
+            return;
+        }
+
+        const expired = context.expired_agreement;
+        if (expired) {
+            panel.classList.add('is-reference');
+            const message = document.createElement('p');
+            message.className = 'mb-2';
+            message.textContent =
+                'A previous Agreement with this partner has expired. You may use its content as a reference for this new Agreement.';
+            const actions = document.createElement('div');
+            actions.className = 'd-flex flex-wrap gap-2';
+            actions.appendChild(agreementContextLink(
+                'Open previous Agreement',
+                `agreement.php?id=${encodeURIComponent(expired.agreement_id)}`,
+                'btn btn-sm btn-outline-primary'
+            ));
+            const reuse = document.createElement('button');
+            reuse.type = 'button';
+            reuse.className = 'btn btn-sm btn-primary';
+            reuse.dataset.reuseExpiredAgreement =
+                String(expired.agreement_id);
+            reuse.textContent = 'Use previous work';
+            actions.appendChild(reuse);
+            panel.append(message, actions);
+        }
+    }
+
+    async function loadPartnerAgreementContext(partnerId) {
+        const requestNumber = state.partnerContextRequest + 1;
+        state.partnerContextRequest = requestNumber;
+        state.partnerAgreementContext = { checking: true };
+        renderPartnerAgreementContext();
+        updateAllSectionStatuses();
+        try {
+            const context = await AgreementApi.partnerAgreementContext(
+                partnerId,
+                state.agreementId
+            );
+            if (requestNumber !== state.partnerContextRequest) return;
+            state.partnerAgreementContext = context;
+            renderPartnerAgreementContext();
+            validatePartnerSelection(true);
+            updateAllSectionStatuses();
+        } catch (error) {
+            if (requestNumber !== state.partnerContextRequest) return;
+            state.partnerAgreementContext = null;
+            renderPartnerAgreementContext();
+            showError(error);
+        }
+    }
+
+    async function reuseExpiredAgreement(agreementId, button) {
+        button.disabled = true;
+        const originalLabel = button.textContent;
+        button.textContent = 'Loading previous work…';
+        try {
+            const agreement = await AgreementApi.agreement(agreementId);
+            const reusableFields = [
+                'title',
+                'title_ar',
+                'agreement_type',
+                'description',
+                'need_justification',
+                'expected_value',
+                'objectives',
+                'focus_areas',
+                'collaboration_areas',
+                'implementation_methods',
+                'financial_description',
+                'human_resources_description',
+                'training_programs_description',
+                'monitoring_plan',
+                'confidentiality_terms',
+                'intellectual_property_terms',
+                'compliance_terms',
+                'relationship_disclaimer',
+                'amendment_terms',
+                'dispute_resolution_terms',
+                'other_terms'
+            ];
+            reusableFields.forEach((name) => {
+                const target = control(name);
+                const source = String(agreement[name] || '').trim();
+                if (target && !target.value.trim() && source) {
+                    target.value = source;
+                }
+            });
+
+            const selectedSdgs = selectedValues('sdgs');
+            if (selectedSdgs.length === 0) {
+                document.querySelectorAll('input[name="sdgs[]"]')
+                    .forEach((checkbox) => {
+                        checkbox.checked = (agreement.sdgs || [])
+                            .map(Number)
+                            .includes(Number(checkbox.value));
+                    });
+            }
+
+            const hasProgrammeWork = programRows().some((row) =>
+                ['title', 'responsible_entity', 'description', 'objectives',
+                    'expected_outputs', 'start_date', 'end_date']
+                    .some((field) =>
+                        row.querySelector(
+                            `[data-program-field="${field}"]`
+                        )?.value.trim()
+                    )
+            );
+            if (
+                !hasProgrammeWork
+                && (agreement.executive_programs || []).length > 0
+            ) {
+                resetPrograms(agreement.executive_programs);
+            }
+
+            (agreement.contacts || []).forEach((contact) => {
+                const row = document.querySelector(
+                    `[data-contact-row][data-party-type="${escapeSelector(contact.party_type)}"][data-contact-role="${escapeSelector(contact.contact_role)}"]`
+                );
+                if (!row) return;
+                const index = [...document.querySelectorAll(
+                    '[data-contact-row]'
+                )].indexOf(row);
+                const values = {
+                    name: contact.full_name,
+                    title: contact.job_title,
+                    email: contact.email,
+                    phone: contact.phone
+                };
+                Object.entries(values).forEach(([suffix, value]) => {
+                    const target = control(`contact_${index}_${suffix}`);
+                    if (
+                        target
+                        && !target.value.trim()
+                        && String(value || '').trim()
+                    ) {
+                        target.value = value;
+                    }
+                });
+            });
+
+            (agreement.metrics || []).forEach((metric) => {
+                const prefix =
+                    `metric_${String(metric.metric_code).toLowerCase()}`;
+                const planned = control(`${prefix}_planned`);
+                const notes = control(`${prefix}_notes`);
+                if (
+                    planned
+                    && planned.value === ''
+                    && metric.planned_value !== null
+                ) {
+                    planned.value = metric.planned_value;
+                }
+                if (
+                    notes
+                    && !notes.value.trim()
+                    && String(metric.notes || '').trim()
+                ) {
+                    notes.value = metric.notes;
+                }
+            });
+
+            syncConditionalSections();
+            refreshProgramSuggestions();
+            updateAllSectionStatuses();
+            showFeedback(
+                'Previous Agreement content was copied only into empty fields. Set new dates and review every copied value before saving.'
+            );
+        } catch (error) {
+            showError(error);
+        } finally {
+            button.disabled = false;
+            button.textContent = originalLabel;
+        }
+    }
+
     function selectPartner(partnerId, selected = true) {
         const id = String(partnerId);
         if (!state.partners.has(id)) {
@@ -357,16 +595,24 @@
         }
 
         if (selected) {
+            state.selectedPartnerIds.clear();
             state.selectedPartnerIds.add(id);
+            loadPartnerAgreementContext(id);
         } else {
             state.selectedPartnerIds.delete(id);
+            state.partnerContextRequest += 1;
+            state.partnerAgreementContext = null;
+            renderPartnerAgreementContext();
         }
         renderSelectedPartners();
     }
 
     function populatePartners(partners, selectedIds = []) {
         state.partners.clear();
-        state.selectedPartnerIds = new Set((selectedIds || []).map(String));
+        const selectedId = (selectedIds || [])[0];
+        state.selectedPartnerIds = new Set(
+            selectedId ? [String(selectedId)] : []
+        );
         elements.partners.replaceChildren();
 
         (Array.isArray(partners) ? partners : []).forEach((partner) => {
@@ -380,6 +626,9 @@
         });
 
         renderSelectedPartners();
+        if (selectedId) {
+            loadPartnerAgreementContext(String(selectedId));
+        }
     }
 
     function selectedPartnersHaveRequiredCountries() {
@@ -430,7 +679,14 @@
     function validatePartnerSelection(showMessage = true) {
         let message = '';
         if (state.selectedPartnerIds.size === 0) {
-            message = 'Select at least one partner organization.';
+            message = 'Select one partner organization.';
+        } else if (state.selectedPartnerIds.size > 1) {
+            message = 'An Agreement can have only one partner organization.';
+        } else if (state.partnerAgreementContext?.checking) {
+            message = 'Wait while the partner Agreement history is checked.';
+        } else if (state.partnerAgreementContext?.blocked) {
+            message =
+                'Use the existing Agreement or its lifecycle workflow instead of creating a duplicate.';
         } else if (!selectedPartnersHaveRequiredCountries()) {
             message = 'Every selected partner must have a country so local or international scope can be determined.';
         } else if (!selectedPartnersHaveRequiredTypes()) {
@@ -591,14 +847,18 @@
     }
 
     function rangeSummaryElement(rangeInput) {
-        return rangeInput.id === 'project_duration'
-            ? document.querySelector('[data-project-duration-summary]')
-            : document.querySelector('[data-program-duration-summary]');
+        return rangeInput.closest('[data-program-row]')
+            ?.querySelector('[data-range-summary]')
+            || document.querySelector('[data-project-duration-summary]');
+    }
+
+    function rangeTarget(rangeInput, attribute) {
+        return document.getElementById(rangeInput.dataset[attribute]);
     }
 
     function syncRangeSummary(rangeInput) {
-        const start = control(rangeInput.dataset.startTarget).value;
-        const end = control(rangeInput.dataset.endTarget).value;
+        const start = rangeTarget(rangeInput, 'startTarget')?.value || '';
+        const end = rangeTarget(rangeInput, 'endTarget')?.value || '';
         const summary = rangeSummaryElement(rangeInput);
         if (summary) {
             summary.textContent = durationText(start, end);
@@ -615,63 +875,84 @@
         updateAllSectionStatuses();
     }
 
-    function initializeDateRanges() {
-        document.querySelectorAll('[data-date-range]').forEach((input) => {
-            if (typeof window.flatpickr === 'function') {
-                window.flatpickr(input, {
-                    mode: 'range',
-                    dateFormat: 'd M Y',
-                    minDate: null,
-                    disableMobile: true,
-                    onChange(selectedDates) {
-                        const startTarget = control(input.dataset.startTarget);
-                        const endTarget = control(input.dataset.endTarget);
-                        startTarget.value = selectedDates[0]
-                            ? dateString(selectedDates[0])
-                            : '';
-                        endTarget.value = selectedDates[1]
-                            ? dateString(selectedDates[1])
-                            : '';
-                        input.setCustomValidity(
-                            input.required && selectedDates.length !== 2
-                                ? 'Select both a start and an end date.'
-                                : ''
-                        );
-                        syncRangeSummary(input);
-                        if (selectedDates.length === 2) {
-                            input.dispatchEvent(new Event('change', {
-                                bubbles: true
-                            }));
-                        }
-                    }
-                });
-            } else {
-                input.readOnly = false;
-                input.placeholder = 'YYYY-MM-DD to YYYY-MM-DD';
-                input.addEventListener('change', () => {
-                    const match = input.value.match(
-                        /^(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})$/
-                    );
-                    control(input.dataset.startTarget).value =
-                        match?.[1] || '';
-                    control(input.dataset.endTarget).value =
-                        match?.[2] || '';
+    function initializeDateRange(input) {
+        if (input.dataset.rangeInitialized === 'true') return;
+        input.dataset.rangeInitialized = 'true';
+
+        if (typeof window.flatpickr === 'function') {
+            window.flatpickr(input, {
+                mode: 'range',
+                dateFormat: 'Y-m-d',
+                minDate: null,
+                disableMobile: true,
+                onChange(selectedDates) {
+                    const startTarget = rangeTarget(input, 'startTarget');
+                    const endTarget = rangeTarget(input, 'endTarget');
+                    startTarget.value = selectedDates[0]
+                        ? dateString(selectedDates[0])
+                        : '';
+                    endTarget.value = selectedDates[1]
+                        ? dateString(selectedDates[1])
+                        : '';
                     input.setCustomValidity(
-                        input.required && !match
-                            ? 'Use YYYY-MM-DD to YYYY-MM-DD.'
+                        input.required && selectedDates.length !== 2
+                            ? 'Select both a start and an end date.'
                             : ''
                     );
                     syncRangeSummary(input);
+                    if (selectedDates.length === 2) {
+                        input.dispatchEvent(new Event('change', {
+                            bubbles: true
+                        }));
+                    }
+                }
+            });
+        } else {
+            input.readOnly = false;
+            input.placeholder = 'YYYY-MM-DD to YYYY-MM-DD';
+            input.addEventListener('change', () => {
+                const match = input.value.match(
+                    /^(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})$/
+                );
+                rangeTarget(input, 'startTarget').value = match?.[1] || '';
+                rangeTarget(input, 'endTarget').value = match?.[2] || '';
+                input.setCustomValidity(
+                    input.required && !match
+                        ? 'Use YYYY-MM-DD to YYYY-MM-DD.'
+                        : ''
+                );
+                syncRangeSummary(input);
+            });
+        }
+
+        [input.dataset.rangeTriggerStart, input.dataset.rangeTriggerEnd]
+            .filter(Boolean)
+            .forEach((targetId) => {
+                const target = document.getElementById(targetId);
+                target?.addEventListener('click', () => {
+                    input._flatpickr?.open();
+                    if (!input._flatpickr) input.focus();
                 });
-            }
-        });
+                target?.addEventListener('keydown', (event) => {
+                    if (['Enter', ' '].includes(event.key)) {
+                        event.preventDefault();
+                        input._flatpickr?.open();
+                    }
+                });
+            });
+    }
+
+    function initializeDateRanges(root = document) {
+        root.querySelectorAll('[data-date-range]').forEach(
+            initializeDateRange
+        );
     }
 
     function setDateRange(rangeId, startValue, endValue) {
         const input = document.getElementById(rangeId);
         if (!input) return;
-        control(input.dataset.startTarget).value = startValue || '';
-        control(input.dataset.endTarget).value = endValue || '';
+        rangeTarget(input, 'startTarget').value = startValue || '';
+        rangeTarget(input, 'endTarget').value = endValue || '';
         if (input._flatpickr) {
             input._flatpickr.setDate(
                 [startValue, endValue].filter(Boolean),
@@ -686,6 +967,100 @@
                 : ''
         );
         syncRangeSummary(input);
+    }
+
+    function programRows() {
+        return [...elements.programList.querySelectorAll('[data-program-row]')];
+    }
+
+    function updateProgramRowControls() {
+        const rows = programRows();
+        rows.forEach((row, index) => {
+            row.querySelector('[data-program-heading]').textContent =
+                `Programme ${index + 1}`;
+            row.querySelector('[data-remove-program]').disabled =
+                rows.length === 1;
+        });
+    }
+
+    function addProgram(program = {}) {
+        const fragment = elements.programTemplate.content.cloneNode(true);
+        const row = fragment.querySelector('[data-program-row]');
+        const index = state.nextProgramIndex;
+        state.nextProgramIndex += 1;
+        row.dataset.programIndex = String(index);
+
+        row.querySelectorAll('[data-program-field]').forEach((input) => {
+            const field = input.dataset.programField;
+            input.id = `program_${index}_${field}`;
+            input.name = `executive_programs[${index}][${field}]`;
+            input.value = program[field] || (
+                field === 'applicant_name' && state.user
+                    ? applicantName(state.user)
+                    : ''
+            );
+            const label = row.querySelector(`[data-label-for="${field}"]`);
+            label?.setAttribute('for', input.id);
+        });
+
+        const range = row.querySelector('[data-program-range]');
+        range.id = `program_${index}_duration`;
+        range.dataset.startTarget = `program_${index}_start_date`;
+        range.dataset.endTarget = `program_${index}_end_date`;
+        row.querySelector('[data-label-for="duration"]')
+            ?.setAttribute('for', range.id);
+
+        elements.programList.appendChild(row);
+        initializeDateRanges(row);
+        setDateRange(
+            range.id,
+            program.start_date || '',
+            program.end_date || ''
+        );
+        updateProgramRowControls();
+        updateAllSectionStatuses();
+
+        return row;
+    }
+
+    function resetPrograms(programs = []) {
+        elements.programList.replaceChildren();
+        state.nextProgramIndex = 0;
+        const values = Array.isArray(programs) && programs.length > 0
+            ? programs
+            : [{}];
+        values.forEach(addProgram);
+    }
+
+    function programRowPayload(row) {
+        const value = (field) =>
+            row.querySelector(`[data-program-field="${field}"]`)
+                ?.value.trim() || '';
+        return {
+            title: value('title'),
+            responsible_entity: value('responsible_entity'),
+            description: value('description'),
+            objectives: value('objectives'),
+            expected_outputs: value('expected_outputs'),
+            start_date: value('start_date'),
+            end_date: value('end_date'),
+            applicant_name: value('applicant_name')
+        };
+    }
+
+    function validatePrograms(showMessage = true) {
+        const rows = programRows();
+        const valid = rows.length > 0 && rows.every((row) => {
+            const program = programRowPayload(row);
+            return Object.values(program).every(
+                (value) => String(value).trim() !== ''
+            ) && [...row.querySelectorAll('[required]')]
+                .every((input) => input.checkValidity());
+        });
+        if (showMessage) {
+            elements.programError.classList.toggle('d-none', valid);
+        }
+        return valid;
     }
 
     function populateAgreement(agreement) {
@@ -718,19 +1093,7 @@
             control(`contact_${index}_phone`).value = contact.phone || '';
         });
 
-        const program = (agreement.executive_programs || [])[0];
-        if (program) {
-            ['title', 'description', 'objectives', 'expected_outputs',
-                'responsible_entity', 'applicant_name'].forEach((name) => {
-                const target = control(`program_${name}`);
-                if (target) target.value = program[name] || '';
-            });
-            setDateRange(
-                'program_duration',
-                program.start_date || '',
-                program.end_date || ''
-            );
-        }
+        resetPrograms(agreement.executive_programs || []);
 
         (agreement.metrics || []).forEach((metric) => {
             const prefix = `metric_${metric.metric_code.toLowerCase()}`;
@@ -794,20 +1157,7 @@
     }
 
     function programsPayload() {
-        const title = control('program_title').value.trim();
-        if (!title) return [];
-        return [{
-            title,
-            responsible_entity:
-                control('program_responsible_entity').value.trim(),
-            description: control('program_description').value.trim(),
-            objectives: control('program_objectives').value.trim(),
-            expected_outputs:
-                control('program_expected_outputs').value.trim(),
-            start_date: control('program_start_date').value,
-            end_date: control('program_end_date').value,
-            applicant_name: control('program_applicant_name').value.trim()
-        }];
+        return programRows().map(programRowPayload);
     }
 
     function metricsPayload() {
@@ -842,7 +1192,8 @@
         } else {
             data.fixed_term_months = '';
         }
-        data.partner_ids = [...state.selectedPartnerIds].map(Number);
+        data.partner_id = Number([...state.selectedPartnerIds][0] || 0);
+        data.partner_ids = data.partner_id ? [data.partner_id] : [];
         data.geographic_scope = derivedPartnerScope();
         data.sdgs = selectedValues('sdgs').map(Number);
         data.contacts = contactsPayload();
@@ -929,6 +1280,9 @@
                 && control('start_date').value !== ''
                 && control('end_date').value !== '';
         }
+        if (section.dataset.sectionNumber === '8') {
+            return controlsValid && validatePrograms(false);
+        }
         if (required.length > 0) {
             return controlsValid;
         }
@@ -968,12 +1322,39 @@
     function updateAllSectionStatuses() {
         sectionNodes.forEach(updateSectionStatus);
         const completed = sectionNodes.filter(sectionIsComplete).length;
-        const percent = Math.round((completed / sectionNodes.length) * 100);
         elements.progressLabel.textContent =
             `${completed} of ${sectionNodes.length} sections complete`;
-        elements.progressBar.style.width = `${percent}%`;
-        elements.progressBar.closest('[role="progressbar"]')
-            .setAttribute('aria-valuenow', String(percent));
+
+        const firstIncomplete = sectionNodes.find(
+            (section) => !sectionIsComplete(section)
+        ) || sectionNodes[sectionNodes.length - 1];
+        elements.stepTimeline
+            .querySelectorAll('[data-step-target]')
+            .forEach((step) => {
+                const section = sectionNodes.find(
+                    (candidate) =>
+                        candidate.dataset.sectionNumber
+                        === step.dataset.stepTarget
+                );
+                const complete = section && sectionIsComplete(section);
+                const started = section && sectionHasMeaningfulValue(section);
+                const current = section === firstIncomplete;
+                step.classList.toggle('is-complete', Boolean(complete));
+                step.classList.toggle(
+                    'needs-attention',
+                    Boolean(!complete && started)
+                );
+                step.classList.toggle('is-current', current);
+                if (current) {
+                    step.setAttribute('aria-current', 'step');
+                } else {
+                    step.removeAttribute('aria-current');
+                }
+                const marker = step.querySelector('.agreement-step-marker');
+                marker.textContent = complete
+                    ? '✓'
+                    : step.dataset.stepTarget;
+            });
 
         const requiredComplete = sectionNodes
             .filter(sectionHasRequiredFields)
@@ -1013,18 +1394,24 @@
     function validateForm() {
         let dateRangesValid = true;
         document.querySelectorAll('[data-date-range][required]').forEach((input) => {
-            const start = control(input.dataset.startTarget).value;
-            const end = control(input.dataset.endTarget).value;
+            const start = rangeTarget(input, 'startTarget')?.value || '';
+            const end = rangeTarget(input, 'endTarget')?.value || '';
             dateRangesValid = dateRangesValid && Boolean(start && end);
             input.setCustomValidity(
                 start && end ? '' : 'Select both a start and an end date.'
             );
         });
         const partnersValid = validatePartnerSelection(true);
+        const programsValid = validatePrograms(true);
         const nativeValid = form.checkValidity();
         updateAllSectionStatuses();
 
-        if (!nativeValid || !partnersValid || !dateRangesValid) {
+        if (
+            !nativeValid
+            || !partnersValid
+            || !programsValid
+            || !dateRangesValid
+        ) {
             const invalidSection = firstInvalidSection();
             if (invalidSection) {
                 setSectionOpen(invalidSection, true);
@@ -1111,33 +1498,43 @@
     }
 
     function applyProgramSuggestions() {
-        const mapping = {
-            title: 'program_title',
-            responsible_entity: 'program_responsible_entity',
-            description: 'program_description',
-            objectives: 'program_objectives',
-            expected_outputs: 'program_expected_outputs',
-            applicant_name: 'program_applicant_name'
-        };
-        Object.entries(mapping).forEach(([source, target]) => {
-            if (!control(target).value.trim() && state.programSuggestions[source]) {
-                control(target).value = state.programSuggestions[source];
+        const mapping = [
+            'title',
+            'responsible_entity',
+            'description',
+            'objectives',
+            'expected_outputs',
+            'applicant_name'
+        ];
+        programRows().forEach((row) => {
+            mapping.forEach((field) => {
+                const target =
+                    row.querySelector(`[data-program-field="${field}"]`);
+                if (
+                    !target.value.trim()
+                    && state.programSuggestions[field]
+                ) {
+                    target.value = state.programSuggestions[field];
+                }
+            });
+            const range = row.querySelector('[data-program-range]');
+            const start =
+                row.querySelector('[data-program-field="start_date"]');
+            if (
+                !start.value
+                && state.programSuggestions.start_date
+                && state.programSuggestions.end_date
+            ) {
+                setDateRange(
+                    range.id,
+                    state.programSuggestions.start_date,
+                    state.programSuggestions.end_date
+                );
             }
         });
-        if (
-            !control('program_start_date').value
-            && state.programSuggestions.start_date
-            && state.programSuggestions.end_date
-        ) {
-            setDateRange(
-                'program_duration',
-                state.programSuggestions.start_date,
-                state.programSuggestions.end_date
-            );
-        }
         updateAllSectionStatuses();
         elements.programSuggestionFeedback.textContent =
-            'Suggestions were applied only to empty executive-programme fields. Review and adjust them before saving.';
+            'Suggestions were applied only to empty fields in every executive programme. Review and adjust each programme before saving.';
         elements.programSuggestionFeedback.classList.remove('d-none');
     }
 
@@ -1309,6 +1706,8 @@
             if (agreement) {
                 configureEditMode(agreement);
                 populateAgreement(agreement);
+            } else {
+                resetPrograms();
             }
             state.hasGovernanceDocument = (documents || []).some(
                 (document) =>
@@ -1321,10 +1720,6 @@
                 elements.clauseFeedback.textContent =
                     'A governance / MOU clauses file is already attached. Choose a replacement only when the document has changed.';
                 elements.clauseFeedback.classList.remove('d-none');
-            }
-            if (!control('program_applicant_name').value.trim()) {
-                control('program_applicant_name').value =
-                    applicantName(state.user);
             }
             syncConditionalSections();
             refreshProgramSuggestions();
@@ -1354,6 +1749,22 @@
         sectionNodes.forEach((section) => setSectionOpen(section, false));
         updateAllSectionStatuses();
     });
+    elements.stepTimeline.addEventListener('click', (event) => {
+        const step = event.target.closest('[data-step-target]');
+        if (!step) return;
+        const section = sectionNodes.find(
+            (candidate) =>
+                candidate.dataset.sectionNumber === step.dataset.stepTarget
+        );
+        if (!section) return;
+        setSectionOpen(section, true);
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.setTimeout(() => {
+            section.querySelector('input, select, textarea, button')?.focus({
+                preventScroll: true
+            });
+        }, 400);
+    });
 
     elements.partnerSearch.addEventListener('input', renderPartnerResults);
     elements.partnerResults.addEventListener('click', (event) => {
@@ -1375,6 +1786,14 @@
             selectPartner(button.dataset.removePartner, false);
         }
     });
+    elements.partnerAgreementContext.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-reuse-expired-agreement]');
+        if (!button) return;
+        reuseExpiredAgreement(
+            button.dataset.reuseExpiredAgreement,
+            button
+        );
+    });
     document.querySelector('[data-show-new-partner]').addEventListener('click', () => {
         openPartnerEditor();
     });
@@ -1391,6 +1810,24 @@
 
     document.querySelector('[data-apply-program-suggestions]')
         .addEventListener('click', applyProgramSuggestions);
+    document.querySelector('[data-add-program]').addEventListener(
+        'click',
+        () => {
+            const row = addProgram();
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.querySelector('[data-program-field="title"]')?.focus({
+                preventScroll: true
+            });
+        }
+    );
+    elements.programList.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-remove-program]');
+        if (!remove || programRows().length <= 1) return;
+        remove.closest('[data-program-row]').remove();
+        updateProgramRowControls();
+        validatePrograms(true);
+        updateAllSectionStatuses();
+    });
     elements.extractClauses.addEventListener('click', extractClauses);
     document.getElementById('governance_document')
         .addEventListener('change', () => {

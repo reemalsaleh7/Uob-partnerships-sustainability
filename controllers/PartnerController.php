@@ -42,6 +42,32 @@ class PartnerController
         }
     }
 
+    public function agreementContext(int $partnerId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+        ]);
+
+        $exclude = filter_input(
+            INPUT_GET,
+            'exclude_agreement_id',
+            FILTER_VALIDATE_INT
+        );
+        try {
+            Response::success(
+                $this->partnerService->agreementContext(
+                    $partnerId,
+                    (int) ($_SESSION['user_id'] ?? 0),
+                    is_int($exclude) && $exclude > 0 ? $exclude : null
+                )
+            );
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 404);
+        }
+    }
+
     public function update(int $partnerId): void
     {
         AuthMiddleware::handle();

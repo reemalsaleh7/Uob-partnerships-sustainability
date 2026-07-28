@@ -15,6 +15,7 @@
     const spinner = document.querySelector('[data-save-spinner]');
     const query = new URLSearchParams(window.location.search);
     const requestId = query.get('id');
+    const requestedType = String(query.get('type') || '').toUpperCase();
     let agreementId = query.get('agreement_id');
     let request = null;
 
@@ -76,6 +77,13 @@
                 agreement = await AgreementApi.agreement(agreementId);
                 if (!['APPROVED', 'ACTIVE'].includes(agreement.status)) {
                     throw new AgreementApi.ApiError('Lifecycle requests require an approved or active Agreement.', 422, null);
+                }
+                if (
+                    ['RENEWAL', 'AMENDMENT', 'TERMINATION']
+                        .includes(requestedType)
+                ) {
+                    control('request_type').value = requestedType;
+                    showType(requestedType);
                 }
             }
             document.querySelector('[data-agreement-title]').textContent = agreement.title;

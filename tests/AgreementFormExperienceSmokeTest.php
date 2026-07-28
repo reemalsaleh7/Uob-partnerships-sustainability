@@ -27,6 +27,12 @@ $form = agreementFormSource(
 $javascript = agreementFormSource(
     'uob-agreements/workspace/assets/js/agreement-form.js'
 );
+$apiClient = agreementFormSource(
+    'uob-agreements/workspace/assets/js/api-client.js'
+);
+$lifecycleJavascript = agreementFormSource(
+    'uob-agreements/workspace/assets/js/lifecycle-form.js'
+);
 $styles = agreementFormSource(
     'uob-agreements/workspace/assets/css/workspace.css'
 );
@@ -34,6 +40,7 @@ $partnerRepository = agreementFormSource(
     'repositories/PartnerRepository.php'
 );
 $agreementService = agreementFormSource('services/AgreementService.php');
+$agreementValidator = agreementFormSource('validators/AgreementValidator.php');
 $partnerRoutes = agreementFormSource('routes/partners.php');
 $agreementRoutes = agreementFormSource('routes/agreements.php');
 $clauseExtraction = agreementFormSource(
@@ -51,6 +58,9 @@ $migration = agreementFormSource(
 $fixedTermMigration = agreementFormSource(
     'uob-agreements/data/sql/migrations/20260728_170000_agreement_fixed_term_months.sql'
 );
+$trainedStudentsMigration = agreementFormSource(
+    'uob-agreements/data/sql/migrations/20260728_183000_add_trained_students_metric.sql'
+);
 
 agreementFormAssert(
     str_contains($form, 'Type of cooperative project')
@@ -59,7 +69,7 @@ agreementFormAssert(
         && str_contains($form, 'data-show-new-partner')
         && str_contains($form, 'data-edit-partner') === false
         && str_contains($javascript, 'dataset.editPartner'),
-    'The searchable multi-partner experience is incomplete'
+    'The searchable single-partner experience is incomplete'
 );
 agreementFormAssert(
     !str_contains($form, '<label for="geographic_scope"')
@@ -74,7 +84,11 @@ agreementFormAssert(
         && str_contains($form, 'ACADEMIC')
         && str_contains($form, 'NON_PROFIT')
         && str_contains($partnerRoutes, "\$method === 'PATCH'")
-        && str_contains($javascript, 'AgreementApi.updatePartner'),
+        && str_contains($javascript, 'AgreementApi.updatePartner')
+        && str_contains(
+            $partnerRepository,
+            'CAST(:exclude_partner_id_empty AS BIGINT)'
+        ),
     'Controlled partner types or audited existing-partner editing is incomplete'
 );
 agreementFormAssert(
@@ -85,9 +99,10 @@ agreementFormAssert(
 agreementFormAssert(
     str_contains($form, 'data-date-range')
         && str_contains($form, 'data-start-target="start_date"')
-        && str_contains($form, 'data-start-target="program_start_date"')
-        && str_contains($form, 'id="start_date" name="start_date" type="date"')
-        && str_contains($form, 'id="end_date" name="end_date" type="date"'),
+        && str_contains($form, 'data-range-trigger-start="start_date"')
+        && str_contains($form, 'data-range-trigger-end="end_date"')
+        && str_contains($form, 'class="date-range-separator">to</span>')
+        && str_contains($javascript, "input._flatpickr?.open()"),
     'Project and programme range calendars are missing'
 );
 agreementFormAssert(
@@ -129,11 +144,14 @@ agreementFormAssert(
         && substr_count($form, 'data-section-number="') === 1
         && str_contains($form, "        10,\n        'media'")
         && str_contains($javascript, 'maybeAdvanceSection')
-        && str_contains($styles, '.agreement-section-toggle'),
+        && str_contains($styles, '.agreement-section-toggle')
+        && str_contains($form, 'data-step-timeline')
+        && str_contains($form, 'data-step-target=')
+        && str_contains($javascript, 'is-current'),
     'The guided collapsible section workflow is incomplete'
 );
 agreementFormAssert(
-    str_contains($javascript, 'program_applicant_name')
+    str_contains($javascript, 'applicant_name')
         && str_contains($javascript, 'refreshProgramSuggestions')
         && str_contains($javascript, 'selectedPartnersHaveRequiredCountries'),
     'Applicant autofill, suggestions, or international-country validation is missing'
@@ -153,6 +171,53 @@ agreementFormAssert(
             'Every selected partner must have a country'
         ),
     'Partner countries are not enforced by the API'
+);
+agreementFormAssert(
+    str_contains($form, 'name="partner_id"')
+        && !str_contains($form, 'name="partner_ids[]" multiple')
+        && str_contains(
+            $agreementValidator,
+            'Exactly one partner is required'
+        )
+        && str_contains(
+            $agreementService,
+            'Exactly one partner organization must be selected'
+        ),
+    'Exactly-one-partner enforcement is incomplete'
+);
+agreementFormAssert(
+    str_contains($form, 'data-partner-agreement-context')
+        && str_contains($partnerRoutes, 'agreement-context')
+        && str_contains($apiClient, 'partnerAgreementContext')
+        && str_contains($javascript, 'Request amendment')
+        && str_contains($javascript, 'Use previous work')
+        && str_contains(
+            $agreementService,
+            'validatePartnerAgreementUniqueness'
+        )
+        && str_contains($lifecycleJavascript, 'requestedType'),
+    'Partner Agreement uniqueness, amendment routing, or expired-Agreement reuse is incomplete'
+);
+agreementFormAssert(
+    str_contains($form, 'data-program-list')
+        && str_contains($form, 'data-add-program')
+        && str_contains($form, 'data-remove-program')
+        && str_contains($javascript, 'function addProgram')
+        && str_contains($javascript, 'function validatePrograms')
+        && str_contains(
+            $agreementValidator,
+            'At least one complete executive programme is required'
+        ),
+    'One-or-more executive-programme enforcement is incomplete'
+);
+agreementFormAssert(
+    str_contains($form, "'TRAINED_STUDENTS' => 'Trained students'")
+        && str_contains($trainedStudentsMigration, "'TRAINED_STUDENTS'")
+        && preg_match(
+            '/^[ \t]*(BEGIN|START[ \t]+TRANSACTION|COMMIT|ROLLBACK)[ \t]*;/mi',
+            $trainedStudentsMigration
+        ) === 0,
+    'The trained-students planned outcome is incomplete'
 );
 agreementFormAssert(
     str_contains($agreementRoutes, '/agreement-document-extraction')

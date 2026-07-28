@@ -131,9 +131,30 @@ $sdgs = [
     <div class="agreement-form-toolbar mt-4" aria-label="Form section controls">
         <div class="agreement-form-progress">
             <span data-progress-label>0 of 10 sections complete</span>
-            <div class="progress" role="progressbar" aria-label="Agreement form completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div class="progress-bar" data-progress-bar></div>
-            </div>
+            <nav class="agreement-step-timeline" aria-label="Agreement form sections" data-step-timeline>
+                <?php foreach ([
+                    1 => 'Partner',
+                    2 => 'Duration',
+                    3 => 'Purpose',
+                    4 => 'Resources',
+                    5 => 'Impact',
+                    6 => 'MOU clauses',
+                    7 => 'People',
+                    8 => 'Programmes',
+                    9 => 'Outcomes',
+                    10 => 'Media',
+                ] as $stepNumber => $stepLabel): ?>
+                    <button
+                        type="button"
+                        class="agreement-step"
+                        data-step-target="<?= $stepNumber ?>"
+                        aria-label="Go to section <?= $stepNumber ?>: <?= $stepLabel ?>"
+                    >
+                        <span class="agreement-step-marker"><?= $stepNumber ?></span>
+                        <span class="agreement-step-label"><?= $stepLabel ?></span>
+                    </button>
+                <?php endforeach; ?>
+            </nav>
         </div>
         <div class="agreement-form-toolbar-actions">
             <button type="button" class="btn btn-sm btn-outline-primary" data-expand-all>Open all</button>
@@ -157,7 +178,7 @@ $sdgs = [
         1,
         'identity',
         'Cooperation and partner information',
-        'Identify the project and select one or more partner organizations.',
+        'Identify the project and select its partner organization.',
         true
     ); ?>
     <div class="form-section"><div class="row g-4">
@@ -179,8 +200,8 @@ $sdgs = [
             <div class="partner-picker" data-partner-picker>
                 <div class="partner-picker-heading">
                     <div>
-                        <label for="partner-search" class="form-label mb-1">Partner organization(s) *</label>
-                        <p class="form-text mt-0 mb-0">Search the University directory, select multiple partners, and remove any selection with one click.</p>
+                        <label for="partner-search" class="form-label mb-1">Partner organization *</label>
+                        <p class="form-text mt-0 mb-0">Search the University directory and select one partner. Choosing another replaces the current selection.</p>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-show-new-partner>+ Add missing partner</button>
                 </div>
@@ -189,15 +210,16 @@ $sdgs = [
                     <span class="partner-search-count" data-partner-search-count></span>
                 </div>
                 <div class="partner-results" role="listbox" aria-label="Available partner organizations" data-partner-results></div>
-                <select id="partner_ids" name="partner_ids[]" multiple class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
+                <select id="partner_ids" name="partner_id" class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
                 <div class="partner-selection-heading">
-                    <strong>Selected partners</strong>
-                    <span><span data-selected-partner-count>0 selected</span> · <span data-derived-partner-scope>Scope determined after selection</span></span>
+                    <strong>Selected partner</strong>
+                    <span><span data-selected-partner-count>None selected</span> · <span data-derived-partner-scope>Scope determined after selection</span></span>
                 </div>
                 <div class="selected-partners" data-selected-partners>
                     <p class="partner-empty mb-0">No partner selected yet.</p>
                 </div>
                 <div class="invalid-feedback d-block d-none" data-partner-error>Select at least one partner organization.</div>
+                <div class="partner-agreement-context d-none" role="status" aria-live="polite" data-partner-agreement-context></div>
             </div>
         </div>
 
@@ -253,18 +275,13 @@ $sdgs = [
     ); ?>
     <div class="form-section"><div class="row g-4">
         <div class="col-md-6">
-            <label for="project_duration" class="form-label">Project duration *</label>
-            <input id="project_duration" type="text" class="form-control" required readonly placeholder="Choose both dates in one calendar" data-date-range data-start-target="start_date" data-end-target="end_date">
-            <div class="row g-2 mt-1">
-                <div class="col-sm-6">
-                    <label for="start_date" class="form-label small">Start date</label>
-                    <input id="start_date" name="start_date" type="date" class="form-control" readonly aria-readonly="true">
-                </div>
-                <div class="col-sm-6">
-                    <label for="end_date" class="form-label small">End date</label>
-                    <input id="end_date" name="end_date" type="date" class="form-control" readonly aria-readonly="true">
-                </div>
+            <span class="form-label d-block">Project duration *</span>
+            <div class="date-range-pair" data-date-range-pair>
+                <input id="start_date" name="start_date" type="text" class="form-control" required readonly aria-label="Project start date" placeholder="Select start" data-range-start>
+                <span class="date-range-separator">to</span>
+                <input id="end_date" name="end_date" type="text" class="form-control" required readonly aria-label="Project end date" placeholder="Select end" data-range-end>
             </div>
+            <input id="project_duration" type="text" class="visually-hidden" tabindex="-1" aria-hidden="true" data-date-range data-start-target="start_date" data-end-target="end_date" data-range-trigger-start="start_date" data-range-trigger-end="end_date">
             <div class="form-text" data-project-duration-help>Project start is when cooperation activities begin; project end is when the planned delivery period finishes.</div>
             <div class="date-range-summary" data-project-duration-summary></div>
             <div class="invalid-feedback">Select both the project start and end dates.</div>
@@ -460,10 +477,10 @@ $sdgs = [
     <?php sectionHeader(
         8,
         'program',
-        'Proposed executive programme',
-        'Use suggestions from the Agreement, then adjust them to match the intended programme.'
+        'Executive programmes',
+        'Add one or more programmes. Use Agreement-based suggestions, then adjust every programme before saving.'
     ); ?>
-    <div class="form-section"><div class="row g-4" data-program-row>
+    <div class="form-section"><div class="row g-4">
         <div class="col-12">
             <div class="executive-suggestion-panel">
                 <div>
@@ -475,36 +492,65 @@ $sdgs = [
             <div class="program-suggestion-list mt-3" data-program-suggestion-list></div>
             <div class="program-suggestion-feedback d-none mt-2" role="status" aria-live="polite" data-program-suggestion-feedback></div>
         </div>
-        <?php field('program_title', 'Proposed programme title', 'text', 'col-md-6'); ?>
-        <?php field('program_responsible_entity', 'Responsible implementing entity', 'text', 'col-md-6'); ?>
-        <?php textArea('program_description', 'Brief programme description'); ?>
-        <?php textArea('program_objectives', 'General programme objectives'); ?>
-        <?php textArea('program_expected_outputs', 'Expected outputs and outcomes'); ?>
-        <div class="col-md-8">
-            <label for="program_duration" class="form-label">Programme duration</label>
-            <input id="program_duration" type="text" class="form-control" readonly placeholder="Choose both dates in one calendar" data-date-range data-start-target="program_start_date" data-end-target="program_end_date">
-            <div class="row g-2 mt-1">
-                <div class="col-sm-6">
-                    <label for="program_start_date" class="form-label small">Start date</label>
-                    <input id="program_start_date" name="program_start_date" type="date" class="form-control" readonly aria-readonly="true">
-                </div>
-                <div class="col-sm-6">
-                    <label for="program_end_date" class="form-label small">End date</label>
-                    <input id="program_end_date" name="program_end_date" type="date" class="form-control" readonly aria-readonly="true">
-                </div>
-            </div>
-            <div class="date-range-summary" data-program-duration-summary></div>
+        <div class="col-12">
+            <div class="executive-program-list" data-program-list></div>
+            <div class="invalid-feedback d-block d-none" data-program-error>Add and complete at least one executive programme.</div>
+            <button type="button" class="btn btn-outline-primary mt-3" data-add-program>+ Add another programme</button>
         </div>
-        <?php field(
-            'program_applicant_name',
-            'Programme applicant name',
-            'text',
-            'col-md-4',
-            'readonly aria-readonly="true"',
-            'Filled automatically from the signed-in University account.'
-        ); ?>
     </div></div>
     <?php sectionFooter(); ?>
+
+    <template id="executive-program-template">
+        <article class="executive-program-card" data-program-row>
+            <div class="executive-program-card-header">
+                <div>
+                    <span class="eyebrow">Executive programme</span>
+                    <h3 class="h6 mb-0" data-program-heading>Programme 1</h3>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-remove-program>Remove</button>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label" data-label-for="title">Proposed programme title *</label>
+                    <input type="text" class="form-control" maxlength="255" required data-program-field="title">
+                    <div class="invalid-feedback">Programme title is required.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" data-label-for="responsible_entity">Responsible implementing entity *</label>
+                    <input type="text" class="form-control" maxlength="255" required data-program-field="responsible_entity">
+                    <div class="invalid-feedback">Responsible entity is required.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" data-label-for="description">Brief programme description *</label>
+                    <textarea class="form-control" rows="3" required data-program-field="description"></textarea>
+                    <div class="invalid-feedback">Programme description is required.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" data-label-for="objectives">General programme objectives *</label>
+                    <textarea class="form-control" rows="3" required data-program-field="objectives"></textarea>
+                    <div class="invalid-feedback">Programme objectives are required.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" data-label-for="expected_outputs">Expected outputs and outcomes *</label>
+                    <textarea class="form-control" rows="3" required data-program-field="expected_outputs"></textarea>
+                    <div class="invalid-feedback">Expected outputs and outcomes are required.</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" data-label-for="duration">Programme duration *</label>
+                    <input type="text" class="form-control" required readonly placeholder="Choose both dates in one calendar" data-date-range data-program-range data-start-target="" data-end-target="">
+                    <input type="hidden" data-program-field="start_date">
+                    <input type="hidden" data-program-field="end_date">
+                    <div class="date-range-summary" data-range-summary></div>
+                    <div class="invalid-feedback">Select both programme dates.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" data-label-for="applicant_name">Programme applicant name *</label>
+                    <input type="text" class="form-control" required readonly aria-readonly="true" data-program-field="applicant_name">
+                    <div class="form-text">Filled automatically from the signed-in University account.</div>
+                </div>
+            </div>
+        </article>
+    </template>
 
     <?php sectionHeader(
         9,
@@ -513,7 +559,12 @@ $sdgs = [
         'Set measurable targets for monitoring and annual reporting.'
     ); ?>
     <div class="form-section"><div class="row g-4">
-        <?php foreach (['STUDENTS_EXCHANGED' => 'Students exchanged', 'FACULTY_EXCHANGED' => 'Faculty exchanged', 'JOINT_PROGRAMS' => 'Joint programmes'] as $code => $label): ?>
+        <?php foreach ([
+            'STUDENTS_EXCHANGED' => 'Students exchanged',
+            'TRAINED_STUDENTS' => 'Trained students',
+            'FACULTY_EXCHANGED' => 'Faculty exchanged',
+            'JOINT_PROGRAMS' => 'Joint programmes',
+        ] as $code => $label): ?>
             <div class="col-12 metric-row" data-metric-row data-metric-code="<?= $code ?>"><div class="row g-3 align-items-end">
                 <div class="col-md-3"><span class="form-label d-block mb-2"><?= $label ?></span></div>
                 <?php field('metric_' . strtolower($code) . '_planned', 'Planned number', 'number', 'col-md-2', 'min="0"'); ?>

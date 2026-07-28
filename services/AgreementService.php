@@ -49,7 +49,11 @@ class AgreementService {
         $data = $this->withDerivedPartnerScope($data);
         $errors = array_merge(
             AgreementValidator::validateCreate($data),
-            $this->validatePartnerSelection($data)
+            $this->validatePartnerSelection($data),
+            $this->validatePartnerAgreementUniqueness(
+                $data,
+                (int) ($data['created_by'] ?? 0)
+            )
         );
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
@@ -58,6 +62,19 @@ class AgreementService {
         $db = Database::connect();
         $db->beginTransaction();
         try {
+            $this->lockSelectedPartner($db, $data);
+            $uniquenessErrors =
+                $this->validatePartnerAgreementUniqueness(
+                    $data,
+                    (int) ($data['created_by'] ?? 0)
+                );
+            if ($uniquenessErrors !== []) {
+                $db->rollBack();
+                return [
+                    'success' => false,
+                    'errors' => $uniquenessErrors,
+                ];
+            }
             $content = $this->normalizeAgreementContent($data);
             $content['created_by'] = $data['created_by'];
             $content['status'] = AgreementStatus::DRAFT;
@@ -83,7 +100,12 @@ class AgreementService {
         $data = $this->withDerivedPartnerScope($data);
         $errors = array_merge(
             AgreementValidator::validateUpdate($data),
-            $this->validatePartnerSelection($data)
+            $this->validatePartnerSelection($data),
+            $this->validatePartnerAgreementUniqueness(
+                $data,
+                (int) ($data['updated_by'] ?? 0),
+                $agreementId
+            )
         );
         $changeSummary = trim((string) ($data['change_summary'] ?? ''));
         $changeSummaryLength = function_exists('mb_strlen')
@@ -101,6 +123,20 @@ class AgreementService {
         $db = Database::connect();
         $db->beginTransaction();
         try {
+            $this->lockSelectedPartner($db, $data);
+            $uniquenessErrors =
+                $this->validatePartnerAgreementUniqueness(
+                    $data,
+                    (int) ($data['updated_by'] ?? 0),
+                    $agreementId
+                );
+            if ($uniquenessErrors !== []) {
+                $db->rollBack();
+                return [
+                    'success' => false,
+                    'errors' => $uniquenessErrors,
+                ];
+            }
             $existing = $this->agreementRepo->findById($agreementId);
             if (!$existing) {
                 $db->rollBack();
@@ -907,8 +943,8 @@ class AgreementService {
             array_map('intval', $partnerIds),
             static fn (int $partnerId): bool => $partnerId > 0
         )));
-        if ($partnerIds === []) {
-            return [];
+        if (count($partnerIds) !== 1) {
+            return ['Exactly one partner organization must be selected'];
         }
 
         $partners = $this->partnerRepo->findActiveByIds($partnerIds);
@@ -977,5 +1013,94 @@ class AgreementService {
         $data['geographic_scope'] = 'LOCAL';
 
         return $data;
+    }
+
+    private function validatePartnerAgreementUniqueness(
+        array $data,
+        int $userId,
+        ?int $excludeAgreementId = null
+    ): array {
+        $partnerIds = $data['partner_ids'] ?? [];
+        if (!is_array($partnerIds)) {
+            $partnerIds = [];
+        }
+        if ($partnerIds === [] && !empty($data['partner_id'])) {
+            $partnerIds = [$data['partner_id']];
+        }
+        $partnerId = (int) ($partnerIds[0] ?? 0);
+        if ($partnerId < 1) {
+            return [];
+        }
+
+        $blockingStatuses = [
+            AgreementStatus::DRAFT,
+            AgreementStatus::REVISION_REQUIRED,
+            AgreementStatus::UNDER_REVIEW,
+            AgreementStatus::APPROVED,
+            AgreementStatus::ACTIVE,
+        ];
+        foreach (
+            $this->partnerRepo->findAgreementContext(
+                $partnerId,
+                $excludeAgreementId
+            ) as $agreement
+        ) {
+            $status = strtoupper((string) ($agreement['status'] ?? ''));
+            if (!in_array($status, $blockingStatuses, true)) {
+                continue;
+            }
+            if (in_array(
+                $status,
+                [AgreementStatus::APPROVED, AgreementStatus::ACTIVE],
+                true
+            )) {
+                return [
+                    'This partner already has a valid Agreement. Submit an amendment lifecycle request instead',
+                ];
+            }
+            if (
+                (int) ($agreement['created_by'] ?? 0) === $userId
+                && in_array(
+                    $status,
+                    [
+                        AgreementStatus::DRAFT,
+                        AgreementStatus::REVISION_REQUIRED,
+                    ],
+                    true
+                )
+            ) {
+                return [
+                    'Continue your existing Agreement for this partner instead of creating another',
+                ];
+            }
+
+            return [
+                'An Agreement for this partner is already in progress',
+            ];
+        }
+
+        return [];
+    }
+
+    private function lockSelectedPartner(PDO $db, array $data): void
+    {
+        $partnerIds = $data['partner_ids'] ?? [];
+        if (!is_array($partnerIds)) {
+            $partnerIds = [];
+        }
+        if ($partnerIds === [] && !empty($data['partner_id'])) {
+            $partnerIds = [$data['partner_id']];
+        }
+        $partnerId = (int) ($partnerIds[0] ?? 0);
+        if ($partnerId < 1) {
+            return;
+        }
+
+        $statement = $db->prepare(
+            'SELECT pg_advisory_xact_lock(CAST(:lock_key AS BIGINT))'
+        );
+        $statement->execute([
+            'lock_key' => 847201000000 + $partnerId,
+        ]);
     }
 }

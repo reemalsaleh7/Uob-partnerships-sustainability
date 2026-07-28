@@ -85,6 +85,19 @@ try {
         $agreementId,
         [(int) $partnerId]
     );
+    $agreementRepository->replaceExecutivePrograms(
+        $agreementId,
+        [[
+            'title' => 'Temporary Executive Programme',
+            'responsible_entity' => 'College test team',
+            'description' => 'Executes the temporary Agreement activities.',
+            'objectives' => 'Verify required executive programme handling.',
+            'expected_outputs' => 'A completed workflow verification.',
+            'start_date' => date('Y-m-d', strtotime('+30 days')),
+            'end_date' => date('Y-m-d', strtotime('+395 days')),
+            'applicant_name' => 'Development Dean',
+        ]]
+    );
 
     $documentStatement = $db->prepare(
         'INSERT INTO agreement_documents (

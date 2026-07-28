@@ -30,6 +30,78 @@ class PartnerService
         return $this->partnerRepository->findActive();
     }
 
+    public function agreementContext(
+        int $partnerId,
+        int $userId,
+        ?int $excludeAgreementId = null
+    ): array {
+        if ($this->partnerRepository->findActiveById($partnerId) === null) {
+            throw new DomainException('Partner organization not found');
+        }
+
+        $agreements = $this->partnerRepository->findAgreementContext(
+            $partnerId,
+            $excludeAgreementId
+        );
+        $blockingStatuses = [
+            'DRAFT',
+            'REVISION_REQUIRED',
+            'UNDER_REVIEW',
+            'APPROVED',
+            'ACTIVE',
+        ];
+        $blocking = null;
+        $expired = null;
+
+        foreach ($agreements as $agreement) {
+            $status = strtoupper((string) ($agreement['status'] ?? ''));
+            if (
+                $blocking === null
+                && in_array($status, $blockingStatuses, true)
+            ) {
+                $isOwner =
+                    (int) ($agreement['created_by'] ?? 0) === $userId;
+                $canIdentify = $isOwner
+                    || in_array($status, ['APPROVED', 'ACTIVE'], true);
+                $blocking = [
+                    'agreement_id' => $canIdentify
+                        ? (int) $agreement['agreement_id']
+                        : null,
+                    'title' => $canIdentify
+                        ? (string) $agreement['title']
+                        : null,
+                    'status' => $status,
+                    'can_amend' => in_array(
+                        $status,
+                        ['APPROVED', 'ACTIVE'],
+                        true
+                    ),
+                    'can_resume' => $isOwner
+                        && in_array(
+                            $status,
+                            ['DRAFT', 'REVISION_REQUIRED'],
+                            true
+                        ),
+                ];
+            }
+            if ($expired === null && $status === 'EXPIRED') {
+                $expired = [
+                    'agreement_id' => (int) $agreement['agreement_id'],
+                    'title' => (string) $agreement['title'],
+                    'status' => $status,
+                    'start_date' => $agreement['start_date'] ?? null,
+                    'end_date' => $agreement['end_date'] ?? null,
+                ];
+            }
+        }
+
+        return [
+            'blocked' => $blocking !== null,
+            'blocking_agreement' => $blocking,
+            'expired_agreement' => $expired,
+        ];
+    }
+
     public function create(array $data, int $userId): array
     {
         $partnerData = $this->validatedData($data);
@@ -115,7 +187,9 @@ class PartnerService
     private function validatedData(array $data): array
     {
         $organizationName = trim((string) ($data['organization_name'] ?? ''));
-        $partnerType = strtoupper(trim((string) ($data['partner_type'] ?? '')));
+        $partnerType = $this->normalizePartnerType(
+            (string) ($data['partner_type'] ?? '')
+        );
         $country = $this->nullableString($data['country'] ?? null);
         $website = $this->nullableString($data['website'] ?? null);
         $profile = $this->nullableString($data['profile'] ?? null);
@@ -167,6 +241,30 @@ class PartnerService
         $normalized = trim((string) ($value ?? ''));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizePartnerType(string $value): string
+    {
+        $normalized = preg_replace(
+            '/[^A-Z0-9]+/',
+            '_',
+            strtoupper(trim($value))
+        );
+        $aliases = [
+            'PUBLIC' => 'PUBLIC_GOVERNMENT',
+            'GOVERNMENT' => 'PUBLIC_GOVERNMENT',
+            'PUBLIC_GOVERNMENT' => 'PUBLIC_GOVERNMENT',
+            'COMPANY' => 'PRIVATE',
+            'PRIVATE' => 'PRIVATE',
+            'UNIVERSITY' => 'ACADEMIC',
+            'RESEARCH_CENTER' => 'ACADEMIC',
+            'RESEARCH_CENTRE' => 'ACADEMIC',
+            'ACADEMIC' => 'ACADEMIC',
+            'NONPROFIT' => 'NON_PROFIT',
+            'NON_PROFIT' => 'NON_PROFIT',
+        ];
+
+        return $aliases[$normalized] ?? $normalized;
     }
 
     private function length(string $value): int

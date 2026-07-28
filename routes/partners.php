@@ -19,6 +19,15 @@ if ($method === 'GET' && $uri === '/partners') {
 } elseif ($method === 'POST' && $uri === '/partners') {
     $controller->create();
 } elseif (
+    $method === 'GET'
+    && preg_match(
+        '#^/partners/([0-9]+)/agreement-context$#',
+        $uri,
+        $matches
+    )
+) {
+    $controller->agreementContext((int) $matches[1]);
+} elseif (
     $method === 'PATCH'
     && preg_match('#^/partners/([0-9]+)$#', $uri, $matches)
 ) {

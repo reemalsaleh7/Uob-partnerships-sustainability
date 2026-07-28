@@ -416,7 +416,8 @@ class AgreementController {
         $scalarFields = [
             'title', 'title_ar', 'agreement_type', 'description',
             'geographic_scope', 'start_date', 'end_date', 'effective_date',
-            'signing_date', 'renewal_term_months', 'non_renewal_notice_months',
+            'signing_date', 'fixed_term_months', 'renewal_term_months',
+            'non_renewal_notice_months',
             'termination_notice_months', 'responsible_unit_id',
             'need_justification', 'expected_value', 'objectives', 'focus_areas',
             'collaboration_areas', 'implementation_methods', 'financial_amount',

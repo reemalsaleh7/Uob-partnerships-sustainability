@@ -15,8 +15,8 @@ class AgreementValidator {
             $errors[] = 'Description is required';
         }
 
-        if (empty(self::partnerIds($data))) {
-            $errors[] = 'At least one partner is required';
+        if (count(self::partnerIds($data)) !== 1) {
+            $errors[] = 'Exactly one partner is required';
         }
 
         $errors = array_merge($errors, self::validateContent($data));
@@ -41,9 +41,9 @@ class AgreementValidator {
 
         if (
             (array_key_exists('partner_id', $data) || array_key_exists('partner_ids', $data))
-            && empty(self::partnerIds($data))
+            && count(self::partnerIds($data)) !== 1
         ) {
-            $errors[] = 'At least one partner is required';
+            $errors[] = 'Exactly one partner is required';
         }
 
         $errors = array_merge($errors, self::validateContent($data));
@@ -74,8 +74,12 @@ class AgreementValidator {
         if (empty($data['start_date']) || empty($data['end_date'])) {
             $errors[] = 'Agreement start and end dates are required before submission';
         }
-        if (empty(self::partnerIds($data))) {
-            $errors[] = 'At least one partner is required before submission';
+        if (count(self::partnerIds($data)) !== 1) {
+            $errors[] = 'Exactly one partner is required before submission';
+        }
+        if (!self::hasCompleteExecutivePrograms($data)) {
+            $errors[] =
+                'At least one complete executive programme is required before submission';
         }
         if (
             empty($data['auto_renew'])
@@ -237,7 +241,38 @@ class AgreementValidator {
         if (empty($ids) && !empty($data['partner_id'])) {
             $ids = [$data['partner_id']];
         }
-        return array_values(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0));
+        return array_values(array_unique(array_filter(
+            array_map('intval', $ids),
+            static fn (int $id): bool => $id > 0
+        )));
+    }
+
+    private static function hasCompleteExecutivePrograms(array $data): bool
+    {
+        $programs = $data['executive_programs'] ?? [];
+        if (!is_array($programs) || $programs === []) {
+            return false;
+        }
+
+        $required = [
+            'title',
+            'responsible_entity',
+            'description',
+            'objectives',
+            'expected_outputs',
+            'start_date',
+            'end_date',
+            'applicant_name',
+        ];
+        foreach ($programs as $program) {
+            foreach ($required as $field) {
+                if (trim((string) ($program[$field] ?? '')) === '') {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private static function dateValue(mixed $value): ?DateTimeImmutable {

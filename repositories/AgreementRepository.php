@@ -163,7 +163,7 @@ class AgreementRepository {
             LEFT JOIN partners p ON p.partner_id = ap.partner_id
             WHERE
                 a.created_by = :creator_user_id
-                OR a.status IN (\'APPROVED\', \'ACTIVE\')
+                OR a.status IN (\'APPROVED\', \'ACTIVE\', \'EXPIRED\')
                 OR (
                     a.status = \'UNDER_REVIEW\'
                     AND EXISTS (
@@ -215,7 +215,7 @@ class AgreementRepository {
             WHERE a.agreement_id = :agreement_id
               AND (
                   a.created_by = :creator_user_id
-                  OR a.status IN (\'APPROVED\', \'ACTIVE\')
+                  OR a.status IN (\'APPROVED\', \'ACTIVE\', \'EXPIRED\')
                   OR (
                       a.status = \'UNDER_REVIEW\'
                       AND EXISTS (
