@@ -130,7 +130,7 @@ $sdgs = [
 <form id="agreement-form" class="d-none" novalidate>
     <div class="agreement-form-toolbar mt-4" aria-label="Form section controls">
         <div class="agreement-form-progress">
-            <span data-progress-label>0 of 9 sections complete</span>
+            <span data-progress-label>0 of 10 sections complete</span>
             <div class="progress" role="progressbar" aria-label="Agreement form completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <div class="progress-bar" data-progress-bar></div>
             </div>
@@ -163,7 +163,7 @@ $sdgs = [
     <div class="form-section"><div class="row g-4">
         <?php field('title', 'Agreement title (English) *', 'text', 'col-md-6', 'maxlength="255" required autocomplete="off"'); ?>
         <?php field('title_ar', 'اسم مشروع التعاون (العربية)', 'text', 'col-md-6', 'maxlength="255" dir="rtl" lang="ar"'); ?>
-        <div class="col-md-4">
+        <div class="col-md-6">
             <label for="agreement_type" class="form-label">Type of cooperative project *</label>
             <select id="agreement_type" name="agreement_type" class="form-select" required>
                 <option value="">Select project type</option>
@@ -175,24 +175,6 @@ $sdgs = [
             </select>
             <div class="form-text">The formal instrument used for this cooperative project.</div>
         </div>
-        <div class="col-md-4">
-            <label for="geographic_scope" class="form-label">Partner scope *</label>
-            <select id="geographic_scope" name="geographic_scope" class="form-select" required>
-                <option value="">Select scope</option>
-                <option value="LOCAL">Local / Bahrain</option>
-                <option value="INTERNATIONAL">International</option>
-            </select>
-            <div class="form-text">International partners must have a country in their profile.</div>
-        </div>
-        <div class="col-md-4">
-            <label for="legal_binding_status" class="form-label">Legal effect</label>
-            <select id="legal_binding_status" name="legal_binding_status" class="form-select">
-                <option value="NON_BINDING">Non-binding MOU</option>
-                <option value="BINDING">Legally binding Agreement</option>
-                <option value="MIXED">Mixed / program-specific obligations</option>
-            </select>
-        </div>
-
         <div class="col-12">
             <div class="partner-picker" data-partner-picker>
                 <div class="partner-picker-heading">
@@ -210,7 +192,7 @@ $sdgs = [
                 <select id="partner_ids" name="partner_ids[]" multiple class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
                 <div class="partner-selection-heading">
                     <strong>Selected partners</strong>
-                    <span data-selected-partner-count>0 selected</span>
+                    <span><span data-selected-partner-count>0 selected</span> · <span data-derived-partner-scope>Scope determined after selection</span></span>
                 </div>
                 <div class="selected-partners" data-selected-partners>
                     <p class="partner-empty mb-0">No partner selected yet.</p>
@@ -223,8 +205,8 @@ $sdgs = [
             <div class="new-partner-panel">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
-                        <h3 class="h6 mb-1">Add a partner to the University directory</h3>
-                        <p class="small text-secondary mb-0">The new profile becomes reusable in future Agreements. Existing profiles are never overwritten here.</p>
+                        <h3 class="h6 mb-1" data-partner-editor-title>Add a partner to the University directory</h3>
+                        <p class="small text-secondary mb-0" data-partner-editor-help>The new profile becomes reusable in future Agreements. Selected profiles can also be corrected through their Edit details action.</p>
                     </div>
                     <button type="button" class="btn-close" aria-label="Close new partner form" data-close-new-partner></button>
                 </div>
@@ -234,12 +216,10 @@ $sdgs = [
                         <label for="new_partner_type" class="form-label">Partner type *</label>
                         <select id="new_partner_type" class="form-select">
                             <option value="">Select type</option>
-                            <option value="Academic Institution">Academic institution</option>
-                            <option value="Government Organization">Government organization</option>
-                            <option value="Private Sector">Private sector</option>
-                            <option value="Non-profit Organization">Non-profit organization</option>
-                            <option value="Research Center">Research center</option>
-                            <option value="Other">Other</option>
+                            <option value="PUBLIC_GOVERNMENT">Public / government</option>
+                            <option value="PRIVATE">Private</option>
+                            <option value="ACADEMIC">Academic</option>
+                            <option value="NON_PROFIT">Non-profit</option>
                         </select>
                     </div>
                     <?php field('new_partner_country', 'Country *', 'text', 'col-md-3', 'maxlength="100" autocomplete="country-name"'); ?>
@@ -274,9 +254,17 @@ $sdgs = [
     <div class="form-section"><div class="row g-4">
         <div class="col-md-6">
             <label for="project_duration" class="form-label">Project duration *</label>
-            <input id="project_duration" type="text" class="form-control" required readonly placeholder="Select start and end dates in one calendar" data-date-range data-start-target="start_date" data-end-target="end_date">
-            <input id="start_date" name="start_date" type="hidden">
-            <input id="end_date" name="end_date" type="hidden">
+            <input id="project_duration" type="text" class="form-control" required readonly placeholder="Choose both dates in one calendar" data-date-range data-start-target="start_date" data-end-target="end_date">
+            <div class="row g-2 mt-1">
+                <div class="col-sm-6">
+                    <label for="start_date" class="form-label small">Start date</label>
+                    <input id="start_date" name="start_date" type="date" class="form-control" readonly aria-readonly="true">
+                </div>
+                <div class="col-sm-6">
+                    <label for="end_date" class="form-label small">End date</label>
+                    <input id="end_date" name="end_date" type="date" class="form-control" readonly aria-readonly="true">
+                </div>
+            </div>
             <div class="form-text" data-project-duration-help>Project start is when cooperation activities begin; project end is when the planned delivery period finishes.</div>
             <div class="date-range-summary" data-project-duration-summary></div>
             <div class="invalid-feedback">Select both the project start and end dates.</div>
@@ -322,13 +310,18 @@ $sdgs = [
                 </div>
             </div>
         </div>
-        <div class="col-12">
-            <div class="early-termination-panel">
-                <div>
-                    <strong>Early termination</strong>
-                    <p class="small text-secondary mb-0">Termination notice ends the current Agreement before its normal end date. It applies whether or not renewal is automatic.</p>
+        <div class="col-12" data-fixed-term-fields>
+            <div class="conditional-panel">
+                <div class="row g-3">
+                    <?php field(
+                        'fixed_term_months',
+                        'Agreement term (months) *',
+                        'number',
+                        'col-md-6',
+                        'min="1" step="1" required',
+                        'Required when the Agreement is not automatically renewable. It may be prefilled from the selected start and end dates and can be adjusted to the formal MOU term.'
+                    ); ?>
                 </div>
-                <?php field('termination_notice_months', 'Termination notice (months)', 'number', 'termination-notice-field', 'min="0" value="6"'); ?>
             </div>
         </div>
     </div></div>
@@ -345,8 +338,6 @@ $sdgs = [
         <?php textArea('objectives', 'Cooperation objectives *', 'Enter one objective per line where practical.', 4, 'required'); ?>
         <?php textArea('expected_value', 'Expected value and impact for the University *', '', 4, 'required'); ?>
         <?php textArea('focus_areas', 'Focus areas', 'Examples: research, academic collaboration, training, innovation, student exchange.'); ?>
-        <?php textArea('collaboration_areas', 'Fields of cooperation / MOU Article 1 *', '', 4, 'required'); ?>
-        <?php textArea('implementation_methods', 'Implementation methods / MOU Article 2 *', '', 4, 'required'); ?>
     </div></div>
     <?php sectionFooter(); ?>
 
@@ -373,17 +364,10 @@ $sdgs = [
     <?php sectionHeader(
         5,
         'alignment',
-        'Strategic alignment and SDGs',
-        'Select only the goals and ranking contribution supported by the planned work.'
+        'Sustainable Development Goals',
+        'Select only the goals supported by the planned work.'
     ); ?>
     <div class="form-section"><div class="row g-4">
-        <div class="col-12">
-            <span class="form-label d-block">Ranking contribution</span>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="rankings[]" value="QS_WORLD" id="ranking-qs-world">
-                <label class="form-check-label" for="ranking-qs-world">QS World University Rankings</label>
-            </div>
-        </div>
         <div class="col-12">
             <span class="form-label d-block">Supported Sustainable Development Goals</span>
             <p class="form-text mt-0">Hover or focus a goal for a brief explanation.</p>
@@ -411,24 +395,25 @@ $sdgs = [
         6,
         'governance',
         'Governance and MOU clauses',
-        'Upload the draft instrument, extract supported clauses, or enter only the terms that need structured review.'
+        'Upload the required DOCX instrument; its clauses and named parties are extracted automatically for review.'
     ); ?>
     <div class="form-section"><div class="row g-4">
         <div class="col-12">
             <div class="clause-upload-panel">
                 <div>
                     <h3 class="h6 mb-1">Upload governance / MOU document</h3>
-                    <p class="small text-secondary mb-0">DOCX text can be suggested into the fields below. PDF and DOC remain attached for reviewer inspection. Extracted Arabic stays Arabic; extracted English stays English.</p>
+                    <p class="small text-secondary mb-0">The DOCX file is required. Extraction starts automatically and preserves the document’s Arabic or English language. Review every populated field before saving.</p>
                 </div>
                 <div class="row g-3 mt-1 align-items-end">
                     <div class="col-lg-8">
-                        <label for="governance_document" class="form-label">Agreement or MOU file</label>
-                        <input id="governance_document" class="form-control" type="file" accept=".pdf,.doc,.docx" data-queued-upload data-document-type="GOVERNANCE_CLAUSES">
-                        <div class="form-text">The file uploads securely after the draft is saved; maximum 10 MB.</div>
+                        <label for="governance_document" class="form-label">Governance / MOU clauses file *</label>
+                        <input id="governance_document" class="form-control" type="file" accept=".docx" required data-queued-upload data-document-type="GOVERNANCE_CLAUSES">
+                        <div class="form-text">Use a text-based DOCX file, maximum 10 MB. It uploads securely after the draft is saved.</div>
+                        <div class="invalid-feedback">Upload the governance / MOU clauses DOCX file.</div>
                     </div>
                     <div class="col-lg-4 d-grid">
                         <button type="button" class="btn btn-outline-primary" data-extract-clauses>
-                            <span data-extract-label>Extract suggested clauses</span>
+                            <span data-extract-label>Extract again</span>
                             <span class="spinner-border spinner-border-sm ms-2 d-none" data-extract-spinner aria-hidden="true"></span>
                         </button>
                     </div>
@@ -436,6 +421,8 @@ $sdgs = [
                 <div class="clause-extraction-feedback d-none" role="status" aria-live="polite" data-clause-feedback></div>
             </div>
         </div>
+        <?php textArea('collaboration_areas', 'Fields of cooperation / MOU Article 1 *', 'Automatically suggested from the uploaded file when the article can be identified.', 4, 'required'); ?>
+        <?php textArea('implementation_methods', 'Implementation methods / MOU Article 2 *', 'Automatically suggested from the uploaded file when the article can be identified.', 4, 'required'); ?>
         <div class="col-12">
             <div class="form-check"><input id="annual_report_required" name="annual_report_required" class="form-check-input" type="checkbox" checked><label for="annual_report_required" class="form-check-label">Annual joint performance report required</label></div>
         </div>
@@ -454,7 +441,7 @@ $sdgs = [
         7,
         'contacts',
         'Coordinators and signatories',
-        'Add known contacts; blank optional rows are ignored.'
+        'Review the coordinators and signatories extracted from the uploaded governance / MOU file; blank optional rows are ignored.'
     ); ?>
     <div class="form-section"><div class="row g-4">
         <?php foreach ([['UOB','COORDINATOR','UOB coordinator'],['PARTNER','COORDINATOR','Partner coordinator'],['UOB','SIGNATORY','UOB signatory'],['PARTNER','SIGNATORY','Partner signatory']] as $index => $contact): ?>
@@ -485,6 +472,8 @@ $sdgs = [
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" data-apply-program-suggestions>Apply to empty fields</button>
             </div>
+            <div class="program-suggestion-list mt-3" data-program-suggestion-list></div>
+            <div class="program-suggestion-feedback d-none mt-2" role="status" aria-live="polite" data-program-suggestion-feedback></div>
         </div>
         <?php field('program_title', 'Proposed programme title', 'text', 'col-md-6'); ?>
         <?php field('program_responsible_entity', 'Responsible implementing entity', 'text', 'col-md-6'); ?>
@@ -493,9 +482,17 @@ $sdgs = [
         <?php textArea('program_expected_outputs', 'Expected outputs and outcomes'); ?>
         <div class="col-md-8">
             <label for="program_duration" class="form-label">Programme duration</label>
-            <input id="program_duration" type="text" class="form-control" readonly placeholder="Select programme start and end dates in one calendar" data-date-range data-start-target="program_start_date" data-end-target="program_end_date">
-            <input id="program_start_date" name="program_start_date" type="hidden">
-            <input id="program_end_date" name="program_end_date" type="hidden">
+            <input id="program_duration" type="text" class="form-control" readonly placeholder="Choose both dates in one calendar" data-date-range data-start-target="program_start_date" data-end-target="program_end_date">
+            <div class="row g-2 mt-1">
+                <div class="col-sm-6">
+                    <label for="program_start_date" class="form-label small">Start date</label>
+                    <input id="program_start_date" name="program_start_date" type="date" class="form-control" readonly aria-readonly="true">
+                </div>
+                <div class="col-sm-6">
+                    <label for="program_end_date" class="form-label small">End date</label>
+                    <input id="program_end_date" name="program_end_date" type="date" class="form-control" readonly aria-readonly="true">
+                </div>
+            </div>
             <div class="date-range-summary" data-program-duration-summary></div>
         </div>
         <?php field(
@@ -512,8 +509,8 @@ $sdgs = [
     <?php sectionHeader(
         9,
         'outcomes',
-        'Outcomes, publication, and media',
-        'Set measurable targets and attach optional public or supporting evidence.'
+        'Planned outcomes',
+        'Set measurable targets for monitoring and annual reporting.'
     ); ?>
     <div class="form-section"><div class="row g-4">
         <?php foreach (['STUDENTS_EXCHANGED' => 'Students exchanged', 'FACULTY_EXCHANGED' => 'Faculty exchanged', 'JOINT_PROGRAMS' => 'Joint programmes'] as $code => $label): ?>
@@ -524,14 +521,16 @@ $sdgs = [
                 <?php field('metric_' . strtolower($code) . '_notes', 'Notes', 'text', 'col-md-5'); ?>
             </div></div>
         <?php endforeach; ?>
-        <?php field(
-            'signing_link',
-            'Public signing / news link',
-            'url',
-            'col-12',
-            'placeholder="https://..."',
-            'Optional link to an official UOB or partner news page about the signing. It is intended for the public catalogue only after approval; leave it blank if no public page exists.'
-        ); ?>
+    </div></div>
+    <?php sectionFooter(); ?>
+
+    <?php sectionHeader(
+        10,
+        'media',
+        'Supporting media',
+        'Attach optional photos, graphics, or video separately from Agreement outcomes.'
+    ); ?>
+    <div class="form-section"><div class="row g-4">
         <div class="col-12">
             <label for="agreement_media" class="form-label">Supporting media</label>
             <input id="agreement_media" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,.mp4" multiple data-queued-upload data-document-type="MEDIA">
@@ -553,5 +552,5 @@ $sdgs = [
 
 <?php workspaceFooter([
     'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js',
-    'assets/js/agreement-form.js?v=20260728-guided-form',
+    'assets/js/agreement-form.js?v=20260728-guided-form-v2',
 ]); ?>

@@ -487,6 +487,12 @@
                 body: jsonBody(data)
             });
         },
+        updatePartner(id, data) {
+            return request(`/partners/${encodeURIComponent(id)}`, {
+                method: 'PATCH',
+                body: jsonBody(data)
+            });
+        },
         extractAgreementClauses(file) {
             const body = new FormData();
             body.append('file', file);

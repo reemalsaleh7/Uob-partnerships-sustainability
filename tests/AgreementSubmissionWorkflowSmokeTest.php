@@ -61,6 +61,7 @@ try {
             'description' =>
                 'Rolled back after verification',
             'geographic_scope' => 'LOCAL',
+            'fixed_term_months' => 12,
             'start_date' =>
                 date('Y-m-d', strtotime('+30 days')),
             'end_date' =>
@@ -84,6 +85,26 @@ try {
         $agreementId,
         [(int) $partnerId]
     );
+
+    $documentStatement = $db->prepare(
+        'INSERT INTO agreement_documents (
+            agreement_id,
+            file_name,
+            document_type,
+            uploaded_by
+        ) VALUES (
+            :agreement_id,
+            :file_name,
+            :document_type,
+            :uploaded_by
+        )'
+    );
+    $documentStatement->execute([
+        'agreement_id' => $agreementId,
+        'file_name' => 'temporary-governance-clauses.docx',
+        'document_type' => 'GOVERNANCE_CLAUSES',
+        'uploaded_by' => (int) $dean['user_id'],
+    ]);
 
     $result =
         $agreementService->submitAgreement(

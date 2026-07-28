@@ -314,7 +314,10 @@ class AgreementController {
     public function extractClauseDocument(): void
     {
         AuthMiddleware::handle();
-        PermissionMiddleware::require('CREATE_AGREEMENT');
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+        ]);
 
         if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
             Response::error('Choose an Agreement document to extract', 422);

@@ -41,4 +41,27 @@ class PartnerController
             Response::error($exception->getMessage(), 422);
         }
     }
+
+    public function update(int $partnerId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+        ]);
+
+        try {
+            Response::success(
+                $this->partnerService->update(
+                    $partnerId,
+                    ApiRequest::json(),
+                    (int) ($_SESSION['user_id'] ?? 0)
+                )
+            );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 404);
+        }
+    }
 }

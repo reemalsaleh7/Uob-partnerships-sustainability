@@ -31,9 +31,9 @@ final class AgreementClauseExtractionService
             (string) ($uploadedFile['name'] ?? '')
         ));
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (!in_array($extension, ['docx', 'doc', 'pdf'], true)) {
+        if ($extension !== 'docx') {
             throw new InvalidArgumentException(
-                'Clause extraction accepts PDF, DOC, or DOCX files'
+                'Automatic clause extraction requires a DOCX file'
             );
         }
 
@@ -48,16 +48,6 @@ final class AgreementClauseExtractionService
             );
         }
 
-        if ($extension !== 'docx') {
-            return [
-                'extracted' => false,
-                'language' => null,
-                'language_label' => null,
-                'fields' => [],
-                'message' => 'The file is ready to upload. Automatic clause extraction currently supports DOCX; PDF and DOC can still be reviewed as attached documents.',
-            ];
-        }
-
         $text = $this->extractDocxText($temporaryPath);
         if ($text === '') {
             throw new InvalidArgumentException(
@@ -67,11 +57,14 @@ final class AgreementClauseExtractionService
 
         $language = $this->detectLanguage($text);
 
+        $paragraphs = $this->paragraphs($text);
+
         return [
             'extracted' => true,
             'language' => $language,
             'language_label' => $language === 'ar' ? 'Arabic' : 'English',
-            'fields' => $this->classifyClauses($text),
+            'fields' => $this->classifyClauses($text, $paragraphs),
+            'contacts' => $this->extractContacts($paragraphs),
             'message' => sprintf(
                 'Text was extracted in %s and kept in its original language. Review every suggested clause before saving.',
                 $language === 'ar' ? 'Arabic' : 'English'
@@ -177,9 +170,26 @@ final class AgreementClauseExtractionService
         return ($arabic / $letters) >= 0.2 ? 'ar' : 'en';
     }
 
-    private function classifyClauses(string $text): array
+    private function paragraphs(string $text): array
     {
+        return array_values(array_filter(
+            array_map(
+                static fn (string $paragraph): string => trim($paragraph),
+                preg_split('/\R{2,}/u', $text) ?: [$text]
+            ),
+            static fn (string $paragraph): bool => $paragraph !== ''
+        ));
+    }
+
+    private function classifyClauses(string $text, array $paragraphs): array
+    {
+        $articleHeading =
+            '/(?:\barticle\s*(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven)\b|المادة\s*(?:\d+|الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|الثامنة|التاسعة|العاشرة|الحادية\s+عشرة))/iu';
         $patterns = [
+            'collaboration_areas' =>
+                '/(?:\barticle\s*(?:1|one)\b|fields?\s+of\s+cooperation|areas?\s+of\s+cooperation|المادة\s*(?:1|الأولى)|مجالات?\s+التعاون)/iu',
+            'implementation_methods' =>
+                '/(?:\barticle\s*(?:2|two)\b|implementation\s+methods?|means?\s+of\s+implementation|المادة\s*(?:2|الثانية)|أساليب?\s+التنفيذ|وسائل?\s+التنفيذ)/iu',
             'monitoring_plan' => '/monitor|evaluat|annual report|progress report|متابع|تقييم|تقرير سنوي|تقارير دورية/iu',
             'confidentiality_terms' => '/confidential|non-disclosure|سرية|الإفصاح/iu',
             'intellectual_property_terms' => '/intellectual property|copyright|patent|ملكية فكرية|حقوق المؤلف|براءة/iu',
@@ -187,11 +197,27 @@ final class AgreementClauseExtractionService
             'relationship_disclaimer' => '/joint venture|employment|franchise|legal partnership|مشروع مشترك|علاقة عمل|امتياز|شراكة قانونية/iu',
             'amendment_terms' => '/amend|modif|variation|تعديل|تغيير/iu',
             'dispute_resolution_terms' => '/dispute|arbitration|jurisdiction|نزاع|تحكيم|اختصاص قضائي/iu',
+            'other_terms' => '/terminat|expiry|notice period|إنهاء|فسخ|انقضاء|مدة الإشعار/iu',
         ];
         $fields = [];
-        $paragraphs = preg_split('/\R{2,}/u', $text) ?: [$text];
 
         foreach ($patterns as $field => $pattern) {
+            if (in_array(
+                $field,
+                ['collaboration_areas', 'implementation_methods'],
+                true
+            )) {
+                $section = $this->articleSection(
+                    $paragraphs,
+                    $pattern,
+                    $articleHeading
+                );
+                if ($section !== '') {
+                    $fields[$field] = $section;
+                }
+                continue;
+            }
+
             $matches = array_values(array_filter(
                 $paragraphs,
                 static fn (string $paragraph): bool =>
@@ -207,5 +233,141 @@ final class AgreementClauseExtractionService
         }
 
         return $fields;
+    }
+
+    private function articleSection(
+        array $paragraphs,
+        string $targetHeading,
+        string $anyArticleHeading
+    ): string {
+        $capturing = false;
+        $section = [];
+
+        foreach ($paragraphs as $paragraph) {
+            $isTarget = preg_match($targetHeading, $paragraph) === 1;
+            $isArticle = preg_match($anyArticleHeading, $paragraph) === 1;
+            if (!$capturing && $isTarget) {
+                $capturing = true;
+                $section[] = $paragraph;
+                continue;
+            }
+            if ($capturing && $isArticle && !$isTarget) {
+                break;
+            }
+            if ($capturing) {
+                $section[] = $paragraph;
+                if (count($section) >= 20) {
+                    break;
+                }
+            }
+        }
+
+        return trim(implode("\n\n", $section));
+    }
+
+    private function extractContacts(array $paragraphs): array
+    {
+        $contacts = [];
+        $rolePatterns = [
+            'COORDINATOR' =>
+                '/\bco-?ordinator\b|\bfocal\s+point\b|منسق|نقطة\s+اتصال/iu',
+            'SIGNATORY' =>
+                '/\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b|المفوض\s+بالتوقيع|المخول\s+بالتوقيع|التوقيع|الموقعون?/iu',
+        ];
+
+        foreach ($paragraphs as $index => $paragraph) {
+            foreach ($rolePatterns as $role => $rolePattern) {
+                if (preg_match($rolePattern, $paragraph) !== 1) {
+                    continue;
+                }
+
+                $context = array_slice(
+                    $paragraphs,
+                    max(0, $index - 2),
+                    7
+                );
+                $contextText = implode("\n", $context);
+                $partyType = preg_match(
+                    '/University\s+of\s+Bahrain|\bUOB\b|جامعة\s+البحرين/iu',
+                    $contextText
+                ) === 1 ? 'UOB' : 'PARTNER';
+                $contact = [
+                    'party_type' => $partyType,
+                    'contact_role' => $role,
+                    'full_name' => $this->labeledValue(
+                        $context,
+                        '/(?:full\s+name|name|الاسم\s+الكامل|الاسم)\s*[:\-]\s*(.+)$/iu'
+                    ),
+                    'job_title' => $this->labeledValue(
+                        $context,
+                        '/(?:job\s+title|title|position|designation|المسمى\s+الوظيفي|المنصب)\s*[:\-]\s*(.+)$/iu'
+                    ),
+                    'email' => '',
+                    'phone' => '',
+                ];
+
+                if (preg_match(
+                    '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu',
+                    $contextText,
+                    $email
+                )) {
+                    $contact['email'] = $email[0];
+                }
+                if (preg_match(
+                    '/(?:\+\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,5}\d{2,4}/u',
+                    $contextText,
+                    $phone
+                )) {
+                    $contact['phone'] = trim($phone[0]);
+                }
+
+                if ($contact['full_name'] === '') {
+                    $contact['full_name'] = $this->roleValue(
+                        $paragraph,
+                        $rolePattern
+                    );
+                }
+
+                $key = $partyType . ':' . $role;
+                if (
+                    !isset($contacts[$key])
+                    && array_filter(
+                        array_slice($contact, 2),
+                        static fn (string $value): bool =>
+                            trim($value) !== ''
+                    ) !== []
+                ) {
+                    $contacts[$key] = $contact;
+                }
+            }
+        }
+
+        return array_values($contacts);
+    }
+
+    private function labeledValue(array $paragraphs, string $pattern): string
+    {
+        foreach ($paragraphs as $paragraph) {
+            if (preg_match($pattern, $paragraph, $match) === 1) {
+                return trim($match[1]);
+            }
+        }
+
+        return '';
+    }
+
+    private function roleValue(string $paragraph, string $rolePattern): string
+    {
+        $value = preg_replace($rolePattern, '', $paragraph, 1);
+        $value = trim((string) $value, " \t\n\r\0\x0B:-|");
+
+        return $this->length($value) <= 255 ? $value : '';
+    }
+
+    private function length(string $value): int
+    {
+        return function_exists('mb_strlen')
+            ? mb_strlen($value, 'UTF-8')
+            : strlen($value);
     }
 }

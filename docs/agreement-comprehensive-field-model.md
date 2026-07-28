@@ -21,13 +21,13 @@ This model consolidates the four official University of Bahrain cooperation form
 | English/general title | `agreements.title` | All sources | Required. |
 | Arabic title | `agreements.title_ar` | Bilingual forms | Optional while drafting; used by the Arabic public page when present. |
 | Cooperation type | `agreements.agreement_type` | Request form, legacy form, CSV | Cooperation Framework, MOU, Cooperation Agreement, Research Agreement, or Other. |
-| Partner scope | `agreements.geographic_scope` | Request form | `LOCAL` or `INTERNATIONAL`. |
-| Partner organizations | `agreement_partners` | Forms and CSV | Multiple partners are supported. Partner type, country, website, brief profile, city, logo, and coordinates stay in `partners`. |
+| Partner scope | `agreements.geographic_scope` | Request form | `LOCAL` or `INTERNATIONAL`; derived by the server from selected partner countries rather than entered separately. All-Bahrain partners produce `LOCAL`; any non-Bahrain partner produces `INTERNATIONAL`. |
+| Partner organizations | `agreement_partners` | Forms and CSV | Multiple partners are supported. Partner type, country, website, brief profile, city, logo, and coordinates stay in `partners`. New and edited profiles use Public/government, Private, Academic, or Non-profit as the four controlled organization types. |
 | Summary/profile | `agreements.description` | Request form and CSV | Required before submission; approved summary may be public. |
 | Start/end dates | `agreements.start_date`, `end_date` | Request, lifecycle, legacy form, CSV | Both required before submission; end cannot precede start. |
 | Signing/effective dates | `agreements.signing_date`, `effective_date` | MOU | Optional until known. |
-| Renewal controls | `auto_renew`, `renewal_term_months`, `non_renewal_notice_months` | MOU and CSV | Stores whether renewal is automatic and its term/notice period. |
-| Termination notice | `termination_notice_months` | MOU | Defaults to six months, matching the template. |
+| Fixed and renewal terms | `auto_renew`, `fixed_term_months`, `renewal_term_months`, `non_renewal_notice_months` | MOU and CSV | A non-automatically-renewing Agreement requires its fixed term in months. An automatically renewing Agreement instead records each renewal term and the non-renewal notice period. |
+| Termination notice | `termination_notice_months` | MOU / legacy data | Retained for historical compatibility but no longer collected on the creation form. A proposal to terminate an Agreement must use the separate termination lifecycle request. |
 | Responsible unit | `responsible_unit_id` or creator active unit | Request form and legacy owner entity | Applicant identity/unit are trusted system data, not arbitrary client values. |
 | Need and justification | `need_justification` | Request form | Required before submission. |
 | Objectives | `objectives` | Request, executive program, old CSV | Required before submission. |
@@ -38,18 +38,18 @@ This model consolidates the four official University of Bahrain cooperation form
 | Financial commitment | financial columns on `agreements` | Request form, MOU, lifecycle form | Boolean, amount, ISO currency, and description. Finance review remains a workflow decision. |
 | Human-resource commitment | HR columns on `agreements` | Request form | Boolean plus conditional description. |
 | Training programs | training columns on `agreements` | Request form | Boolean plus conditional description. |
-| Ranking alignment | `agreement_rankings` | Request form and CSV | `QS_WORLD`, `THE_IMPACT`, `UI_GREENMETRIC`. |
+| Ranking alignment | `agreement_rankings` | Historical request form and CSV | Legacy/import compatibility only. QS World, THE Impact, and UI GreenMetric are no longer offered by the guided form. |
 | SDG alignment | `agreement_sdgs` | Both CSV files | Normalized SDG numbers 1–17. |
 | Monitoring and annual report | `annual_report_required`, `monitoring_plan` | MOU Article 5 | Annual report defaults to required. |
 | Confidentiality | `confidentiality_terms` | MOU Article 6 | Stores agreed terms or approved deviations. |
 | Intellectual property | `intellectual_property_terms` | MOU Article 8 | Stores approved IP treatment. |
 | Legal/regulatory compliance | `compliance_terms` | MOU Article 7 | Preserves national, regional, and international rights and obligations. |
 | Relationship disclaimer | `relationship_disclaimer` | MOU Article 8 | Records that the MOU does not itself create a partnership, joint venture, employment, or franchise. |
-| Legal effect | `legal_binding_status` | MOU Article 9 | `NON_BINDING`, `BINDING`, or `MIXED`. |
+| Legal effect | `legal_binding_status` | MOU Article 9 / legacy data | Retained for existing records and imports but not selected by Agreement creators. Every new request must provide the MOU/governance document and passes through mandatory Legal Office review. |
 | Amendment terms | `amendment_terms` | MOU Article 10 | Stores the agreed written-amendment mechanism. |
 | Dispute resolution | `dispute_resolution_terms` | MOU Article 11 | Stores the agreed settlement mechanism. |
 | Other terms | `other_terms` | MOU Article 1/2 catch-all | Stores approved additional fields or implementation methods agreed in writing. |
-| Public signing/news URL | `signing_link` | New CSV | May be published only after approval. |
+| Public signing/news URL | `signing_link` | New CSV | Legacy/import field only. It is no longer collected by the guided form because each reusable partner profile already provides its website. |
 | Legacy source ID | `source_record_id` | New CSV | Import traceability only; not accepted from the normal browser form. |
 
 ## Repeating child records
@@ -73,41 +73,56 @@ The comprehensive migration adds city, logo, latitude, and longitude to
 `partners`; the guided-form migration adds the reusable brief profile. The
 Agreement form searches the active University partner directory and displays
 the selected organizations as removable cards with their country, website, and
-profile. A creator may add a missing partner through a validated, audited
-directory action. A matching existing name/country is selected instead of
-duplicated, and the form never silently rewrites an existing shared profile.
+profile. A creator may add a missing partner or explicitly edit an existing
+selected profile. Both actions are validated and audited because a directory
+profile is shared by future Agreements. A matching existing name/country is
+selected instead of duplicated. Partner country and one of the four current
+organization types are required; older directory profiles show a correction
+warning and can be updated inline. The server derives local or international
+scope, which is shown beside the selected-partner count rather than as a
+separate user decision.
 
 ## Guided form behavior
 
-- Nine sections render as accessible disclosure panels. Only the first opens
+- Ten sections render as accessible disclosure panels. Only the first opens
   initially; required sections advance when complete, while Open all and
   Collapse all remain available.
 - Collapsed required sections retain a visible Complete, Not started, or Needs
   attention status. The first invalid section reopens on save.
-- Project and executive-programme dates use one range-calendar control each
-  while persisting the established start/end columns.
+- Project and executive-programme dates use one range-calendar control each,
+  while displaying and persisting the established start and end fields
+  separately.
 - Project start means planned activity delivery. Effective date means the date
   an approved and signed Agreement becomes operational/legal and is the date
   used by status activation.
 - Automatic-renewal fields appear only when enabled. Non-renewal notice prevents
-  the next automatic term; termination notice ends the current term early and
-  therefore remains a separate field.
-- Only QS World University Rankings remains selectable in the form. Historical
-  THE Impact and UI GreenMetric values remain readable for compatibility but
-  are no longer offered for new edits.
+  the next automatic term. When automatic renewal is disabled, a fixed Agreement
+  term in months is required and can be prefilled from the selected date range.
+  Early termination is not initiated on this form; it requires the dedicated
+  termination lifecycle request.
+- University-ranking controls have been removed. Historical QS World, THE
+  Impact, and UI GreenMetric values remain readable for compatibility but are
+  not modified by guided-form saves.
 - Every SDG displays its official short title and an explanatory hover/focus
   hint.
-- Governance/MOU DOCX files can be inspected before save. Suggested structured
-  clauses are copied only into empty fields, retain their detected Arabic or
-  English language and direction, and require user review. PDF/DOC files remain
-  securely uploadable but are not automatically extracted.
-- Executive-programme suggestions use only values already entered in the
-  Agreement and never overwrite populated programme fields. Applicant identity
-  comes from the authenticated account.
+- A governance/MOU DOCX file is mandatory for a new Agreement. Choosing it
+  immediately starts automatic language-aware extraction. Article 1 fields of
+  cooperation, Article 2 implementation methods, governance clauses,
+  coordinators, and signatories are copied only into empty fields and remain
+  subject to creator review. Submission and resubmission are rejected by the
+  server if no `GOVERNANCE_CLAUSES` document is attached.
+- Legal effect is not a creator-entered choice. The mandatory MOU file and
+  mandatory Legal Office workflow step provide the legal-review boundary.
+- Executive-programme suggestions cover the programme title, implementing
+  entity, description, objectives, expected outputs, start date, end date, and
+  authenticated applicant. A local preview shows every suggestion, populated
+  programme fields are never overwritten, and applying suggestions does not
+  move focus to the beginning of the form.
 - Governance files and optional JPG, PNG, WebP, or MP4 supporting media are
   queued until the Agreement draft/version has been saved, then use the existing
   private document store, checksum, version link, access controls, and audit
-  trail.
+  trail. Supporting media is presented as its own final section, separate from
+  planned outcomes.
 
 ## System-derived workflow fields
 
@@ -137,7 +152,7 @@ The existing `agreement_relationships`, `agreement_actions`, workflow engine, ve
 ## Validation and versioning
 
 - Draft creation remains backward compatible with the former four-field API.
-- Formal submission now requires partners, geographic scope, duration, description, need/justification, objectives, expected value, collaboration areas, and implementation methods.
+- Formal submission now requires partners with complete countries, server-derived geographic scope, duration, description, need/justification, objectives, expected value, collaboration areas, implementation methods, and an attached governance/MOU DOCX document.
 - Commitment descriptions become required only when their corresponding flag is enabled.
 - Every save snapshots scalar and repeating child data in `agreement_versions.agreement_snapshot`.
 - Reviewers and the public catalogue receive only the fields allowed by their existing record-visibility or publication rules.

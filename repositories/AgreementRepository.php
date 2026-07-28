@@ -15,6 +15,7 @@ class AgreementRepository {
         'effective_date',
         'signing_date',
         'auto_renew',
+        'fixed_term_months',
         'renewal_term_months',
         'non_renewal_notice_months',
         'termination_notice_months',

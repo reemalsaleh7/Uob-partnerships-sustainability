@@ -50,7 +50,8 @@ class PartnerRepository
             array_fill(0, count($ids), '?')
         );
         $statement = $this->db->prepare(
-            'SELECT partner_id, country
+            'SELECT partner_id, organization_name, partner_type, country,
+                    city, profile, website, logo_url, latitude, longitude
              FROM partners
              WHERE is_active = TRUE
                AND partner_id IN (' . $placeholders . ')'
@@ -62,7 +63,8 @@ class PartnerRepository
 
     public function findActiveDuplicate(
         string $organizationName,
-        ?string $country
+        ?string $country,
+        ?int $excludePartnerId = null
     ): ?array {
         $statement = $this->db->prepare('
             SELECT
@@ -83,6 +85,10 @@ class PartnerRepository
                     NULLIF(TRIM(:country_empty), \'\') IS NULL
                     OR LOWER(COALESCE(country, \'\')) = LOWER(TRIM(:country_match))
               )
+              AND (
+                    :exclude_partner_id_empty IS NULL
+                    OR partner_id <> :exclude_partner_id_match
+              )
             ORDER BY partner_id
             LIMIT 1
         ');
@@ -90,6 +96,8 @@ class PartnerRepository
             'organization_name' => $organizationName,
             'country_empty' => $country,
             'country_match' => $country,
+            'exclude_partner_id_empty' => $excludePartnerId,
+            'exclude_partner_id_match' => $excludePartnerId,
         ]);
         $partner = $statement->fetch();
 
@@ -137,6 +145,72 @@ class PartnerRepository
         $partner = $statement->fetch();
         if (!$partner) {
             throw new RuntimeException('The partner could not be created');
+        }
+
+        return $partner;
+    }
+
+    public function findActiveById(int $partnerId): ?array
+    {
+        $statement = $this->db->prepare('
+            SELECT
+                partner_id,
+                organization_name,
+                partner_type,
+                country,
+                city,
+                profile,
+                website,
+                logo_url,
+                latitude,
+                longitude
+            FROM partners
+            WHERE partner_id = :partner_id
+              AND is_active = TRUE
+            LIMIT 1
+        ');
+        $statement->execute(['partner_id' => $partnerId]);
+        $partner = $statement->fetch();
+
+        return $partner ?: null;
+    }
+
+    public function update(int $partnerId, array $data): array
+    {
+        $statement = $this->db->prepare('
+            UPDATE partners
+            SET
+                organization_name = :organization_name,
+                partner_type = :partner_type,
+                country = :country,
+                website = :website,
+                profile = :profile,
+                updated_at = NOW()
+            WHERE partner_id = :partner_id
+              AND is_active = TRUE
+            RETURNING
+                partner_id,
+                organization_name,
+                partner_type,
+                country,
+                city,
+                profile,
+                website,
+                logo_url,
+                latitude,
+                longitude
+        ');
+        $statement->execute([
+            'partner_id' => $partnerId,
+            'organization_name' => $data['organization_name'],
+            'partner_type' => $data['partner_type'],
+            'country' => $data['country'],
+            'website' => $data['website'],
+            'profile' => $data['profile'],
+        ]);
+        $partner = $statement->fetch();
+        if (!$partner) {
+            throw new DomainException('Partner organization not found');
         }
 
         return $partner;

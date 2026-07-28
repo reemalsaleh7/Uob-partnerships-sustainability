@@ -25,6 +25,9 @@
         createPartner: document.querySelector('[data-create-partner]'),
         createPartnerLabel: document.querySelector('[data-create-partner-label]'),
         createPartnerSpinner: document.querySelector('[data-create-partner-spinner]'),
+        partnerEditorTitle: document.querySelector('[data-partner-editor-title]'),
+        partnerEditorHelp: document.querySelector('[data-partner-editor-help]'),
+        derivedPartnerScope: document.querySelector('[data-derived-partner-scope]'),
         save: document.getElementById('save-agreement'),
         saveLabel: document.querySelector('[data-save-label]'),
         saveSpinner: document.querySelector('[data-save-spinner]'),
@@ -38,6 +41,8 @@
         extractSpinner: document.querySelector('[data-extract-spinner]'),
         clauseFeedback: document.querySelector('[data-clause-feedback]'),
         programSuggestionText: document.querySelector('[data-program-suggestion-text]'),
+        programSuggestionList: document.querySelector('[data-program-suggestion-list]'),
+        programSuggestionFeedback: document.querySelector('[data-program-suggestion-feedback]'),
         mediaFileList: document.querySelector('[data-media-file-list]')
     };
 
@@ -49,23 +54,24 @@
         user: null,
         partners: new Map(),
         selectedPartnerIds: new Set(),
+        editingPartnerId: null,
+        hasGovernanceDocument: false,
         autoAdvancedSections: new Set(),
         programSuggestions: {}
     };
 
     const scalarFields = [
-        'title', 'title_ar', 'agreement_type', 'description', 'geographic_scope',
+        'title', 'title_ar', 'agreement_type', 'description',
         'start_date', 'end_date', 'effective_date', 'signing_date',
-        'renewal_term_months', 'non_renewal_notice_months',
-        'termination_notice_months', 'need_justification', 'expected_value',
+        'fixed_term_months', 'renewal_term_months', 'non_renewal_notice_months',
+        'need_justification', 'expected_value',
         'objectives', 'focus_areas', 'collaboration_areas',
         'implementation_methods', 'financial_amount', 'financial_currency',
         'financial_description', 'human_resources_description',
         'training_programs_description', 'monitoring_plan',
         'confidentiality_terms', 'intellectual_property_terms',
         'compliance_terms', 'relationship_disclaimer', 'amendment_terms',
-        'dispute_resolution_terms', 'other_terms', 'legal_binding_status',
-        'signing_link'
+        'dispute_resolution_terms', 'other_terms'
     ];
     const booleanFields = [
         'auto_renew', 'financial_commitments', 'human_resources_commitments',
@@ -138,15 +144,26 @@
     function setPartnerCreateBusy(isBusy) {
         elements.createPartner.disabled = isBusy;
         elements.createPartnerLabel.textContent = isBusy
-            ? 'Adding partner…'
-            : 'Add and select partner';
+            ? (state.editingPartnerId ? 'Saving changes…' : 'Adding partner…')
+            : (state.editingPartnerId ? 'Save partner changes' : 'Add and select partner');
         elements.createPartnerSpinner.classList.toggle('d-none', !isBusy);
+    }
+
+    const partnerTypeLabels = Object.freeze({
+        PUBLIC_GOVERNMENT: 'Public / government',
+        PRIVATE: 'Private',
+        ACADEMIC: 'Academic',
+        NON_PROFIT: 'Non-profit'
+    });
+
+    function partnerTypeLabel(value) {
+        return partnerTypeLabels[value] || value || 'Partner organization';
     }
 
     function partnerSearchText(partner) {
         return normalized([
             partner.organization_name,
-            partner.partner_type,
+            partnerTypeLabel(partner.partner_type),
             partner.country,
             partner.website,
             partner.profile
@@ -168,7 +185,7 @@
         name.textContent = partner.organization_name || 'Unnamed organization';
         const meta = document.createElement('span');
         meta.textContent = [
-            partner.partner_type,
+            partnerTypeLabel(partner.partner_type),
             partner.country || 'Country not recorded'
         ].filter(Boolean).join(' · ');
         const action = document.createElement('span');
@@ -213,8 +230,19 @@
         const name = document.createElement('strong');
         name.textContent = partner.organization_name || 'Unnamed organization';
         const type = document.createElement('span');
-        type.textContent = partner.partner_type || 'Partner organization';
+        type.textContent = partnerTypeLabel(partner.partner_type);
         heading.append(name, type);
+        const actions = document.createElement('div');
+        actions.className = 'selected-partner-actions';
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'btn btn-sm btn-outline-primary';
+        edit.dataset.editPartner = String(partner.partner_id);
+        edit.textContent = 'Edit details';
+        edit.setAttribute(
+            'aria-label',
+            `Edit ${partner.organization_name || 'partner'} details`
+        );
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'btn btn-sm btn-outline-danger';
@@ -224,7 +252,8 @@
             'aria-label',
             `Remove ${partner.organization_name || 'partner'}`
         );
-        header.append(heading, remove);
+        actions.append(edit, remove);
+        header.append(heading, actions);
 
         const facts = document.createElement('dl');
         facts.className = 'partner-facts';
@@ -262,13 +291,21 @@
             facts.appendChild(wrapper);
         });
 
-        if (
-            control('geographic_scope').value === 'INTERNATIONAL'
-            && !partner.country
-        ) {
+        const warnings = [];
+        if (!String(partner.country || '').trim()) {
+            warnings.push(
+                'Add a country so the Agreement scope can be determined.'
+            );
+        }
+        if (!partnerTypeLabels[partner.partner_type]) {
+            warnings.push(
+                'Choose one of the four current partner organization types.'
+            );
+        }
+        if (warnings.length > 0) {
             const warning = document.createElement('p');
             warning.className = 'partner-data-warning';
-            warning.textContent = 'Country is required for an international partner.';
+            warning.textContent = warnings.join(' ');
             card.append(header, facts, warning);
         } else {
             card.append(header, facts);
@@ -302,6 +339,7 @@
 
         elements.selectedPartnerCount.textContent =
             `${selected.length} selected`;
+        elements.derivedPartnerScope.textContent = derivedPartnerScopeLabel();
         elements.partnerError.classList.toggle(
             'd-none',
             selected.length !== 0
@@ -345,13 +383,48 @@
     }
 
     function selectedPartnersHaveRequiredCountries() {
-        if (control('geographic_scope').value !== 'INTERNATIONAL') {
-            return true;
-        }
-
         return [...state.selectedPartnerIds].every((id) =>
             Boolean(String(state.partners.get(id)?.country || '').trim())
         );
+    }
+
+    function selectedPartnersHaveRequiredTypes() {
+        return [...state.selectedPartnerIds].every((id) =>
+            Boolean(
+                partnerTypeLabels[state.partners.get(id)?.partner_type]
+            )
+        );
+    }
+
+    function isBahrainCountry(country) {
+        return /^(?:kingdom\s+of\s+)?bahrain$/iu.test(
+            String(country || '').trim()
+        );
+    }
+
+    function derivedPartnerScope() {
+        const selected = [...state.selectedPartnerIds]
+            .map((id) => state.partners.get(id))
+            .filter(Boolean);
+        if (
+            selected.length === 0
+            || selected.some((partner) => !String(partner.country || '').trim())
+        ) {
+            return '';
+        }
+
+        return selected.every((partner) => isBahrainCountry(partner.country))
+            ? 'LOCAL'
+            : 'INTERNATIONAL';
+    }
+
+    function derivedPartnerScopeLabel() {
+        const scope = derivedPartnerScope();
+        if (scope === 'LOCAL') return 'Local scope (derived from Bahrain)';
+        if (scope === 'INTERNATIONAL') {
+            return 'International scope (derived from partner countries)';
+        }
+        return 'Scope needs complete partner countries';
     }
 
     function validatePartnerSelection(showMessage = true) {
@@ -359,7 +432,9 @@
         if (state.selectedPartnerIds.size === 0) {
             message = 'Select at least one partner organization.';
         } else if (!selectedPartnersHaveRequiredCountries()) {
-            message = 'Every international partner must have a country in its directory profile.';
+            message = 'Every selected partner must have a country so local or international scope can be determined.';
+        } else if (!selectedPartnersHaveRequiredTypes()) {
+            message = 'Edit each selected partner and choose Public/government, Private, Academic, or Non-profit.';
         }
 
         if (showMessage) {
@@ -370,7 +445,49 @@
         return message === '';
     }
 
-    async function createPartner() {
+    function resetPartnerEditor() {
+        state.editingPartnerId = null;
+        ['new_partner_name', 'new_partner_type', 'new_partner_country',
+            'new_partner_website', 'new_partner_profile'].forEach((name) => {
+            control(name).value = '';
+            control(name).classList.remove('is-invalid');
+        });
+        elements.partnerEditorTitle.textContent =
+            'Add a partner to the University directory';
+        elements.partnerEditorHelp.textContent =
+            'The new profile becomes reusable in future Agreements. Selected profiles can also be corrected through their Edit details action.';
+        setPartnerCreateBusy(false);
+    }
+
+    function openPartnerEditor(partner = null) {
+        resetPartnerEditor();
+        elements.newPartnerPanel.classList.remove('d-none');
+
+        if (partner) {
+            state.editingPartnerId = String(partner.partner_id);
+            elements.partnerEditorTitle.textContent =
+                'Edit partner directory details';
+            elements.partnerEditorHelp.textContent =
+                'Saving updates this shared University directory profile and is recorded in the audit log.';
+            control('new_partner_name').value =
+                partner.organization_name || '';
+            control('new_partner_type').value =
+                partnerTypeLabels[partner.partner_type]
+                    ? partner.partner_type
+                    : '';
+            control('new_partner_country').value = partner.country || '';
+            control('new_partner_website').value = partner.website || '';
+            control('new_partner_profile').value = partner.profile || '';
+            setPartnerCreateBusy(false);
+        } else {
+            control('new_partner_name').value =
+                elements.partnerSearch.value.trim();
+        }
+
+        control('new_partner_name').focus();
+    }
+
+    async function savePartner() {
         const fields = {
             organization_name: control('new_partner_name').value.trim(),
             partner_type: control('new_partner_type').value,
@@ -402,7 +519,12 @@
         clearMessages();
         setPartnerCreateBusy(true);
         try {
-            const partner = await AgreementApi.createPartner(fields);
+            const partner = state.editingPartnerId
+                ? await AgreementApi.updatePartner(
+                    state.editingPartnerId,
+                    fields
+                )
+                : await AgreementApi.createPartner(fields);
             const id = String(partner.partner_id);
             state.partners.set(id, partner);
             if (!elements.partners.querySelector(
@@ -413,17 +535,16 @@
                 option.textContent = partner.organization_name;
                 elements.partners.appendChild(option);
             }
+            const wasEditing = Boolean(state.editingPartnerId);
             selectPartner(id, true);
-            ['new_partner_name', 'new_partner_type', 'new_partner_country',
-                'new_partner_website', 'new_partner_profile'].forEach((name) => {
-                control(name).value = '';
-                control(name).classList.remove('is-invalid');
-            });
+            resetPartnerEditor();
             elements.newPartnerPanel.classList.add('d-none');
             elements.partnerSearch.value = '';
-            showFeedback(partner.already_existed
-                ? 'A matching partner already existed and has been selected.'
-                : 'The partner was added to the University directory and selected.');
+            showFeedback(wasEditing
+                ? 'The shared partner directory profile was updated.'
+                : (partner.already_existed
+                    ? 'A matching partner already existed and has been selected.'
+                    : 'The partner was added to the University directory and selected.'));
         } catch (error) {
             showError(error);
         } finally {
@@ -459,6 +580,16 @@
         return `Approximately ${parts.join(' and ') || `${days} days`}.`;
     }
 
+    function durationMonths(startValue, endValue) {
+        if (!startValue || !endValue) return '';
+        const start = new Date(`${startValue}T00:00:00`);
+        const end = new Date(`${endValue}T00:00:00`);
+        const days = Math.round((end - start) / 86400000) + 1;
+        if (!Number.isFinite(days) || days <= 0) return '';
+
+        return String(Math.max(1, Math.round(days / 30.4375)));
+    }
+
     function rangeSummaryElement(rangeInput) {
         return rangeInput.id === 'project_duration'
             ? document.querySelector('[data-project-duration-summary]')
@@ -471,6 +602,14 @@
         const summary = rangeSummaryElement(rangeInput);
         if (summary) {
             summary.textContent = durationText(start, end);
+        }
+        if (
+            rangeInput.id === 'project_duration'
+            && !control('auto_renew').checked
+            && !control('fixed_term_months').value
+        ) {
+            control('fixed_term_months').value =
+                durationMonths(start, end);
         }
         refreshProgramSuggestions();
         updateAllSectionStatuses();
@@ -561,15 +700,6 @@
         if (!agreement.financial_currency) {
             control('financial_currency').value = 'BHD';
         }
-        if (agreement.termination_notice_months == null) {
-            control('termination_notice_months').value = '6';
-        }
-
-        document.querySelectorAll('input[name="rankings[]"]').forEach((checkbox) => {
-            checkbox.checked = (agreement.rankings || []).includes(
-                checkbox.value
-            );
-        });
         document.querySelectorAll('input[name="sdgs[]"]').forEach((checkbox) => {
             checkbox.checked = (agreement.sdgs || []).map(Number)
                 .includes(Number(checkbox.value));
@@ -709,9 +839,11 @@
         if (!data.auto_renew) {
             data.renewal_term_months = '';
             data.non_renewal_notice_months = '';
+        } else {
+            data.fixed_term_months = '';
         }
         data.partner_ids = [...state.selectedPartnerIds].map(Number);
-        data.rankings = selectedValues('rankings');
+        data.geographic_scope = derivedPartnerScope();
         data.sdgs = selectedValues('sdgs').map(Number);
         data.contacts = contactsPayload();
         data.executive_programs = programsPayload();
@@ -741,10 +873,14 @@
 
         const autoRenew = control('auto_renew').checked;
         const renewalFields = document.querySelector('[data-renewal-fields]');
+        const fixedTermFields =
+            document.querySelector('[data-fixed-term-fields]');
         renewalFields.classList.toggle('d-none', !autoRenew);
+        fixedTermFields.classList.toggle('d-none', autoRenew);
         ['renewal_term_months', 'non_renewal_notice_months'].forEach((name) => {
             control(name).required = autoRenew;
         });
+        control('fixed_term_months').required = !autoRenew;
         renderSelectedPartners();
     }
 
@@ -910,6 +1046,35 @@
         return AgreementApi.displayName(user);
     }
 
+    const programSuggestionLabels = Object.freeze({
+        title: 'Programme title',
+        responsible_entity: 'Responsible entity',
+        description: 'Description',
+        objectives: 'Objectives',
+        expected_outputs: 'Expected outputs',
+        start_date: 'Start date',
+        end_date: 'End date',
+        applicant_name: 'Applicant'
+    });
+
+    function renderProgramSuggestions() {
+        elements.programSuggestionList.replaceChildren();
+        Object.entries(programSuggestionLabels).forEach(([field, label]) => {
+            const item = document.createElement('div');
+            item.className = 'program-suggestion-item';
+            const name = document.createElement('strong');
+            name.textContent = label;
+            const value = document.createElement('span');
+            const suggestion = String(
+                state.programSuggestions[field] || ''
+            ).trim();
+            value.textContent = suggestion || 'Complete more Agreement details';
+            item.classList.toggle('is-missing', suggestion === '');
+            item.append(name, value);
+            elements.programSuggestionList.appendChild(item);
+        });
+    }
+
     function refreshProgramSuggestions() {
         if (!state.user) return;
         const agreementTitle = control('title').value.trim();
@@ -939,9 +1104,10 @@
 
         const readyCount = Object.values(state.programSuggestions)
             .filter((value) => String(value || '').trim() !== '').length;
-        elements.programSuggestionText.textContent = readyCount >= 4
-            ? `Suggestions are ready from the Agreement title, ${partners.length || 'no'} selected partner${partners.length === 1 ? '' : 's'}, objectives, impact, and duration. Existing programme text will not be overwritten.`
+        elements.programSuggestionText.textContent = readyCount === 8
+            ? `Suggestions are ready for all programme fields from the Agreement title, ${partners.length} selected partner${partners.length === 1 ? '' : 's'}, objectives, impact, duration, and signed-in applicant. Existing programme text will not be overwritten.`
             : 'Complete the title, partners, objectives, impact, and duration to generate more useful programme suggestions.';
+        renderProgramSuggestions();
     }
 
     function applyProgramSuggestions() {
@@ -970,7 +1136,9 @@
             );
         }
         updateAllSectionStatuses();
-        showFeedback('Suggestions were applied only to empty executive-programme fields. Review and adjust them before saving.');
+        elements.programSuggestionFeedback.textContent =
+            'Suggestions were applied only to empty executive-programme fields. Review and adjust them before saving.';
+        elements.programSuggestionFeedback.classList.remove('d-none');
     }
 
     function queuedUploads() {
@@ -988,7 +1156,7 @@
 
     function validateQueuedUploads() {
         const allowed = {
-            GOVERNANCE_CLAUSES: ['pdf', 'doc', 'docx'],
+            GOVERNANCE_CLAUSES: ['docx'],
             MEDIA: ['jpg', 'jpeg', 'png', 'webp', 'mp4']
         };
         for (const upload of queuedUploads()) {
@@ -1066,8 +1234,36 @@
                     applied += 1;
                 }
             });
+            let contactsApplied = 0;
+            (result.contacts || []).forEach((contact) => {
+                const row = document.querySelector(
+                    `[data-contact-row][data-party-type="${escapeSelector(contact.party_type)}"][data-contact-role="${escapeSelector(contact.contact_role)}"]`
+                );
+                if (!row) return;
+                const index = [...document.querySelectorAll('[data-contact-row]')]
+                    .indexOf(row);
+                const mapping = {
+                    full_name: `contact_${index}_name`,
+                    job_title: `contact_${index}_title`,
+                    email: `contact_${index}_email`,
+                    phone: `contact_${index}_phone`
+                };
+                Object.entries(mapping).forEach(([source, targetName]) => {
+                    const target = control(targetName);
+                    const value = String(contact[source] || '').trim();
+                    if (target && !target.value.trim() && value) {
+                        target.value = value;
+                        if (['full_name', 'job_title'].includes(source)) {
+                            target.lang = result.language || '';
+                            target.dir =
+                                result.language === 'ar' ? 'rtl' : 'ltr';
+                        }
+                        contactsApplied += 1;
+                    }
+                });
+            });
             elements.clauseFeedback.textContent = result.extracted
-                ? `${result.message} ${applied} empty clause field${applied === 1 ? '' : 's'} populated.`
+                ? `${result.message} ${applied} empty clause field${applied === 1 ? '' : 's'} and ${contactsApplied} coordinator/signatory field${contactsApplied === 1 ? '' : 's'} populated.`
                 : result.message;
             elements.clauseFeedback.classList.remove('d-none');
             updateAllSectionStatuses();
@@ -1075,7 +1271,7 @@
             showError(error);
         } finally {
             elements.extractClauses.disabled = false;
-            elements.extractLabel.textContent = 'Extract suggested clauses';
+            elements.extractLabel.textContent = 'Extract again';
             elements.extractSpinner.classList.add('d-none');
         }
     }
@@ -1091,8 +1287,13 @@
             const requests = [AgreementApi.partners()];
             if (state.isEdit) {
                 requests.push(AgreementApi.agreement(state.agreementId));
+                requests.push(AgreementApi.documents(state.agreementId));
             }
-            const [partners, agreement = null] = await Promise.all(requests);
+            const [
+                partners,
+                agreement = null,
+                documents = []
+            ] = await Promise.all(requests);
 
             if (
                 agreement
@@ -1108,6 +1309,18 @@
             if (agreement) {
                 configureEditMode(agreement);
                 populateAgreement(agreement);
+            }
+            state.hasGovernanceDocument = (documents || []).some(
+                (document) =>
+                    document.document_type === 'GOVERNANCE_CLAUSES'
+            );
+            const governanceInput =
+                document.getElementById('governance_document');
+            governanceInput.required = !state.hasGovernanceDocument;
+            if (state.hasGovernanceDocument) {
+                elements.clauseFeedback.textContent =
+                    'A governance / MOU clauses file is already attached. Choose a replacement only when the document has changed.';
+                elements.clauseFeedback.classList.remove('d-none');
             }
             if (!control('program_applicant_name').value.trim()) {
                 control('program_applicant_name').value =
@@ -1150,43 +1363,44 @@
         selectPartner(id, !state.selectedPartnerIds.has(id));
     });
     elements.selectedPartners.addEventListener('click', (event) => {
+        const editButton = event.target.closest('[data-edit-partner]');
+        if (editButton) {
+            openPartnerEditor(
+                state.partners.get(editButton.dataset.editPartner) || null
+            );
+            return;
+        }
         const button = event.target.closest('[data-remove-partner]');
         if (button) {
             selectPartner(button.dataset.removePartner, false);
         }
     });
     document.querySelector('[data-show-new-partner]').addEventListener('click', () => {
-        elements.newPartnerPanel.classList.remove('d-none');
-        if (!control('new_partner_name').value.trim()) {
-            control('new_partner_name').value =
-                elements.partnerSearch.value.trim();
-        }
-        if (
-            control('geographic_scope').value === 'LOCAL'
-            && !control('new_partner_country').value.trim()
-        ) {
-            control('new_partner_country').value = 'Bahrain';
-        }
-        control('new_partner_name').focus();
+        openPartnerEditor();
     });
     document.querySelector('[data-close-new-partner]').addEventListener('click', () => {
+        resetPartnerEditor();
         elements.newPartnerPanel.classList.add('d-none');
     });
-    elements.createPartner.addEventListener('click', createPartner);
+    elements.createPartner.addEventListener('click', savePartner);
 
     document.querySelectorAll('[data-toggle-section], [data-auto-renew]')
         .forEach((checkbox) => {
             checkbox.addEventListener('change', syncConditionalSections);
         });
 
-    control('geographic_scope').addEventListener('change', () => {
-        renderSelectedPartners();
-        validatePartnerSelection(true);
-    });
-
     document.querySelector('[data-apply-program-suggestions]')
         .addEventListener('click', applyProgramSuggestions);
     elements.extractClauses.addEventListener('click', extractClauses);
+    document.getElementById('governance_document')
+        .addEventListener('change', () => {
+            state.hasGovernanceDocument = false;
+            elements.clauseFeedback.classList.add('d-none');
+            if (document.getElementById('governance_document').files?.length) {
+                extractClauses();
+            }
+            updateAllSectionStatuses();
+        });
     document.getElementById('agreement_media')
         .addEventListener('change', renderMediaFileList);
 

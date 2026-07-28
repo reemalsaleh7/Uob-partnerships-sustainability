@@ -129,7 +129,7 @@ try {
         exit;
     }
 
-    if ($requestPath === '/partners') {
+    if (preg_match('#^/partners(?:/|$)#', $requestPath)) {
         require dirname(__DIR__) . '/routes/partners.php';
         exit;
     }

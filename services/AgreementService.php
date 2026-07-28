@@ -14,6 +14,13 @@ require_once __DIR__ . '/../services/DocumentStorageService.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 require_once __DIR__ . '/../repositories/PartnerRepository.php';
 class AgreementService {
+    private const PARTNER_TYPES = [
+        'PUBLIC_GOVERNMENT',
+        'PRIVATE',
+        'ACADEMIC',
+        'NON_PROFIT',
+    ];
+
     private AgreementRepository $agreementRepo;
     private ApprovalService $approvalService;
     private AgreementVersionRepository $agreementVersionRepo;
@@ -39,6 +46,7 @@ class AgreementService {
     }
 
     public function createAgreement(array $data): array {
+        $data = $this->withDerivedPartnerScope($data);
         $errors = array_merge(
             AgreementValidator::validateCreate($data),
             $this->validatePartnerSelection($data)
@@ -72,6 +80,7 @@ class AgreementService {
     }
 
     public function updateAgreement(int $agreementId, array $data): array {
+        $data = $this->withDerivedPartnerScope($data);
         $errors = array_merge(
             AgreementValidator::validateUpdate($data),
             $this->validatePartnerSelection($data)
@@ -211,6 +220,15 @@ class AgreementService {
         }
 
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (
+            !$this->agreementDocumentRepo->hasDocumentType(
+                $agreementId,
+                'GOVERNANCE_CLAUSES'
+            )
+        ) {
+            $submissionErrors[] =
+                'Upload the governance / MOU clauses DOCX file before submission';
+        }
         if (!empty($submissionErrors)) {
             if ($ownsTransaction && $db->inTransaction()) {
                 $db->rollBack();
@@ -330,6 +348,15 @@ class AgreementService {
         }
 
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (
+            !$this->agreementDocumentRepo->hasDocumentType(
+                $agreementId,
+                'GOVERNANCE_CLAUSES'
+            )
+        ) {
+            $submissionErrors[] =
+                'Upload the governance / MOU clauses DOCX file before resubmission';
+        }
         if (!empty($submissionErrors)) {
             return ['success' => false, 'errors' => $submissionErrors];
         }
@@ -425,6 +452,18 @@ class AgreementService {
         if (!in_array($normalizedType, $allowedTypes, true)) {
             throw new InvalidArgumentException(
                 'Select a valid document type'
+            );
+        }
+
+        if (
+            $normalizedType === 'GOVERNANCE_CLAUSES'
+            && strtolower(pathinfo(
+                (string) ($uploadedFile['name'] ?? ''),
+                PATHINFO_EXTENSION
+            )) !== 'docx'
+        ) {
+            throw new InvalidArgumentException(
+                'Governance / MOU clause documents must be DOCX so extraction can run automatically'
             );
         }
 
@@ -877,19 +916,66 @@ class AgreementService {
             return ['One or more selected partners are unavailable'];
         }
 
-        if (
-            strtoupper(trim((string) ($data['geographic_scope'] ?? '')))
-            === 'INTERNATIONAL'
-        ) {
-            foreach ($partners as $partner) {
-                if (trim((string) ($partner['country'] ?? '')) === '') {
-                    return [
-                        'Every international partner must have a country in its directory profile',
-                    ];
-                }
+        foreach ($partners as $partner) {
+            if (trim((string) ($partner['country'] ?? '')) === '') {
+                return [
+                    'Every selected partner must have a country so Agreement scope can be derived',
+                ];
+            }
+            if (!in_array(
+                strtoupper(trim((string) ($partner['partner_type'] ?? ''))),
+                self::PARTNER_TYPES,
+                true
+            )) {
+                return [
+                    'Every selected partner must be categorized as Public/government, Private, Academic, or Non-profit',
+                ];
             }
         }
 
         return [];
+    }
+
+    private function withDerivedPartnerScope(array $data): array
+    {
+        if (
+            !array_key_exists('partner_ids', $data)
+            && !array_key_exists('partner_id', $data)
+        ) {
+            return $data;
+        }
+
+        $partnerIds = $data['partner_ids'] ?? [];
+        if (!is_array($partnerIds)) {
+            $partnerIds = [];
+        }
+        if ($partnerIds === [] && !empty($data['partner_id'])) {
+            $partnerIds = [$data['partner_id']];
+        }
+        $partners = $this->partnerRepo->findActiveByIds($partnerIds);
+        if ($partners === []) {
+            return $data;
+        }
+
+        foreach ($partners as $partner) {
+            $country = trim((string) ($partner['country'] ?? ''));
+            if ($country === '') {
+                $data['geographic_scope'] = '';
+                return $data;
+            }
+            if (
+                preg_match(
+                    '/^(?:kingdom\s+of\s+)?bahrain$/iu',
+                    $country
+                ) !== 1
+            ) {
+                $data['geographic_scope'] = 'INTERNATIONAL';
+                return $data;
+            }
+        }
+
+        $data['geographic_scope'] = 'LOCAL';
+
+        return $data;
     }
 }

@@ -78,6 +78,34 @@ class AgreementValidator {
             $errors[] = 'At least one partner is required before submission';
         }
         if (
+            empty($data['auto_renew'])
+            && (
+                !isset($data['fixed_term_months'])
+                || filter_var(
+                    $data['fixed_term_months'],
+                    FILTER_VALIDATE_INT
+                ) === false
+                || (int) $data['fixed_term_months'] < 1
+            )
+        ) {
+            $errors[] =
+                'Agreement term in months is required when automatic renewal is disabled';
+        }
+        if (
+            !empty($data['auto_renew'])
+            && (
+                !isset($data['renewal_term_months'])
+                || filter_var(
+                    $data['renewal_term_months'],
+                    FILTER_VALIDATE_INT
+                ) === false
+                || (int) $data['renewal_term_months'] < 1
+            )
+        ) {
+            $errors[] =
+                'Each automatic renewal term must be at least one month';
+        }
+        if (
             strtoupper(trim((string) ($data['geographic_scope'] ?? '')))
             === 'INTERNATIONAL'
         ) {
@@ -116,9 +144,16 @@ class AgreementValidator {
             $errors[] = 'End date cannot be earlier than start date';
         }
 
-        foreach (['renewal_term_months', 'non_renewal_notice_months', 'termination_notice_months'] as $field) {
+        foreach (['fixed_term_months', 'renewal_term_months', 'non_renewal_notice_months', 'termination_notice_months'] as $field) {
             $value = $data[$field] ?? null;
-            if ($value !== null && $value !== '' && (!is_numeric($value) || (int) $value < 0)) {
+            if (
+                $value !== null
+                && $value !== ''
+                && (
+                    filter_var($value, FILTER_VALIDATE_INT) === false
+                    || (int) $value < 0
+                )
+            ) {
                 $errors[] = str_replace('_', ' ', ucfirst($field)) . ' must be zero or greater';
             }
         }
