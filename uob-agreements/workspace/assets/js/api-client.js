@@ -481,6 +481,11 @@
         partners() {
             return request('/partners');
         },
+        lookupPartner(name) {
+            return request(
+                `/partners/lookup?name=${encodeURIComponent(name)}`
+            );
+        },
         partnerAgreementContext(id, excludeAgreementId = null) {
             const query = excludeAgreementId
                 ? `?exclude_agreement_id=${encodeURIComponent(excludeAgreementId)}`

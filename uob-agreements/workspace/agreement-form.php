@@ -183,7 +183,7 @@ $sdgs = [
     ); ?>
     <div class="form-section"><div class="row g-4">
         <?php field('title', 'Agreement title (English) *', 'text', 'col-md-6', 'maxlength="255" required autocomplete="off"'); ?>
-        <?php field('title_ar', 'اسم مشروع التعاون (العربية)', 'text', 'col-md-6', 'maxlength="255" dir="rtl" lang="ar"'); ?>
+        <?php field('title_ar', 'اسم مشروع التعاون (العربية) *', 'text', 'col-md-6', 'maxlength="255" dir="rtl" lang="ar" required'); ?>
         <div class="col-md-6">
             <label for="agreement_type" class="form-label">Type of cooperative project *</label>
             <select id="agreement_type" name="agreement_type" class="form-select" required>
@@ -209,7 +209,7 @@ $sdgs = [
                     <input id="partner-search" type="search" class="form-control" placeholder="Search by organization, type, country, or website" autocomplete="off" data-partner-search>
                     <span class="partner-search-count" data-partner-search-count></span>
                 </div>
-                <div class="partner-results" role="listbox" aria-label="Available partner organizations" data-partner-results></div>
+                <div class="partner-results" role="listbox" aria-label="Available partner organizations" data-partner-results hidden></div>
                 <select id="partner_ids" name="partner_id" class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
                 <div class="partner-selection-heading">
                     <strong>Selected partner</strong>
@@ -247,6 +247,16 @@ $sdgs = [
                     <?php field('new_partner_country', 'Country *', 'text', 'col-md-3', 'maxlength="100" autocomplete="country-name"'); ?>
                     <?php field('new_partner_website', 'Website', 'url', 'col-md-6', 'maxlength="255" placeholder="https://..."'); ?>
                     <?php textArea('new_partner_profile', 'Brief partner profile', 'Describe the organization’s purpose, expertise, and relevance to the cooperation.', 3, 'maxlength="4000"'); ?>
+                    <div class="col-12">
+                        <div class="partner-lookup-actions">
+                            <button type="button" class="btn btn-outline-primary" data-lookup-partner>
+                                <span data-lookup-partner-label>Search the web for partner details</span>
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" data-lookup-partner-spinner aria-hidden="true"></span>
+                            </button>
+                            <span class="small text-secondary">Suggestions use public Wikidata records and fill only empty fields. Review them before saving.</span>
+                        </div>
+                        <div class="partner-lookup-feedback d-none mt-2" role="status" aria-live="polite" data-partner-lookup-feedback></div>
+                    </div>
                     <div class="col-12 d-flex justify-content-end">
                         <button type="button" class="btn btn-primary" data-create-partner>
                             <span data-create-partner-label>Add and select partner</span>
@@ -288,18 +298,18 @@ $sdgs = [
         </div>
         <?php field(
             'signing_date',
-            'Signing date',
+            'Signing date *',
             'date',
             'col-md-3',
-            '',
+            'required',
             'The date the authorized parties sign the approved instrument.'
         ); ?>
         <?php field(
             'effective_date',
-            'Effective date',
+            'Effective date *',
             'date',
             'col-md-3',
-            '',
+            'required',
             'The date the signed Agreement becomes operational/legal. It may be the signing date or a later date and is separate from activity start.'
         ); ?>
 
@@ -438,8 +448,8 @@ $sdgs = [
                 <div class="clause-extraction-feedback d-none" role="status" aria-live="polite" data-clause-feedback></div>
             </div>
         </div>
-        <?php textArea('collaboration_areas', 'Fields of cooperation / MOU Article 1 *', 'Automatically suggested from the uploaded file when the article can be identified.', 4, 'required'); ?>
-        <?php textArea('implementation_methods', 'Implementation methods / MOU Article 2 *', 'Automatically suggested from the uploaded file when the article can be identified.', 4, 'required'); ?>
+        <?php textArea('collaboration_areas', 'Fields of cooperation / MOU Article 1', 'Automatically suggested from the uploaded file when the article can be identified. This extracted field is optional and may be corrected by the creator.', 4); ?>
+        <?php textArea('implementation_methods', 'Implementation methods / MOU Article 2', 'Automatically suggested from the uploaded file when the article can be identified. This extracted field is optional and may be corrected by the creator.', 4); ?>
         <div class="col-12">
             <div class="form-check"><input id="annual_report_required" name="annual_report_required" class="form-check-input" type="checkbox" checked><label for="annual_report_required" class="form-check-label">Annual joint performance report required</label></div>
         </div>
@@ -458,16 +468,16 @@ $sdgs = [
         7,
         'contacts',
         'Coordinators and signatories',
-        'Review the coordinators and signatories extracted from the uploaded governance / MOU file; blank optional rows are ignored.'
+        'Review the coordinators and signatories extracted from the uploaded governance / MOU file; every field is required.'
     ); ?>
     <div class="form-section"><div class="row g-4">
         <?php foreach ([['UOB','COORDINATOR','UOB coordinator'],['PARTNER','COORDINATOR','Partner coordinator'],['UOB','SIGNATORY','UOB signatory'],['PARTNER','SIGNATORY','Partner signatory']] as $index => $contact): ?>
             <fieldset class="col-12 contact-row" data-contact-row data-party-type="<?= $contact[0] ?>" data-contact-role="<?= $contact[1] ?>">
                 <legend class="h6 mb-3"><?= $contact[2] ?></legend><div class="row g-3">
-                    <?php field('contact_' . $index . '_name', 'Full name', 'text', 'col-md-3'); ?>
-                    <?php field('contact_' . $index . '_title', 'Job title', 'text', 'col-md-3'); ?>
-                    <?php field('contact_' . $index . '_email', 'Email', 'email', 'col-md-3'); ?>
-                    <?php field('contact_' . $index . '_phone', 'Phone', 'tel', 'col-md-3'); ?>
+                    <?php field('contact_' . $index . '_name', 'Full name *', 'text', 'col-md-3', 'required'); ?>
+                    <?php field('contact_' . $index . '_title', 'Job title *', 'text', 'col-md-3', 'required'); ?>
+                    <?php field('contact_' . $index . '_email', 'Email *', 'email', 'col-md-3', 'required'); ?>
+                    <?php field('contact_' . $index . '_phone', 'Phone *', 'tel', 'col-md-3', 'required'); ?>
                 </div>
             </fieldset>
         <?php endforeach; ?>
@@ -517,7 +527,9 @@ $sdgs = [
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" data-label-for="responsible_entity">Responsible implementing entity *</label>
-                    <input type="text" class="form-control" maxlength="255" required data-program-field="responsible_entity">
+                    <select class="form-select" required data-program-field="responsible_entity" data-program-responsible-entity>
+                        <option value="">Select responsible entity</option>
+                    </select>
                     <div class="invalid-feedback">Responsible entity is required.</div>
                 </div>
                 <div class="col-12">
@@ -535,18 +547,13 @@ $sdgs = [
                     <textarea class="form-control" rows="3" required data-program-field="expected_outputs"></textarea>
                     <div class="invalid-feedback">Expected outputs and outcomes are required.</div>
                 </div>
-                <div class="col-md-8">
+                <div class="col-12">
                     <label class="form-label" data-label-for="duration">Programme duration *</label>
                     <input type="text" class="form-control" required readonly placeholder="Choose both dates in one calendar" data-date-range data-program-range data-start-target="" data-end-target="">
                     <input type="hidden" data-program-field="start_date">
                     <input type="hidden" data-program-field="end_date">
                     <div class="date-range-summary" data-range-summary></div>
                     <div class="invalid-feedback">Select both programme dates.</div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" data-label-for="applicant_name">Programme applicant name *</label>
-                    <input type="text" class="form-control" required readonly aria-readonly="true" data-program-field="applicant_name">
-                    <div class="form-text">Filled automatically from the signed-in University account.</div>
                 </div>
             </div>
         </article>
@@ -567,9 +574,9 @@ $sdgs = [
         ] as $code => $label): ?>
             <div class="col-12 metric-row" data-metric-row data-metric-code="<?= $code ?>"><div class="row g-3 align-items-end">
                 <div class="col-md-3"><span class="form-label d-block mb-2"><?= $label ?></span></div>
-                <?php field('metric_' . strtolower($code) . '_planned', 'Planned number', 'number', 'col-md-2', 'min="0"'); ?>
-                <?php field('metric_' . strtolower($code) . '_actual', 'Actual number', 'number', 'col-md-2', 'min="0"'); ?>
-                <?php field('metric_' . strtolower($code) . '_notes', 'Notes', 'text', 'col-md-5'); ?>
+                <?php field('metric_' . strtolower($code) . '_planned', 'Planned number *', 'number', 'col-md-2', 'min="0" required'); ?>
+                <?php field('metric_' . strtolower($code) . '_actual', 'Actual number *', 'number', 'col-md-2', 'min="0" required'); ?>
+                <?php field('metric_' . strtolower($code) . '_notes', 'Notes *', 'text', 'col-md-5', 'required'); ?>
             </div></div>
         <?php endforeach; ?>
     </div></div>
@@ -603,5 +610,5 @@ $sdgs = [
 
 <?php workspaceFooter([
     'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js',
-    'assets/js/agreement-form.js?v=20260728-guided-form-v2',
+    'assets/js/agreement-form.js?v=20260729-guided-form-v4',
 ]); ?>

@@ -27,6 +27,10 @@
         createPartnerSpinner: document.querySelector('[data-create-partner-spinner]'),
         partnerEditorTitle: document.querySelector('[data-partner-editor-title]'),
         partnerEditorHelp: document.querySelector('[data-partner-editor-help]'),
+        lookupPartner: document.querySelector('[data-lookup-partner]'),
+        lookupPartnerLabel: document.querySelector('[data-lookup-partner-label]'),
+        lookupPartnerSpinner: document.querySelector('[data-lookup-partner-spinner]'),
+        partnerLookupFeedback: document.querySelector('[data-partner-lookup-feedback]'),
         derivedPartnerScope: document.querySelector('[data-derived-partner-scope]'),
         partnerAgreementContext: document.querySelector(
             '[data-partner-agreement-context]'
@@ -65,6 +69,8 @@
         editingPartnerId: null,
         hasGovernanceDocument: false,
         autoAdvancedSections: new Set(),
+        visitedSections: new Set(),
+        validationAttempted: false,
         programSuggestions: {},
         nextProgramIndex: 0
     };
@@ -87,6 +93,10 @@
         'training_programs', 'annual_report_required'
     ];
     const sectionNodes = [...document.querySelectorAll('[data-form-section]')];
+    const requiredSectionNumbers = new Set([
+        '1', '2', '3', '6', '7', '8', '9'
+    ]);
+    const optionalSectionNumbers = new Set(['4', '5', '10']);
 
     function control(name) {
         return form.elements.namedItem(name);
@@ -207,11 +217,17 @@
 
     function renderPartnerResults() {
         const query = normalized(elements.partnerSearch.value);
-        const matches = [...state.partners.values()].filter((partner) =>
-            query === '' || partnerSearchText(partner).includes(query)
-        );
-
         elements.partnerResults.replaceChildren();
+        if (query === '') {
+            elements.partnerResults.hidden = true;
+            elements.partnerSearchCount.textContent = '';
+            return;
+        }
+
+        const matches = [...state.partners.values()].filter((partner) =>
+            partnerSearchText(partner).includes(query)
+        );
+        elements.partnerResults.hidden = false;
         matches.slice(0, 30).forEach((partner) => {
             elements.partnerResults.appendChild(partnerResultNode(partner));
         });
@@ -353,6 +369,10 @@
         elements.partnerError.classList.toggle(
             'd-none',
             selected.length !== 0
+                || (
+                    !state.validationAttempted
+                    && !state.visitedSections.has('1')
+                )
         );
         syncPartnerSelect();
         renderPartnerResults();
@@ -593,6 +613,7 @@
         if (!state.partners.has(id)) {
             return;
         }
+        state.visitedSections.add('1');
 
         if (selected) {
             state.selectedPartnerIds.clear();
@@ -712,6 +733,8 @@
             'Add a partner to the University directory';
         elements.partnerEditorHelp.textContent =
             'The new profile becomes reusable in future Agreements. Selected profiles can also be corrected through their Edit details action.';
+        elements.partnerLookupFeedback.classList.add('d-none');
+        elements.partnerLookupFeedback.textContent = '';
         setPartnerCreateBusy(false);
     }
 
@@ -738,9 +761,61 @@
         } else {
             control('new_partner_name').value =
                 elements.partnerSearch.value.trim();
+            if (control('new_partner_name').value !== '') {
+                window.setTimeout(lookupPartnerDetails, 0);
+            }
         }
 
         control('new_partner_name').focus();
+    }
+
+    function setPartnerLookupBusy(isBusy) {
+        elements.lookupPartner.disabled = isBusy;
+        elements.lookupPartnerLabel.textContent = isBusy
+            ? 'Searching public records…'
+            : 'Search the web for partner details';
+        elements.lookupPartnerSpinner.classList.toggle('d-none', !isBusy);
+    }
+
+    async function lookupPartnerDetails() {
+        const name = control('new_partner_name').value.trim();
+        control('new_partner_name').classList.toggle('is-invalid', name === '');
+        if (name === '') {
+            control('new_partner_name').focus();
+            return;
+        }
+
+        setPartnerLookupBusy(true);
+        elements.partnerLookupFeedback.classList.add('d-none');
+        try {
+            const suggestion = await AgreementApi.lookupPartner(name);
+            const mapping = {
+                partner_type: 'new_partner_type',
+                country: 'new_partner_country',
+                website: 'new_partner_website',
+                profile: 'new_partner_profile'
+            };
+            let applied = 0;
+            Object.entries(mapping).forEach(([source, targetName]) => {
+                const target = control(targetName);
+                const value = String(suggestion[source] || '').trim();
+                if (target && target.value.trim() === '' && value !== '') {
+                    target.value = value;
+                    target.classList.remove('is-invalid', 'is-valid');
+                    applied += 1;
+                }
+            });
+            elements.partnerLookupFeedback.textContent = applied > 0
+                ? `${applied} empty partner field${applied === 1 ? '' : 's'} filled from ${suggestion.source_label || 'a public record'}. Review the suggestions before saving.`
+                : 'A public record was found, but it did not contain additional values for the empty fields.';
+            elements.partnerLookupFeedback.classList.remove('d-none');
+        } catch (error) {
+            elements.partnerLookupFeedback.textContent =
+                error.message || 'No reliable public partner record was found.';
+            elements.partnerLookupFeedback.classList.remove('d-none');
+        } finally {
+            setPartnerLookupBusy(false);
+        }
     }
 
     async function savePartner() {
@@ -796,6 +871,7 @@
             resetPartnerEditor();
             elements.newPartnerPanel.classList.add('d-none');
             elements.partnerSearch.value = '';
+            renderPartnerResults();
             showFeedback(wasEditing
                 ? 'The shared partner directory profile was updated.'
                 : (partner.already_existed
@@ -983,6 +1059,55 @@
         });
     }
 
+    function responsibleEntityChoices() {
+        const universityContext = state.user
+            ? AgreementApi.primaryContext(state.user)
+            : '';
+        const partnerName = [...state.selectedPartnerIds]
+            .map((id) => state.partners.get(id)?.organization_name)
+            .find(Boolean) || '';
+
+        return [
+            universityContext,
+            partnerName,
+            universityContext && partnerName
+                ? `${universityContext} and ${partnerName}`
+                : ''
+        ].filter((value, index, values) =>
+            value !== '' && values.indexOf(value) === index
+        );
+    }
+
+    function populateResponsibleEntitySelect(select, selectedValue = '') {
+        const values = responsibleEntityChoices();
+        if (selectedValue && !values.includes(selectedValue)) {
+            values.push(selectedValue);
+        }
+        select.replaceChildren();
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select responsible entity';
+        select.appendChild(placeholder);
+        values.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+        select.value = selectedValue;
+    }
+
+    function refreshResponsibleEntityOptions() {
+        programRows().forEach((row) => {
+            const select = row.querySelector(
+                '[data-program-responsible-entity]'
+            );
+            if (select) {
+                populateResponsibleEntitySelect(select, select.value);
+            }
+        });
+    }
+
     function addProgram(program = {}) {
         const fragment = elements.programTemplate.content.cloneNode(true);
         const row = fragment.querySelector('[data-program-row]');
@@ -994,11 +1119,14 @@
             const field = input.dataset.programField;
             input.id = `program_${index}_${field}`;
             input.name = `executive_programs[${index}][${field}]`;
-            input.value = program[field] || (
-                field === 'applicant_name' && state.user
-                    ? applicantName(state.user)
-                    : ''
-            );
+            if (field === 'responsible_entity') {
+                populateResponsibleEntitySelect(
+                    input,
+                    program[field] || ''
+                );
+            } else {
+                input.value = program[field] || '';
+            }
             const label = row.querySelector(`[data-label-for="${field}"]`);
             label?.setAttribute('for', input.id);
         });
@@ -1043,8 +1171,7 @@
             objectives: value('objectives'),
             expected_outputs: value('expected_outputs'),
             start_date: value('start_date'),
-            end_date: value('end_date'),
-            applicant_name: value('applicant_name')
+            end_date: value('end_date')
         };
     }
 
@@ -1244,8 +1371,8 @@
     }
 
     function sectionHasRequiredFields(section) {
-        return section.querySelector('[required]') !== null
-            || section.dataset.sectionNumber === '1';
+        return requiredSectionNumbers.has(section.dataset.sectionNumber)
+            || section.querySelector('[required]') !== null;
     }
 
     function sectionHasMeaningfulValue(section) {
@@ -1262,60 +1389,81 @@
                         && (input.files?.length || 0) > 0;
                 }
                 if (['checkbox', 'radio'].includes(input.type)) {
-                    return input.checked;
+                    return input.checked !== input.defaultChecked;
                 }
-                return input.value.trim() !== '';
+                return input.value.trim() !== ''
+                    && input.value !== input.defaultValue;
             });
     }
 
     function sectionIsComplete(section) {
+        const number = section.dataset.sectionNumber;
         const required = [...section.querySelectorAll('[required]')]
             .filter((input) => !input.closest('.d-none'));
         const controlsValid = required.every((input) => input.checkValidity());
-        if (section.dataset.sectionNumber === '1') {
+        if (number === '1') {
             return controlsValid && validatePartnerSelection(false);
         }
-        if (section.dataset.sectionNumber === '2') {
+        if (number === '2') {
             return controlsValid
                 && control('start_date').value !== ''
                 && control('end_date').value !== '';
         }
-        if (section.dataset.sectionNumber === '8') {
+        if (number === '6') {
+            const selectedDocument =
+                document.getElementById('governance_document').files?.length > 0;
+            return controlsValid
+                && (state.hasGovernanceDocument || selectedDocument);
+        }
+        if (number === '8') {
             return controlsValid && validatePrograms(false);
+        }
+        if (optionalSectionNumbers.has(number)) {
+            return state.visitedSections.has(number) && controlsValid;
         }
         if (required.length > 0) {
             return controlsValid;
         }
-        return sectionHasMeaningfulValue(section);
+        return state.visitedSections.has(number);
+    }
+
+    function sectionNeedsAttention(section) {
+        if (!sectionHasRequiredFields(section) || sectionIsComplete(section)) {
+            return false;
+        }
+        return state.validationAttempted
+            || state.visitedSections.has(section.dataset.sectionNumber)
+            || sectionHasMeaningfulValue(section);
     }
 
     function updateSectionStatus(section) {
         const status = section.querySelector('[data-section-status]');
         const complete = sectionIsComplete(section);
-        const started = sectionHasMeaningfulValue(section);
         const required = sectionHasRequiredFields(section);
+        const needsAttention = sectionNeedsAttention(section);
 
         status.className = 'section-status';
-        section.classList.remove('has-error', 'is-complete');
+        section.classList.remove('has-error', 'is-complete', 'needs-attention');
         if (complete) {
             status.textContent = 'Complete';
             status.classList.add('section-status-complete');
             section.classList.add('is-complete');
-        } else if (required && started) {
+        } else if (needsAttention) {
             status.textContent = 'Needs attention';
             status.classList.add('section-status-error');
+            section.classList.add('needs-attention');
             if (section.querySelector('[data-section-body]').hidden) {
                 section.classList.add('has-error');
             }
         } else if (required) {
             status.textContent = 'Not started';
             status.classList.add('section-status-pending');
-        } else if (started) {
-            status.textContent = 'In progress';
-            status.classList.add('section-status-progress');
-        } else {
-            status.textContent = 'Optional';
+        } else if (optionalSectionNumbers.has(section.dataset.sectionNumber)) {
+            status.textContent = 'Optional · open to review';
             status.classList.add('section-status-optional');
+        } else {
+            status.textContent = 'Not started';
+            status.classList.add('section-status-pending');
         }
     }
 
@@ -1337,12 +1485,11 @@
                         === step.dataset.stepTarget
                 );
                 const complete = section && sectionIsComplete(section);
-                const started = section && sectionHasMeaningfulValue(section);
                 const current = section === firstIncomplete;
                 step.classList.toggle('is-complete', Boolean(complete));
                 step.classList.toggle(
                     'needs-attention',
-                    Boolean(!complete && started)
+                    Boolean(section && sectionNeedsAttention(section))
                 );
                 step.classList.toggle('is-current', current);
                 if (current) {
@@ -1380,7 +1527,9 @@
         state.autoAdvancedSections.add(section.dataset.sectionNumber);
         window.setTimeout(() => {
             setSectionOpen(section, false);
+            state.visitedSections.add(next.dataset.sectionNumber);
             setSectionOpen(next, true);
+            updateAllSectionStatuses();
             next.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 350);
     }
@@ -1392,6 +1541,7 @@
     }
 
     function validateForm() {
+        state.validationAttempted = true;
         let dateRangesValid = true;
         document.querySelectorAll('[data-date-range][required]').forEach((input) => {
             const start = rangeTarget(input, 'startTarget')?.value || '';
@@ -1404,6 +1554,9 @@
         const partnersValid = validatePartnerSelection(true);
         const programsValid = validatePrograms(true);
         const nativeValid = form.checkValidity();
+        form.querySelectorAll('input, select, textarea').forEach((input) => {
+            updateControlFeedback(input, true);
+        });
         updateAllSectionStatuses();
 
         if (
@@ -1429,8 +1582,21 @@
         return true;
     }
 
-    function applicantName(user) {
-        return AgreementApi.displayName(user);
+    function updateControlFeedback(input, force = false) {
+        if (
+            !input
+            || ['hidden', 'button', 'submit', 'reset', 'checkbox', 'radio']
+                .includes(input.type)
+            || input.closest('.d-none')
+        ) {
+            return;
+        }
+        input.classList.remove('is-valid');
+        const shouldShow = force || input.dataset.touched === 'true';
+        input.classList.toggle(
+            'is-invalid',
+            shouldShow && !input.checkValidity()
+        );
     }
 
     const programSuggestionLabels = Object.freeze({
@@ -1440,8 +1606,7 @@
         objectives: 'Objectives',
         expected_outputs: 'Expected outputs',
         start_date: 'Start date',
-        end_date: 'End date',
-        applicant_name: 'Applicant'
+        end_date: 'End date'
     });
 
     function renderProgramSuggestions() {
@@ -1472,27 +1637,27 @@
             .map((id) => state.partners.get(id)?.organization_name)
             .filter(Boolean);
         const context = AgreementApi.primaryContext(state.user);
+        refreshResponsibleEntityOptions();
 
         state.programSuggestions = {
             title: agreementTitle
                 ? `${agreementTitle} — Executive Programme`
                 : '',
             responsible_entity: [context, partners.join(', ')]
-                .filter(Boolean).join(' with '),
+                .filter(Boolean).join(' and '),
             description: agreementTitle
                 ? `Implementation programme for ${agreementTitle}${partners.length ? ` with ${partners.join(', ')}` : ''}.${focusAreas ? ` Focus areas: ${focusAreas}.` : ''}`
                 : '',
             objectives,
             expected_outputs: expectedValue,
             start_date: control('start_date').value,
-            end_date: control('end_date').value,
-            applicant_name: applicantName(state.user)
+            end_date: control('end_date').value
         };
 
         const readyCount = Object.values(state.programSuggestions)
             .filter((value) => String(value || '').trim() !== '').length;
-        elements.programSuggestionText.textContent = readyCount === 8
-            ? `Suggestions are ready for all programme fields from the Agreement title, ${partners.length} selected partner${partners.length === 1 ? '' : 's'}, objectives, impact, duration, and signed-in applicant. Existing programme text will not be overwritten.`
+        elements.programSuggestionText.textContent = readyCount === 7
+            ? `Suggestions are ready for all programme fields from the Agreement title, ${partners.length} selected partner${partners.length === 1 ? '' : 's'}, objectives, impact, and duration. Existing programme text will not be overwritten.`
             : 'Complete the title, partners, objectives, impact, and duration to generate more useful programme suggestions.';
         renderProgramSuggestions();
     }
@@ -1503,8 +1668,7 @@
             'responsible_entity',
             'description',
             'objectives',
-            'expected_outputs',
-            'applicant_name'
+            'expected_outputs'
         ];
         programRows().forEach((row) => {
             mapping.forEach((field) => {
@@ -1624,10 +1788,18 @@
             let applied = 0;
             Object.entries(result.fields || {}).forEach(([name, value]) => {
                 const target = control(name);
-                if (target && !target.value.trim() && String(value).trim()) {
+                if (
+                    target
+                    && (
+                        !target.value.trim()
+                        || target.dataset.extractionSuggested === 'true'
+                    )
+                    && String(value).trim()
+                ) {
                     target.value = value;
                     target.lang = result.language || '';
                     target.dir = result.language === 'ar' ? 'rtl' : 'ltr';
+                    target.dataset.extractionSuggested = 'true';
                     applied += 1;
                 }
             });
@@ -1676,6 +1848,13 @@
     async function initialize() {
         try {
             initializeDateRanges();
+            sectionNodes.forEach((section) => {
+                const toggle = section.querySelector('[data-section-toggle]');
+                setSectionOpen(
+                    section,
+                    toggle?.getAttribute('aria-expanded') === 'true'
+                );
+            });
             state.agreementId = readAgreementId();
             state.isEdit = state.agreementId !== null;
             state.user = await AgreementApi.requireSession(
@@ -1737,13 +1916,20 @@
         button.addEventListener('click', () => {
             const section = button.closest('[data-form-section]');
             const isOpen = button.getAttribute('aria-expanded') === 'true';
+            if (!isOpen) {
+                state.visitedSections.add(section.dataset.sectionNumber);
+            }
             setSectionOpen(section, !isOpen);
-            updateSectionStatus(section);
+            updateAllSectionStatuses();
         });
     });
 
     document.querySelector('[data-expand-all]').addEventListener('click', () => {
-        sectionNodes.forEach((section) => setSectionOpen(section, true));
+        sectionNodes.forEach((section) => {
+            state.visitedSections.add(section.dataset.sectionNumber);
+            setSectionOpen(section, true);
+        });
+        updateAllSectionStatuses();
     });
     document.querySelector('[data-collapse-all]').addEventListener('click', () => {
         sectionNodes.forEach((section) => setSectionOpen(section, false));
@@ -1757,12 +1943,17 @@
                 candidate.dataset.sectionNumber === step.dataset.stepTarget
         );
         if (!section) return;
+        state.visitedSections.add(section.dataset.sectionNumber);
         setSectionOpen(section, true);
+        updateAllSectionStatuses();
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         window.setTimeout(() => {
-            section.querySelector('input, select, textarea, button')?.focus({
-                preventScroll: true
-            });
+            section.querySelector(
+                '[data-section-body] input:not([type="hidden"]), '
+                + '[data-section-body] select, '
+                + '[data-section-body] textarea, '
+                + '[data-section-body] button'
+            )?.focus({ preventScroll: true });
         }, 400);
     });
 
@@ -1802,6 +1993,18 @@
         elements.newPartnerPanel.classList.add('d-none');
     });
     elements.createPartner.addEventListener('click', savePartner);
+    elements.lookupPartner.addEventListener('click', lookupPartnerDetails);
+    [
+        'new_partner_name',
+        'new_partner_type',
+        'new_partner_country',
+        'new_partner_website',
+        'new_partner_profile'
+    ].forEach((name) => {
+        control(name).addEventListener('input', (event) => {
+            event.target.classList.remove('is-invalid', 'is-valid');
+        });
+    });
 
     document.querySelectorAll('[data-toggle-section], [data-auto-renew]')
         .forEach((checkbox) => {
@@ -1843,8 +2046,14 @@
 
     form.addEventListener('input', (event) => {
         const section = event.target.closest('[data-form-section]');
+        event.target.classList.remove('is-valid');
+        if (event.target.dataset.extractionSuggested === 'true') {
+            delete event.target.dataset.extractionSuggested;
+        }
         refreshProgramSuggestions();
         if (section) {
+            state.visitedSections.add(section.dataset.sectionNumber);
+            updateControlFeedback(event.target);
             updateSectionStatus(section);
         }
         updateAllSectionStatuses();
@@ -1853,6 +2062,8 @@
     form.addEventListener('change', (event) => {
         const section = event.target.closest('[data-form-section]');
         if (section) {
+            state.visitedSections.add(section.dataset.sectionNumber);
+            updateControlFeedback(event.target);
             updateSectionStatus(section);
             maybeAdvanceSection(section);
         }
@@ -1862,6 +2073,8 @@
     form.addEventListener('focusout', (event) => {
         const section = event.target.closest('[data-form-section]');
         if (section) {
+            event.target.dataset.touched = 'true';
+            updateControlFeedback(event.target);
             window.setTimeout(() => maybeAdvanceSection(section), 0);
         }
     });
@@ -1876,7 +2089,6 @@
         event.preventDefault();
         event.stopPropagation();
         clearMessages();
-        form.classList.add('was-validated');
         if (!validateForm()) return;
 
         try {

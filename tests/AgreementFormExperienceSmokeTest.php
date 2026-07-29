@@ -46,6 +46,9 @@ $agreementRoutes = agreementFormSource('routes/agreements.php');
 $clauseExtraction = agreementFormSource(
     'services/AgreementClauseExtractionService.php'
 );
+$partnerLookup = agreementFormSource(
+    'services/PartnerLookupService.php'
+);
 $documentRepository = agreementFormSource(
     'repositories/AgreementDocumentRepository.php'
 );
@@ -61,12 +64,16 @@ $fixedTermMigration = agreementFormSource(
 $trainedStudentsMigration = agreementFormSource(
     'uob-agreements/data/sql/migrations/20260728_183000_add_trained_students_metric.sql'
 );
+$partnerEnrichmentMigration = agreementFormSource(
+    'uob-agreements/data/sql/migrations/20260729_103000_enrich_existing_partner_profiles.sql'
+);
 
 agreementFormAssert(
     str_contains($form, 'Type of cooperative project')
         && str_contains($form, 'data-partner-search')
         && str_contains($form, 'data-selected-partners')
         && str_contains($form, 'data-show-new-partner')
+        && str_contains($form, 'data-partner-results hidden')
         && str_contains($form, 'data-edit-partner') === false
         && str_contains($javascript, 'dataset.editPartner'),
     'The searchable single-partner experience is incomplete'
@@ -90,6 +97,16 @@ agreementFormAssert(
             'CAST(:exclude_partner_id_empty AS BIGINT)'
         ),
     'Controlled partner types or audited existing-partner editing is incomplete'
+);
+agreementFormAssert(
+    str_contains($form, 'data-lookup-partner')
+        && str_contains($apiClient, 'lookupPartner(name)')
+        && str_contains($partnerRoutes, '/partners/lookup')
+        && str_contains($partnerLookup, "'wbsearchentities'")
+        && str_contains($partnerLookup, "'wbgetentities'")
+        && str_contains($partnerLookup, "'P856'")
+        && str_contains($partnerLookup, "'P17'"),
+    'The reviewable public partner lookup is incomplete'
 );
 agreementFormAssert(
     !str_contains($form, 'Use Ctrl')
@@ -138,6 +155,12 @@ agreementFormAssert(
     'Automatic Article 1/2, coordinator, and signatory extraction is incomplete'
 );
 agreementFormAssert(
+    str_contains($clauseExtraction, 'numberedArticleSection')
+        && str_contains($clauseExtraction, 'articleNumber')
+        && str_contains($javascript, 'extractionSuggested'),
+    'Article-aware extraction does not protect Article 2 from Article 1 grouping'
+);
+agreementFormAssert(
     str_contains($form, 'data-form-section')
         && str_contains($form, 'data-expand-all')
         && str_contains($form, 'data-collapse-all')
@@ -147,14 +170,20 @@ agreementFormAssert(
         && str_contains($styles, '.agreement-section-toggle')
         && str_contains($form, 'data-step-timeline')
         && str_contains($form, 'data-step-target=')
-        && str_contains($javascript, 'is-current'),
+        && str_contains($javascript, 'is-current')
+        && str_contains($javascript, 'visitedSections')
+        && str_contains($javascript, 'sectionNeedsAttention')
+        && str_contains($styles, '.agreement-form-section.needs-attention .agreement-section-number')
+        && str_contains($styles, '.partner-results[hidden]'),
     'The guided collapsible section workflow is incomplete'
 );
 agreementFormAssert(
-    str_contains($javascript, 'applicant_name')
+    !str_contains($form, 'Programme applicant name')
+        && !str_contains($javascript, 'applicant_name')
+        && str_contains($form, 'data-program-responsible-entity')
         && str_contains($javascript, 'refreshProgramSuggestions')
         && str_contains($javascript, 'selectedPartnersHaveRequiredCountries'),
-    'Applicant autofill, suggestions, or international-country validation is missing'
+    'Programme applicant removal, suggestions, responsible-entity choices, or international-country validation is incomplete'
 );
 agreementFormAssert(
     str_contains($partnerRepository, 'profile')
@@ -163,6 +192,16 @@ agreementFormAssert(
         && str_contains($partnerRepository, 'public function update')
         && str_contains($migration, 'ADD COLUMN IF NOT EXISTS profile'),
     'Partner profile storage and controlled creation are incomplete'
+);
+agreementFormAssert(
+    str_contains($partnerEnrichmentMigration, "THEN 'ACADEMIC'")
+        && str_contains($partnerEnrichmentMigration, "THEN 'NON_PROFIT'")
+        && str_contains($partnerEnrichmentMigration, 'SET profile = CASE')
+        && preg_match(
+            '/^[ \t]*(BEGIN|START[ \t]+TRANSACTION|COMMIT|ROLLBACK)[ \t]*;/mi',
+            $partnerEnrichmentMigration
+        ) === 0,
+    'Existing partner types and profiles are not enriched safely'
 );
 agreementFormAssert(
     str_contains($agreementService, 'validatePartnerSelection')
@@ -211,6 +250,31 @@ agreementFormAssert(
     'One-or-more executive-programme enforcement is incomplete'
 );
 agreementFormAssert(
+    str_contains(
+        $form,
+        "'title_ar', 'اسم مشروع التعاون (العربية) *'"
+    )
+        && str_contains($form, "'Signing date *'")
+        && str_contains($form, "'Effective date *'")
+        && !str_contains(
+            $form,
+            "'Fields of cooperation / MOU Article 1 *'"
+        )
+        && !str_contains(
+            $form,
+            "'Implementation methods / MOU Article 2 *'"
+        )
+        && substr_count($form, "'Full name *'") === 1
+        && str_contains($form, "'Planned number *'")
+        && str_contains($form, "'Actual number *'")
+        && str_contains($form, "'Notes *'")
+        && str_contains(
+            $agreementValidator,
+            'Every planned-outcome field is required before submission'
+        ),
+    'The revised mandatory and optional field rules are incomplete'
+);
+agreementFormAssert(
     str_contains($form, "'TRAINED_STUDENTS' => 'Trained students'")
         && str_contains($trainedStudentsMigration, "'TRAINED_STUDENTS'")
         && preg_match(
@@ -252,6 +316,43 @@ agreementFormAssert(
         $fixedTermMigration
     ) === 0,
     'The fixed-term migration must rely on the database manager transaction'
+);
+
+require_once dirname(__DIR__)
+    . '/services/AgreementClauseExtractionService.php';
+$extractor = new AgreementClauseExtractionService();
+$classifier = new ReflectionMethod(
+    AgreementClauseExtractionService::class,
+    'classifyClauses'
+);
+$classifier->setAccessible(true);
+$paragraphs = [
+    'Article 1 - Fields of Cooperation',
+    'Research, teaching, and student exchange.',
+    'Article 2 - Implementation Methods',
+    'Annual plans, named coordinators, and joint review.',
+    'Article 3 - Duration',
+    'This instrument remains in force for three years.',
+];
+$classified = $classifier->invoke(
+    $extractor,
+    implode("\n\n", $paragraphs),
+    $paragraphs
+);
+agreementFormAssert(
+    str_contains(
+        (string) ($classified['collaboration_areas'] ?? ''),
+        'Research, teaching'
+    )
+        && !str_contains(
+            (string) ($classified['collaboration_areas'] ?? ''),
+            'Implementation Methods'
+        )
+        && str_contains(
+            (string) ($classified['implementation_methods'] ?? ''),
+            'Annual plans'
+        ),
+    'Article 1 and Article 2 extraction are grouped incorrectly'
 );
 
 echo "Agreement form experience smoke test passed.\n";

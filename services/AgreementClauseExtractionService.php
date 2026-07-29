@@ -183,13 +183,11 @@ final class AgreementClauseExtractionService
 
     private function classifyClauses(string $text, array $paragraphs): array
     {
-        $articleHeading =
-            '/(?:\barticle\s*(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven)\b|المادة\s*(?:\d+|الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|الثامنة|التاسعة|العاشرة|الحادية\s+عشرة))/iu';
         $patterns = [
             'collaboration_areas' =>
-                '/(?:\barticle\s*(?:1|one)\b|fields?\s+of\s+cooperation|areas?\s+of\s+cooperation|المادة\s*(?:1|الأولى)|مجالات?\s+التعاون)/iu',
+                '/(?:fields?\s+of\s+cooperation|areas?\s+of\s+cooperation|مجالات?\s+التعاون)/iu',
             'implementation_methods' =>
-                '/(?:\barticle\s*(?:2|two)\b|implementation\s+methods?|means?\s+of\s+implementation|المادة\s*(?:2|الثانية)|أساليب?\s+التنفيذ|وسائل?\s+التنفيذ)/iu',
+                '/(?:implementation\s+methods?|means?\s+of\s+implementation|أساليب?\s+التنفيذ|وسائل?\s+التنفيذ)/iu',
             'monitoring_plan' => '/monitor|evaluat|annual report|progress report|متابع|تقييم|تقرير سنوي|تقارير دورية/iu',
             'confidentiality_terms' => '/confidential|non-disclosure|سرية|الإفصاح/iu',
             'intellectual_property_terms' => '/intellectual property|copyright|patent|ملكية فكرية|حقوق المؤلف|براءة/iu',
@@ -207,11 +205,18 @@ final class AgreementClauseExtractionService
                 ['collaboration_areas', 'implementation_methods'],
                 true
             )) {
-                $section = $this->articleSection(
+                $articleNumber =
+                    $field === 'collaboration_areas' ? 1 : 2;
+                $section = $this->numberedArticleSection(
                     $paragraphs,
-                    $pattern,
-                    $articleHeading
+                    $articleNumber
                 );
+                if ($section === '') {
+                    $section = $this->topicalSection(
+                        $paragraphs,
+                        $pattern
+                    );
+                }
                 if ($section !== '') {
                     $fields[$field] = $section;
                 }
@@ -235,23 +240,25 @@ final class AgreementClauseExtractionService
         return $fields;
     }
 
-    private function articleSection(
+    private function numberedArticleSection(
         array $paragraphs,
-        string $targetHeading,
-        string $anyArticleHeading
+        int $targetNumber
     ): string {
         $capturing = false;
         $section = [];
 
         foreach ($paragraphs as $paragraph) {
-            $isTarget = preg_match($targetHeading, $paragraph) === 1;
-            $isArticle = preg_match($anyArticleHeading, $paragraph) === 1;
-            if (!$capturing && $isTarget) {
+            $articleNumber = $this->articleNumber($paragraph);
+            if (!$capturing && $articleNumber === $targetNumber) {
                 $capturing = true;
                 $section[] = $paragraph;
                 continue;
             }
-            if ($capturing && $isArticle && !$isTarget) {
+            if (
+                $capturing
+                && $articleNumber !== null
+                && $articleNumber !== $targetNumber
+            ) {
                 break;
             }
             if ($capturing) {
@@ -263,6 +270,71 @@ final class AgreementClauseExtractionService
         }
 
         return trim(implode("\n\n", $section));
+    }
+
+    private function topicalSection(
+        array $paragraphs,
+        string $targetPattern
+    ): string {
+        foreach ($paragraphs as $index => $paragraph) {
+            if (preg_match($targetPattern, $paragraph) !== 1) {
+                continue;
+            }
+
+            $section = [$paragraph];
+            for (
+                $next = $index + 1;
+                $next < count($paragraphs) && count($section) < 20;
+                $next++
+            ) {
+                if ($this->articleNumber($paragraphs[$next]) !== null) {
+                    break;
+                }
+                $section[] = $paragraphs[$next];
+            }
+
+            return trim(implode("\n\n", $section));
+        }
+
+        return '';
+    }
+
+    private function articleNumber(string $paragraph): ?int
+    {
+        if (
+            preg_match(
+                '/^\s*(?:article|المادة)\s*[\(\[]?\s*'
+                . '(11|10|9|8|7|6|5|4|3|2|1|١١|١٠|٩|٨|٧|٦|٥|٤|٣|٢|١'
+                . '|one|two|three|four|five|six|seven|eight|nine|ten|eleven'
+                . '|الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة'
+                . '|السابعة|الثامنة|التاسعة|العاشرة|الحادية\s+عشرة)'
+                . '\s*[\)\]]?(?![\p{L}\p{N}])/iu',
+                $paragraph,
+                $match
+            ) !== 1
+        ) {
+            return null;
+        }
+
+        $value = function_exists('mb_strtolower')
+            ? mb_strtolower(trim($match[1]), 'UTF-8')
+            : strtolower(trim($match[1]));
+        $numbers = [
+            '1' => 1, '١' => 1, 'one' => 1, 'الأولى' => 1,
+            '2' => 2, '٢' => 2, 'two' => 2, 'الثانية' => 2,
+            '3' => 3, '٣' => 3, 'three' => 3, 'الثالثة' => 3,
+            '4' => 4, '٤' => 4, 'four' => 4, 'الرابعة' => 4,
+            '5' => 5, '٥' => 5, 'five' => 5, 'الخامسة' => 5,
+            '6' => 6, '٦' => 6, 'six' => 6, 'السادسة' => 6,
+            '7' => 7, '٧' => 7, 'seven' => 7, 'السابعة' => 7,
+            '8' => 8, '٨' => 8, 'eight' => 8, 'الثامنة' => 8,
+            '9' => 9, '٩' => 9, 'nine' => 9, 'التاسعة' => 9,
+            '10' => 10, '١٠' => 10, 'ten' => 10, 'العاشرة' => 10,
+            '11' => 11, '١١' => 11, 'eleven' => 11,
+            'الحادية عشرة' => 11,
+        ];
+
+        return $numbers[$value] ?? null;
     }
 
     private function extractContacts(array $paragraphs): array

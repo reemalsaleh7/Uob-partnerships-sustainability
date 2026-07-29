@@ -39,7 +39,7 @@ function workspaceHeader(
         rel="stylesheet"
     >
 {$extraStyles}
-    <link href="assets/css/workspace.css?v=20260728-guided-form" rel="stylesheet">
+    <link href="assets/css/workspace.css?v=20260729-guided-form-v4" rel="stylesheet">
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../repositories/PartnerRepository.php';
 require_once __DIR__ . '/../services/AuditService.php';
 require_once __DIR__ . '/../helpers/AuditAction.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/PartnerLookupService.php';
 
 class PartnerService
 {
@@ -18,16 +19,23 @@ class PartnerService
 
     private PartnerRepository $partnerRepository;
     private AuditService $auditService;
+    private PartnerLookupService $partnerLookupService;
 
     public function __construct()
     {
         $this->partnerRepository = new PartnerRepository();
         $this->auditService = new AuditService();
+        $this->partnerLookupService = new PartnerLookupService();
     }
 
     public function findActive(): array
     {
         return $this->partnerRepository->findActive();
+    }
+
+    public function lookup(string $organizationName): array
+    {
+        return $this->partnerLookupService->lookup($organizationName);
     }
 
     public function agreementContext(

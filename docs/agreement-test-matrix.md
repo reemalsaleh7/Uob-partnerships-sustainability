@@ -7,7 +7,7 @@
 2. Create a draft with two partners, Arabic/English titles, dates, objectives, impact, commitments, rankings, SDGs, four contact roles, one executive program, all three metrics, and a signing link.
 3. Reload the edit form and confirm every scalar, selected partner, checkbox, contact, program, and metric is restored.
 4. Save the draft and confirm the latest `agreement_versions.agreement_snapshot` contains the same nested partner, SDG, ranking, contact, program, and metric arrays.
-5. Attempt submission without dates, need/justification, objectives, expected value, collaboration areas, or implementation methods; confirm the API returns `422` and no workflow is created.
+5. Attempt submission without the Arabic name; project, signing, or effective dates; need/justification; objectives; expected value; complete coordinator/signatory records; complete planned outcomes; an executive programme; or the governance/MOU DOCX file. Confirm the API returns `422` and no workflow is created. Leave Article 1/2 extracted fields blank and confirm they do not block submission.
 6. Complete the required fields and submit; confirm Initial VP activates normally.
 7. Complete the workflow and confirm only approved public fields appear in the PostgreSQL catalogue. Contacts, clauses, workflow comments, versions, and private documents must remain absent from public output.
 8. Update an existing Agreement with the former four-field API payload and confirm omitted comprehensive child collections are preserved rather than erased.

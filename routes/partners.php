@@ -16,6 +16,8 @@ $uri = '/' . ltrim((string) $uri, '/');
 
 if ($method === 'GET' && $uri === '/partners') {
     $controller->index();
+} elseif ($method === 'GET' && $uri === '/partners/lookup') {
+    $controller->lookup();
 } elseif ($method === 'POST' && $uri === '/partners') {
     $controller->create();
 } elseif (

@@ -1077,6 +1077,10 @@ textarea.form-control {
     background: var(--workspace-success);
 }
 
+.agreement-form-section.needs-attention .agreement-section-number {
+    background: #b42338;
+}
+
 .agreement-section-heading strong,
 .agreement-section-heading small {
     display: block;
@@ -1199,6 +1203,10 @@ textarea.form-control {
     overflow-y: auto;
 }
 
+.partner-results[hidden] {
+    display: none;
+}
+
 .partner-result {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1251,6 +1259,30 @@ textarea.form-control {
 
 .partner-result.is-selected .partner-result-action {
     color: var(--workspace-success);
+}
+
+.partner-lookup-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.partner-lookup-feedback {
+    padding: 0.75rem 0.85rem;
+    color: #174ea6;
+    background: #eaf2ff;
+    border: 1px solid #c9dcfb;
+    border-radius: 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+#agreement-form .form-control.is-valid,
+#agreement-form .form-select.is-valid {
+    padding-right: 0.75rem;
+    background-image: none;
+    border-color: var(--uob-border);
 }
 
 .partner-selection-heading {

@@ -57,6 +57,8 @@ try {
         $agreementRepository->create([
             'title' =>
                 'Temporary Submission Workflow Test',
+            'title_ar' =>
+                'اختبار مؤقت لمسار تقديم الاتفاقية',
             'agreement_type' => 'MOU',
             'description' =>
                 'Rolled back after verification',
@@ -66,6 +68,10 @@ try {
                 date('Y-m-d', strtotime('+30 days')),
             'end_date' =>
                 date('Y-m-d', strtotime('+395 days')),
+            'signing_date' =>
+                date('Y-m-d', strtotime('+20 days')),
+            'effective_date' =>
+                date('Y-m-d', strtotime('+30 days')),
             'need_justification' =>
                 'Required for submission workflow verification',
             'expected_value' =>
@@ -97,6 +103,64 @@ try {
             'end_date' => date('Y-m-d', strtotime('+395 days')),
             'applicant_name' => 'Development Dean',
         ]]
+    );
+    $agreementRepository->replaceContacts(
+        $agreementId,
+        [
+            [
+                'party_type' => 'UOB',
+                'contact_role' => 'COORDINATOR',
+                'full_name' => 'UOB Test Coordinator',
+                'job_title' => 'Programme Coordinator',
+                'email' => 'uob.coordinator@uob.test',
+                'phone' => '+973 1700 0001',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'PARTNER',
+                'contact_role' => 'COORDINATOR',
+                'full_name' => 'Partner Test Coordinator',
+                'job_title' => 'Partnership Coordinator',
+                'email' => 'partner.coordinator@example.test',
+                'phone' => '+973 1700 0002',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'UOB',
+                'contact_role' => 'SIGNATORY',
+                'full_name' => 'UOB Test Signatory',
+                'job_title' => 'Authorized Signatory',
+                'email' => 'uob.signatory@uob.test',
+                'phone' => '+973 1700 0003',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'PARTNER',
+                'contact_role' => 'SIGNATORY',
+                'full_name' => 'Partner Test Signatory',
+                'job_title' => 'Authorized Signatory',
+                'email' => 'partner.signatory@example.test',
+                'phone' => '+973 1700 0004',
+                'is_primary' => true,
+            ],
+        ]
+    );
+    $agreementRepository->replaceMetrics(
+        $agreementId,
+        array_map(
+            static fn (string $code): array => [
+                'metric_code' => $code,
+                'planned_value' => 10,
+                'actual_value' => 0,
+                'notes' => 'Baseline target for workflow verification.',
+            ],
+            [
+                'STUDENTS_EXCHANGED',
+                'TRAINED_STUDENTS',
+                'FACULTY_EXCHANGED',
+                'JOINT_PROGRAMS',
+            ]
+        )
     );
 
     $documentStatement = $db->prepare(

@@ -42,6 +42,27 @@ class PartnerController
         }
     }
 
+    public function lookup(): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+        ]);
+
+        try {
+            Response::success($this->partnerService->lookup(
+                trim((string) ($_GET['name'] ?? ''))
+            ));
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 404);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 503);
+        }
+    }
+
     public function agreementContext(int $partnerId): void
     {
         AuthMiddleware::handle();
