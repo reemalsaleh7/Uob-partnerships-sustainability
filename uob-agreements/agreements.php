@@ -17,15 +17,12 @@ $isArabic = ($lang === 'ar');
 $T = [
   'ar' => [
     'page_title' => 'اتفاقيات جامعة البحرين',
-    'about_desc' => 'منصة رقمية لعرض وإدارة اتفاقيات جامعة البحرين، تتيح الوصول إلى بيانات الاتفاقيات واستعراض تفاصيلها وربطها بالمبادرات والأهداف ذات الصلة.',
-    'total_agreements' => 'إجمالي الاتفاقيات',
+    'total_agreements' => 'إجمــــالي الاتفاقيات',
     'active_agreements' => 'الاتفاقيات السارية',
     'countries' => 'الدول',
     'partners' => 'الجهات المتعاونة',
     'view_agreements' => 'استعراض الاتفاقيات',
-    'view_initiatives' => 'استعراض المبادرات',
     'add_agreement' => 'إضافة اتفاقية جديدة',
-    'about_title' => 'عن اتفاقيات جامعة البحرين',
     'tag_bilingual' => 'واجهة ثنائية اللغة',
     'tag_search' => 'بحث واستعراض',
     'tag_related' => 'بيانات مترابطة',
@@ -36,7 +33,6 @@ $T = [
     'period_label' => 'الفترة',
     'status_label' => 'الحالة',
     'agreements_section_title' => 'الاتفاقيات',
-    'agreements_section_desc' => 'استعرض الاتفاقيات من خلال واجهة تفاعلية، مع إمكانية فتح الجدول الكامل للبحث والتصفية والوصول إلى البيانات التفصيلية.',
     'details' => 'التفاصيل',
     'no_agreements' => 'لا توجد اتفاقيات لعرضها.',
     'partnerships_title' => 'الشراكات والاتفاقيات',
@@ -73,9 +69,7 @@ $T = [
     'countries' => 'Countries',
     'partners' => 'Partner Entities',
     'view_agreements' => 'View Agreements',
-    'view_initiatives' => 'View Initiatives',
     'add_agreement' => 'Add New Agreement',
-    'about_title' => 'About the University of Bahrain Agreements',
     'tag_bilingual' => 'Bilingual Interface',
     'tag_search' => 'Search & Browse',
     'tag_related' => 'Linked Data',
@@ -223,85 +217,699 @@ $aboutImg = 'assets/image/THEM/agreement1.png';
 ?>
 
 <style>
-/* FIX: remove white gap under navbar in Agreements page */
 .sdg-heroX{
+  min-height:650px !important;
   padding:0 !important;
   margin:0 !important;
-  min-height:520px !important;
   background:#0b1f3a !important;
+  text-align:center !important;
 }
 
 .sdg-heroX-bg{
   inset:0 !important;
   background-size:cover !important;
-  background-position:center center !important;
+  background-position:center !important;
   background-repeat:no-repeat !important;
 }
 
 .sdg-heroX-container{
-  min-height:520px !important;
-  padding:0 !important;
+  min-height:650px !important;
+  padding:0 20px !important;
   display:flex !important;
   align-items:center !important;
-}
-/* AGREEMENTS HERO BUTTONS - LIKE HOME PAGE */
-.agreement-hero-actions {
-  margin-top: 18px !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 14px !important;
-  justify-content: center !important;
-  align-items: center !important;
+  justify-content:center !important;
 }
 
-.agreement-hero-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-width: 190px !important;
-  min-height: 50px !important;
-  padding: 10px 24px !important;
-  border-radius: 14px !important;
-  font-size: 16px !important;
-  font-weight: 950 !important;
-  text-decoration: none !important;
-  border: 0 !important;
-  box-shadow: 0 10px 24px rgba(2,8,23,.20) !important;
-  transition: .2s ease !important;
+.sdg-heroX-card{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  margin:0 auto !important;
+  max-width:1300px !important;
+  text-align:center !important;
 }
 
-.agreement-btn-dark {
-  background: #0b1f3a !important;
-  color: #ffffff !important;
+.sdg-heroX-card h1{
+  color:#ffffff !important;
+  font-size:56px !important;
+  font-weight:950 !important;
+  line-height:1.2 !important;
+  margin:0 !important;
+  white-space:nowrap !important;
 }
 
-.agreement-btn-light {
-  background: #ffffff !important;
-  color: #0b1f3a !important;
-  border: 1px solid rgba(11,31,58,.20) !important;
+.sdg-heroX-line{
+  width:110px !important;
+  height:5px !important;
+  border-radius:999px !important;
+  background:#b89a68 !important;
+  margin:18px auto 36px !important;
 }
 
-.agreement-btn-dark:hover {
-  background: #102a4c !important;
-  color: #ffffff !important;
+.sdg-heroX-mini{
+  display:grid !important;
+  grid-template-columns:repeat(4, 170px) !important;
+  justify-content:center !important;
+  gap:40px !important;
+  margin:0 auto 36px !important;
+  direction:rtl !important;
 }
 
-.agreement-btn-light:hover {
-  background: #f8fafc !important;
-  color: #0b1f3a !important;
-}
-html body .sdg-heroX{
-  min-height:710px !important;
+.sdg-heroX-mini .mini{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  gap:10px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
   padding:0 !important;
 }
 
-html body .sdg-heroX .sdg-heroX-bg{
-  height:100% !important;
-  min-height:710px !important;
+.sdg-heroX-mini .mini .lbl{
+  order:1 !important;
+  color:rgba(255,255,255,.85) !important;
+  font-size:20px !important;
+  font-weight:900 !important;
+  line-height:1.4 !important;
 }
 
+.sdg-heroX-mini .mini .val{
+  order:2 !important;
+  color:#ffffff !important;
+  font-size:54px !important;
+  font-weight:950 !important;
+  line-height:1 !important;
+}
+
+.agreement-hero-actions{
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:16px !important;
+  flex-wrap:wrap !important;
+}
+
+.agreement-hero-btn{
+  min-width:499px !important;
+  min-height:54px !important;
+  border-radius:16px !important;
+  font-size:20px !important;
+  font-weight:950 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-decoration:none !important;
+}
+
+.agreement-btn-dark{
+  background:#b89a68 !important;
+  color:#ffffff !important;
+  border:0 !important;
+}
+
+.agreement-btn-light{
+  background:transparent !important;
+  color:#ffffff !important;
+border:2px solid rgba(255,255,255,.45) !important;}
+
+@media(max-width:992px){
+  .sdg-heroX-card h1{
+    white-space:normal !important;
+    font-size:42px !important;
+  }
+
+  .sdg-heroX-mini{
+    gap:28px !important;
+  }
+
+  .sdg-heroX-mini .mini .val{
+    font-size:42px !important;
+  }
+}
 html body .sdg-heroX-container{
-  min-height:710px !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+}
+
+html body .sdg-heroX-card{
+  width:100% !important;
+  max-width:950px !important;
+  margin:0 auto !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  text-align:center !important;
+}
+
+html body .sdg-heroX-mini{
+  width:fit-content !important;
+  max-width:100% !important;
+  display:grid !important;
+  grid-template-columns:repeat(4, 150px) !important;
+  gap:36px !important;
+  justify-content:center !important;
+  align-items:start !important;
+  margin:0 auto 34px !important;
+}
+
+html body .sdg-heroX-mini .mini{
+  width:150px !important;
+  text-align:center !important;
+}
+
+html body .agreement-hero-actions{
+  width:100% !important;
+  display:flex !important;
+  justify-content:center !important;
+}
+
+.agreement-hero-btn{
+  transition:transform .45s ease !important;
+}
+
+.agreement-hero-btn:hover{
+  transform:scale(1.03) !important;
+}
+/* ===== Latest Agreements News Slider ===== */
+
+.ag-news-section{
+  background:#f8fafc !important;
+  padding-top:90px !important;
+  padding-bottom:90px !important;
+}
+
+.ag-news-wrap{
+  position:relative !important;
+  margin-top:38px !important;
+}
+
+.ag-news-viewport{
+  width:100% !important;
+  overflow:hidden !important;
+  padding:8px 4px 18px !important;
+}
+
+.ag-news-track{
+  display:flex !important;
+  gap:26px !important;
+  direction:ltr !important;
+  transition:transform .55s ease !important;
+  will-change:transform !important;
+}
+
+.ag-news-card{
+  flex:0 0 calc((100% - 52px) / 3) !important;
+  height:520px !important;
+  background:#ffffff !important;
+  border:1px solid rgba(184,154,104,.45) !important;
+  border-radius:22px !important;
+  overflow:hidden !important;
+  text-decoration:none !important;
+  box-shadow:0 14px 34px rgba(2,8,23,.08) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  transition:transform .35s ease, box-shadow .35s ease !important;
+}
+
+.ag-news-card:hover{
+  transform:translateY(-6px) !important;
+  box-shadow:0 22px 48px rgba(2,8,23,.14) !important;
+}
+
+.ag-news-image{
+  width:100% !important;
+  height:220px !important;
+  background:#eef2f6 !important;
+  overflow:hidden !important;
+  flex-shrink:0 !important;
+}
+
+.ag-news-image img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  display:block !important;
+}
+
+.ag-news-placeholder{
+  width:100% !important;
+  height:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:linear-gradient(135deg,#eef2f6 0%,#ffffff 100%) !important;
+  color:#0b1f3a !important;
+  font-size:20px !important;
+  font-weight:950 !important;
+}
+
+.ag-news-body{
+  padding:24px 24px 22px !important;
+  flex:1 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  direction:rtl !important;
+  text-align:right !important;
+}
+
+html[dir="ltr"] .ag-news-body{
+  direction:ltr !important;
+  text-align:left !important;
+}
+
+.ag-news-label{
+  color:#b89a68 !important;
+  font-size:14px !important;
+  font-weight:950 !important;
+  margin-bottom:10px !important;
+}
+
+.ag-news-body h3{
+  color:#0b1f3a !important;
+  font-size:22px !important;
+  font-weight:950 !important;
+  line-height:1.55 !important;
+  margin:0 0 12px !important;
+  min-height:68px !important;
+
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+.ag-news-body p{
+  color:#475569 !important;
+  font-size:15px !important;
+  font-weight:750 !important;
+  line-height:1.8 !important;
+  margin:0 0 16px !important;
+  min-height:80px !important;
+
+  display:-webkit-box !important;
+  -webkit-line-clamp:3 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+.ag-news-empty-desc{
+  visibility:hidden !important;
+}
+
+.ag-news-badges{
+  display:flex !important;
+  gap:8px !important;
+  flex-wrap:wrap !important;
+  margin-bottom:18px !important;
+}
+
+.ag-news-badge{
+  background:#eef2f6 !important;
+  color:#0b1f3a !important;
+  border-radius:999px !important;
+  padding:7px 14px !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+}
+
+.ag-news-badge.gold{
+  background:rgba(184,154,104,.16) !important;
+  color:#8f6f3f !important;
+}
+
+.ag-news-footer{
+  margin-top:auto !important;
+}
+
+.ag-news-read{
+  color:#b89a68 !important;
+  font-size:16px !important;
+  font-weight:950 !important;
+  text-decoration:none !important;
+}
+
+.ag-news-read:hover{
+  color:#0b1f3a !important;
+}
+
+.ag-news-arrow{
+  position:absolute !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+  width:52px !important;
+  height:52px !important;
+  border-radius:50% !important;
+  border:2px solid #b89a68 !important;
+  background:#ffffff !important;
+  color:#8f6f3f !important;
+  font-size:36px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  z-index:10 !important;
+  cursor:pointer !important;
+  box-shadow:0 10px 24px rgba(2,8,23,.10) !important;
+}
+
+.ag-news-arrow:hover{
+  background:#b89a68 !important;
+  color:#ffffff !important;
+}
+
+html[dir="rtl"] .ag-news-prev{
+  right:-26px !important;
+  left:auto !important;
+}
+
+html[dir="rtl"] .ag-news-next{
+  left:-26px !important;
+  right:auto !important;
+}
+
+html[dir="ltr"] .ag-news-prev{
+  left:-26px !important;
+  right:auto !important;
+}
+
+html[dir="ltr"] .ag-news-next{
+  right:-26px !important;
+  left:auto !important;
+}
+
+@media(max-width:992px){
+  .ag-news-card{
+    flex:0 0 calc((100% - 26px) / 2) !important;
+  }
+}
+
+@media(max-width:700px){
+  .ag-news-card{
+    flex:0 0 100% !important;
+  }
+
+  .ag-news-arrow{
+    width:44px !important;
+    height:44px !important;
+    font-size:30px !important;
+  }
+
+  html[dir="rtl"] .ag-news-prev{
+    right:8px !important;
+  }
+
+  html[dir="rtl"] .ag-news-next{
+    left:8px !important;
+  }
+
+  html[dir="ltr"] .ag-news-prev{
+    left:8px !important;
+  }
+
+  html[dir="ltr"] .ag-news-next{
+    right:8px !important;
+  }
+}
+/* ===== Smaller Professional Latest Agreements Cards ===== */
+
+html body .ag-news-section{
+  background:#f8fafc !important;
+  padding-top:65px !important;
+  padding-bottom:65px !important;
+}
+
+html body .ag-news-section .sdg-centerX h2{
+  font-size:38px !important;
+  font-weight:950 !important;
+  color:#0b1f3a !important;
+}
+
+html body .ag-news-section .sdg-lineX.center{
+  width:95px !important;
+  height:4px !important;
+  background:#b89a68 !important;
+  margin-top:12px !important;
+}
+
+html body .ag-news-wrap{
+  position:relative !important;
+  margin-top:32px !important;
+}
+
+html body .ag-news-viewport{
+  width:100% !important;
+  overflow:hidden !important;
+  padding:6px 2px 14px !important;
+}
+
+html body .ag-news-track{
+  display:flex !important;
+  gap:22px !important;
+  direction:ltr !important;
+  transition:transform .55s ease !important;
+  will-change:transform !important;
+}
+
+html body .ag-news-card{
+  flex:0 0 calc((100% - 44px) / 3) !important;
+  height:430px !important;
+  background:#ffffff !important;
+  border:none !important;
+  border-radius:18px !important;
+  overflow:hidden !important;
+  text-decoration:none !important;
+  box-shadow:0 8px 22px rgba(2,8,23,.07) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  transition:transform .35s ease, box-shadow .35s ease, outline .35s ease !important;
+  outline:1px solid transparent !important;
+}
+
+html body .ag-news-card:hover{
+  transform:translateY(-4px) !important;
+  box-shadow:0 12px 28px rgba(2,8,23,.10) !important;
+  outline:1px solid rgba(184,154,104,.55) !important;
+}
+
+html body .ag-news-image{
+  width:100% !important;
+  aspect-ratio:16 / 9 !important;
+  height:auto !important;
+  max-height:175px !important;
+  background:#F1F3F5 !important;
+  overflow:hidden !important;
+  flex-shrink:0 !important;
+}
+
+html body .ag-news-image img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  display:block !important;
+}
+
+html body .ag-news-placeholder{
+  width:100% !important;
+  height:100% !important;
+  background:#F1F3F5 !important;
+  color:#8a94a3 !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+html body .ag-news-body{
+  padding:17px 18px 18px !important;
+  flex:1 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  direction:rtl !important;
+  text-align:right !important;
+}
+
+html[dir="ltr"] body .ag-news-body{
+  direction:ltr !important;
+  text-align:left !important;
+}
+
+html body .ag-news-label{
+  color:#b89a68 !important;
+  font-size:12px !important;
+  font-weight:850 !important;
+  margin-bottom:7px !important;
+  line-height:1.4 !important;
+}
+
+html body .ag-news-body h3{
+  color:#0b1f3a !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+  line-height:1.45 !important;
+  margin:0 0 10px !important;
+  min-height:52px !important;
+
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+html body .ag-news-body p{
+  color:#64748b !important;
+  font-size:13.5px !important;
+  font-weight:650 !important;
+  line-height:1.65 !important;
+  margin:0 0 12px !important;
+  min-height:44px !important;
+
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+
+html body .ag-news-empty-desc{
+  visibility:hidden !important;
+}
+
+html body .ag-news-badges{
+  display:flex !important;
+  gap:7px !important;
+  flex-wrap:wrap !important;
+  margin-bottom:12px !important;
+}
+
+html body .ag-news-badge{
+  background:#eef2f6 !important;
+  color:#0b1f3a !important;
+  border-radius:999px !important;
+  padding:5px 11px !important;
+  font-size:11.5px !important;
+  font-weight:850 !important;
+  line-height:1.3 !important;
+}
+
+html body .ag-news-badge.gold{
+  background:rgba(184,154,104,.14) !important;
+  color:#8f6f3f !important;
+}
+
+html body .ag-news-footer{
+  margin-top:auto !important;
+}
+
+html body .ag-news-read{
+  color:#8f6f3f !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  text-decoration:none !important;
+}
+
+html body .ag-news-card:hover .ag-news-read{
+  color:#0b1f3a !important;
+}
+
+html body .ag-news-arrow{
+  position:absolute !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+  width:42px !important;
+  height:42px !important;
+  border-radius:50% !important;
+  border:1.5px solid #b89a68 !important;
+  background:#ffffff !important;
+  color:#8f6f3f !important;
+  font-size:28px !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  z-index:10 !important;
+  cursor:pointer !important;
+  box-shadow:0 8px 18px rgba(2,8,23,.08) !important;
+  transition:.25s ease !important;
+}
+
+html body .ag-news-arrow:hover{
+  background:#b89a68 !important;
+  color:#ffffff !important;
+}
+
+html[dir="rtl"] body .ag-news-prev{
+  right:-21px !important;
+  left:auto !important;
+}
+
+html[dir="rtl"] body .ag-news-next{
+  left:-21px !important;
+  right:auto !important;
+}
+
+html[dir="ltr"] body .ag-news-prev{
+  left:-21px !important;
+  right:auto !important;
+}
+
+html[dir="ltr"] body .ag-news-next{
+  right:-21px !important;
+  left:auto !important;
+}
+
+@media(max-width:992px){
+  html body .ag-news-card{
+    flex:0 0 calc((100% - 22px) / 2) !important;
+  }
+}
+
+@media(max-width:700px){
+  html body .ag-news-section{
+    padding-top:50px !important;
+    padding-bottom:50px !important;
+  }
+
+  html body .ag-news-section .sdg-centerX h2{
+    font-size:30px !important;
+  }
+
+  html body .ag-news-card{
+    flex:0 0 100% !important;
+    height:410px !important;
+  }
+
+  html body .ag-news-arrow{
+    width:38px !important;
+    height:38px !important;
+    font-size:25px !important;
+  }
+
+  html[dir="rtl"] body .ag-news-prev{
+    right:6px !important;
+  }
+
+  html[dir="rtl"] body .ag-news-next{
+    left:6px !important;
+  }
+
+  html[dir="ltr"] body .ag-news-prev{
+    left:6px !important;
+  }
+
+  html[dir="ltr"] body .ag-news-next{
+    right:6px !important;
+  }
 }
 </style>
 
@@ -311,112 +919,257 @@ html body .sdg-heroX-container{
   <div class="sdg-heroX-bg" style="background-image:url('<?= h($heroBg) ?>')"></div>
   <div class="sdg-heroX-overlay"></div>
 
-  <div class="container sdg-heroX-container" style="justify-content:flex-start;">
-    <div class="sdg-heroX-card uob-reveal in">
+<div class="container sdg-heroX-container">
+      <div class="sdg-heroX-card uob-reveal in">
       <h1><?= h(tt('page_title')) ?></h1>
       <div class="sdg-heroX-line"></div>
 
       
+<div class="sdg-heroX-mini">
 
-      <div class="sdg-heroX-mini">
-        <div class="mini">
-          <div class="lbl"><?= h(tt('total_agreements')) ?></div>
-          <div class="val"><?= (int)$totalAgreements ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('active_agreements')) ?></div>
-          <div class="val"><?= (int)$activeAgreements ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('countries')) ?></div>
-          <div class="val"><?= (int)$uniqueCountries ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('partners')) ?></div>
-          <div class="val"><?= (int)$uniquePartners ?></div>
-        </div>
-      </div>
+  <div class="mini">
+    <span class="lbl"><?= h(tt('total_agreements')) ?></span>
+    <span class="val counter" data-target="<?= (int)$totalAgreements ?>">0</span>
+  </div>
 
+  <div class="mini">
+    <span class="lbl"><?= h(tt('active_agreements')) ?></span>
+    <span class="val counter" data-target="<?= (int)$activeAgreements ?>">0</span>
+  </div>
+
+  <div class="mini">
+    <span class="lbl"><?= h($isArabic ? 'عدد الدول المشاركة' : 'Countries') ?></span>
+    <span class="val counter" data-target="<?= (int)$uniqueCountries ?>">0</span>
+  </div>
+
+  <div class="mini">
+    <span class="lbl"><?= h($isArabic ? 'الجهـــات الشريكة' : 'Partner Entities') ?></span>
+    <span class="val counter" data-target="<?= (int)$uniquePartners ?>">0</span>
+  </div>
+
+</div>
+  
       <div class="agreement-hero-actions">
   <button type="button" class="agreement-hero-btn agreement-btn-dark" id="openAgreementModal">
     <?= h(tt('view_agreements')) ?>
   </button>
 
-  <a class="agreement-hero-btn agreement-btn-light" href="initiatives.php?lang=<?= h($lang) ?>">
-    <?= h(tt('view_initiatives')) ?>
-  </a>
-</div>
+  
     </div>
   </div>
 </section>
-
-<section class="sdg-sectionX sdg-sectionX-alt">
+<section class="sdg-sectionX ag-news-section">
   <div class="container">
-    <div class="sdg-aboutX">
-      <div class="sdg-aboutX-media uob-reveal left">
-        <img src="<?= h($aboutImg) ?>" alt="<?= h(tt('uob_agreements_alt')) ?>">
-      </div>
 
-      <div class="sdg-aboutX-content uob-reveal right">
-        <h2><?= h(tt('about_title')) ?></h2>
-        <div class="sdg-lineX"></div>
-
-        <p><?= h(tt('about_desc')) ?></p>
-
-        
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="sdg-sectionX">
-  <div class="container">
     <div class="sdg-centerX">
       <h2><?= h(tt('latest_agreements')) ?></h2>
       <div class="sdg-lineX center"></div>
     </div>
 
-    <div class="sdg-servicesX">
-      <?php foreach ($latest as $index => $ag): ?>
-  <?php
-    $code    = (string)($ag['agreement_code'] ?? '');
-    $name    = (string)($ag['agreement_name'] ?? '');
-    $partner = (string)($ag['partner_entity'] ?? '');
-    $country = (string)($ag['country'] ?? '');
-    $status  = (string)($ag['status'] ?? '');
-    $start   = (string)($ag['start_date'] ?? '');
-    $end     = (string)($ag['end_date'] ?? '');
+    <div class="ag-news-wrap" id="agNewsWrap">
 
-    $latestImages = [
-      'assets/image/THEM/agreement-background1.png',
-      'assets/image/THEM/agreement-background2.png',
-      'assets/image/THEM/agreement-background3.png',
-    ];
+      <button class="ag-news-arrow ag-news-prev" type="button" id="agNewsPrev">‹</button>
 
-    $img = $latestImages[$index] ?? 'assets/image/THEM/agreement-background1.png';
-  ?>
+      <div class="ag-news-viewport">
+        <div class="ag-news-track" id="agNewsTrack">
 
-        <a class="sdg-serviceX uob-reveal"
-           href="agreement-details.php?code=<?= urlencode($code) ?>&lang=<?= urlencode($lang) ?>">
+          <?php foreach ($sliderItems as $ag): ?>
+            <?php
+              $code    = trim((string)($ag['agreement_code'] ?? ''));
+              $name    = trim((string)($ag['agreement_name'] ?? ''));
+              $country = trim((string)($ag['country'] ?? ''));
+              $status  = trim((string)($ag['status'] ?? ''));
 
-          <img src="<?= h($img) ?>" alt="<?= h(tt('agreement_image_alt')) ?>">
+              /* استخدم صورة حقيقية فقط إذا كانت موجودة في بيانات الاتفاقية */
+              $imagePath = '';
+              foreach (['image','image_url','image_path','cover_image','agreement_image','news_image','photo'] as $imgKey) {
+                if (!empty($ag[$imgKey])) {
+                  $imagePath = trim((string)$ag[$imgKey]);
+                  break;
+                }
+              }
 
-          <div class="body">
-            <h3><?= h($name ?: $code) ?></h3>
+              /* نبذة قصيرة فقط إذا كانت موجودة في البيانات */
+              $desc = '';
+              foreach (['description','summary','brief','agreement_description','notes'] as $descKey) {
+                if (!empty($ag[$descKey])) {
+                  $desc = trim((string)$ag[$descKey]);
+                  break;
+                }
+              }
+            ?>
 
-            <p style="margin-top:10px;">
-              <b><?= h(tt('partner_label')) ?>:</b> <?= h($partner ?: '—') ?><br>
-              <b><?= h(tt('country_label')) ?>:</b> <?= h($country ?: '—') ?><br>
-              <b><?= h(tt('period_label')) ?>:</b> <?= h($start ?: '—') ?> — <?= h($end ?: '—') ?><br>
-              <b><?= h(tt('status_label')) ?>:</b> <?= h($status ?: '—') ?>
-            </p>
-          </div>
-        </a>
-      <?php endforeach; ?>
+            <a class="ag-news-card"
+               href="agreement-details.php?code=<?= urlencode($code) ?>&lang=<?= urlencode($lang) ?>">
+
+              <div class="ag-news-image">
+                <?php if ($imagePath !== ''): ?>
+                  <img src="<?= h($imagePath) ?>" alt="<?= h($name ?: tt('agreement_image_alt')) ?>">
+                <?php else: ?>
+                  <div class="ag-news-placeholder">
+                    <?= h($isArabic ? 'لا توجد صورة' : 'No Image Available') ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+
+              <div class="ag-news-body">
+                <div class="ag-news-label">
+                  <?= h($isArabic ? 'اتفاقية' : 'Agreement') ?>
+                </div>
+
+                <h3><?= h($name ?: $code) ?></h3>
+
+                <?php if ($desc !== ''): ?>
+                  <p><?= h($desc) ?></p>
+                <?php else: ?>
+                  <p class="ag-news-empty-desc">.</p>
+                <?php endif; ?>
+
+                <div class="ag-news-badges">
+                  <?php if ($status !== ''): ?>
+                    <span class="ag-news-badge gold"><?= h($status) ?></span>
+                  <?php endif; ?>
+
+                  <?php if ($country !== ''): ?>
+                    <span class="ag-news-badge"><?= h($country) ?></span>
+                  <?php endif; ?>
+                </div>
+
+                <div class="ag-news-footer">
+                  <span class="ag-news-read">
+                    <?= h($isArabic ? 'اقرأ المزيد' : 'Read More') ?>
+                  </span>
+                </div>
+              </div>
+
+            </a>
+
+          <?php endforeach; ?>
+
+          <?php if (!$sliderItems): ?>
+            <div class="alert alert-warning w-100"><?= h(tt('no_agreements')) ?></div>
+          <?php endif; ?>
+
+        </div>
+      </div>
+
+      <button class="ag-news-arrow ag-news-next" type="button" id="agNewsNext">›</button>
+
     </div>
+
   </div>
 </section>
+<script>
+(function(){
+  const wrap = document.getElementById('agNewsWrap');
+  const track = document.getElementById('agNewsTrack');
+  const prev = document.getElementById('agNewsPrev');
+  const next = document.getElementById('agNewsNext');
 
+  if(!wrap || !track) return;
+
+  let originalCards = Array.from(track.querySelectorAll('.ag-news-card'));
+  if(originalCards.length === 0) return;
+
+  let index = 0;
+  let timer = null;
+
+  function visibleCount(){
+    if(window.innerWidth <= 700) return 1;
+    if(window.innerWidth <= 992) return 2;
+    return 3;
+  }
+
+  function cleanClones(){
+    track.querySelectorAll('.ag-news-card.clone').forEach(card => card.remove());
+  }
+
+  function buildClones(){
+    cleanClones();
+
+    const count = visibleCount();
+    originalCards.slice(0, count).forEach(card => {
+      const clone = card.cloneNode(true);
+      clone.classList.add('clone');
+      track.appendChild(clone);
+    });
+  }
+
+  function cardStep(){
+    const first = track.querySelector('.ag-news-card');
+    if(!first) return 0;
+
+    const style = window.getComputedStyle(track);
+    const gap = parseFloat(style.gap || style.columnGap || 26) || 26;
+
+    return first.offsetWidth + gap;
+  }
+
+  function move(animate = true){
+    const step = cardStep();
+
+    track.style.transition = animate ? 'transform .55s ease' : 'none';
+    track.style.transform = `translateX(-${index * step}px)`;
+  }
+
+  function nextSlide(){
+    index++;
+    move(true);
+  }
+
+  function prevSlide(){
+    if(index === 0){
+      index = originalCards.length;
+      move(false);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          index--;
+          move(true);
+        });
+      });
+    }else{
+      index--;
+      move(true);
+    }
+  }
+
+  track.addEventListener('transitionend', function(){
+    if(index >= originalCards.length){
+      index = 0;
+      move(false);
+    }
+  });
+
+  function startAuto(){
+    stopAuto();
+    timer = setInterval(nextSlide, 5000);
+  }
+
+  function stopAuto(){
+    if(timer){
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  next && next.addEventListener('click', nextSlide);
+  prev && prev.addEventListener('click', prevSlide);
+
+  wrap.addEventListener('mouseenter', stopAuto);
+  wrap.addEventListener('mouseleave', startAuto);
+
+  window.addEventListener('resize', function(){
+    buildClones();
+    index = 0;
+    move(false);
+  });
+
+  buildClones();
+  move(false);
+  startAuto();
+})();
+</script>
 <section class="sdg-sectionX sdg-sectionX-alt">
   <div class="container">
     <section class="ag-split">
@@ -1071,4 +1824,29 @@ html body .sdg-heroX-container{
 
   </div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const counters = document.querySelectorAll('.counter');
+
+  counters.forEach(counter => {
+    const target = parseInt(counter.getAttribute('data-target'), 10) || 0;
+    let current = 0;
+    const duration = 1200;
+    const stepTime = 20;
+    const steps = Math.ceil(duration / stepTime);
+    const increment = target / steps;
+
+    const timer = setInterval(() => {
+      current += increment;
+
+      if (current >= target) {
+        counter.textContent = target;
+        clearInterval(timer);
+      } else {
+        counter.textContent = Math.floor(current);
+      }
+    }, stepTime);
+  });
+});
+</script>
 <?php require_once __DIR__ . '/footer.php'; ?>

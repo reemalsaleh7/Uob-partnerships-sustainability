@@ -40,7 +40,6 @@ function t(string $key, string $english = null): string {
   
   $dict = [
     'ar' => [
-      'app_name' => 'الشراكات والأثر المستدام – جامعة البحرين',
       'search_initiative' => 'بحث عن مبادرة...',
       'home' => 'الرئيسية',
       'agreements' => 'الاتفاقيات',
@@ -140,7 +139,6 @@ function t(string $key, string $english = null): string {
       'news_link_required' => 'رابط خبر المبادرة مطلوب عند اختيار نعم.',
     ],
     'en' => [
-      'app_name' => 'UOB Partnerships & Sustainable Impact',
       'search_initiative' => 'Search initiatives...',
       'home' => 'Home',
       'agreements' => 'Agreements',
@@ -404,6 +402,7 @@ html body .uob-nav-actions .uob-workspace-link {
 
 }
 
+
 /* تسجيل الخروج رمادي بدون تغيير الحجم */
 html body .uob-nav-actions a[href*="logout.php"],
 html body .uob-nav-actions a[href*="login.php"] {
@@ -411,7 +410,7 @@ html body .uob-nav-actions a[href*="login.php"] {
   height: 40px !important;
   padding: 0 !important;
   display: flex !important;
-  align-items: center !important;
+  align-items:  !important;
   justify-content: center !important;
   background: #eef2f6 !important;
   border: 1px solid #cbd5e1 !important;
@@ -420,6 +419,38 @@ html body .uob-nav-actions a[href*="login.php"] {
   font-weight: 950 !important;
   white-space: nowrap !important;
   box-shadow: none !important;
+}
+html body .uob-navbar {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+html body .uob-navbar .navbar-brand .uob-logo-box {
+  position: absolute !important;
+  top: -66px !important;
+  left: auto !important;
+right: 70px !important;
+transform: none !important;
+width: 100px !important;
+height: 150px !important;
+  object-fit: contain !important;
+
+  background: #fff !important;
+padding: 5px 8px !important;
+  border-radius: 0 0 30px 30px !important;
+  box-shadow: 0 7px 18px rgba(0,0,0,.15) !important;
+  z-index: 9999 !important;
+}
+/* Arabic: logo on right */
+html[dir="rtl"] body .uob-navbar .navbar-brand .uob-logo-box{
+  right:70px !important;
+  left:auto !important;
+}
+
+/* English: logo on far left */
+html[dir="ltr"] body .uob-navbar .navbar-brand .uob-logo-box{
+  left:70px !important;
+  right:auto !important;
 }
 </style>
 </head>
@@ -627,16 +658,15 @@ document.addEventListener('DOMContentLoaded', function () {
 <nav class="navbar navbar-expand-lg bg-white border-bottom uob-navbar">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
-<img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto; position:relative; left:90px;">
-<span class="fw-bold brand-title-move"><?= h(t('app_name')) ?></span>    </a>
+<img src="<?= h($logoPath) ?>" alt="UOB Logo" class="uob-logo-box">
+  </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="mainNav">
-      <ul class="navbar-nav <?= $isRtl ? 'me-auto' : 'ms-auto' ?> mb-2 mb-lg-0 align-items-lg-center">
-        <li class="nav-item">
+<ul class="navbar-nav mx-auto mb-2 mb-lg-0 align-items-lg-center">        <li class="nav-item">
           <a class="nav-link" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
             <?= h(t('home')) ?>
           </a>

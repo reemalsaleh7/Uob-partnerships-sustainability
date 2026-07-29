@@ -677,6 +677,7 @@ a:hover{ color:#0b3a84; }
   line-height:1.25;
   font-size:clamp(28px, 3.2vw, 44px);
 }
+
 .landing-hero-sub{
   margin:14px 0 0;
   color:#334155;
@@ -3542,6 +3543,11 @@ padding: 120px 0 80px !important;
   max-width: 100% !important;
   width: 100% !important;
   padding: 0 !important;
+}
+@media (max-width: 768px) {
+  html body .landing-hero-title {
+    color: #ffffff !important;
+  }
 }
 
 
