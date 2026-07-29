@@ -1,5 +1,6 @@
 <?php
 // services/NotificationService.php
+
 declare(strict_types=1);
 
 class NotificationService {
@@ -47,149 +48,282 @@ class NotificationService {
         }
     }
     
+    /**
+     * Send real email using PHPMailer or mail() function
+     */
+    private function sendEmail($to, $subject, $message, $isHtml = true) {
+        // ============================================
+        // OPTION 1: Using PHPMailer (Recommended)
+        // ============================================
+        // First, check if PHPMailer is available
+        if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+            require_once __DIR__ . '/../vendor/autoload.php';
+            
+            try {
+                $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+                
+                // Server settings for UOB email (using SMTP)
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.office365.com'; // UOB uses Office 365
+                $mail->SMTPAuth   = true;
+                $mail->Username   = '202208354@stu.uob.edu.bh'; // Your UOB email
+                $mail->Password   = 'YOUR_UOB_EMAIL_PASSWORD'; // ⚠️ Replace with your actual password
+                $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+                
+                // Recipients
+                $mail->setFrom('202208354@stu.uob.edu.bh', 'UOB Partnerships & Sustainable Impact');
+                $mail->addAddress($to);
+                
+                // Content
+                $mail->isHTML($isHtml);
+                $mail->Subject = $subject;
+                $mail->Body    = $message;
+                $mail->AltBody = strip_tags($message);
+                
+                $mail->send();
+                error_log("Email sent to: $to");
+                return true;
+                
+            } catch (Exception $e) {
+                error_log("Email sending failed: " . $e->getMessage());
+                return false;
+            }
+        }
+        
+        // ============================================
+        // OPTION 2: Using PHP mail() function (Fallback)
+        // ============================================
+        $headers = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: 202208354@stu.uob.edu.bh\r\n";
+        $headers .= "Reply-To: 202208354@stu.uob.edu.bh\r\n";
+        $headers .= "X-Mailer: PHP/" . phpversion();
+        
+        $result = mail($to, $subject, $message, $headers);
+        
+        if ($result) {
+            error_log("Email sent via mail() to: $to");
+        } else {
+            error_log("Email via mail() failed for: $to");
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Create email content with proper styling
+     */
+    private function buildEmailContent($title, $message, $actionUrl = null, $lang = 'ar') {
+        $isArabic = ($lang === 'ar');
+        $appName = $isArabic ? 'الشراكات والأثر المستدام – جامعة البحرين' : 'UOB Partnerships & Sustainable Impact';
+        $buttonText = $isArabic ? 'عرض التفاصيل' : 'View Details';
+        $footerText = $isArabic ? '© جامعة البحرين - جميع الحقوق محفوظة' : '© University of Bahrain - All rights reserved';
+        
+        $html = '
+        <!DOCTYPE html>
+        <html dir="' . ($isArabic ? 'rtl' : 'ltr') . '">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>' . htmlspecialchars($title) . '</title>
+            <style>
+                body {
+                    font-family: "Cairo", Arial, sans-serif;
+                    background-color: #f4f7fb;
+                    margin: 0;
+                    padding: 20px;
+                    color: #0f172a;
+                }
+                .email-container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: #ffffff;
+                    border-radius: 16px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+                    overflow: hidden;
+                }
+                .email-header {
+                    background: #0b1f3a;
+                    padding: 20px 30px;
+                    text-align: center;
+                }
+                .email-header h1 {
+                    color: #ffffff;
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0;
+                }
+                .email-header .subtitle {
+                    color: #c9a227;
+                    font-size: 14px;
+                    margin-top: 4px;
+                }
+                .email-body {
+                    padding: 30px;
+                }
+                .email-title {
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #0b1f3a;
+                    margin: 0 0 12px 0;
+                }
+                .email-message {
+                    color: #334155;
+                    line-height: 1.8;
+                    margin: 12px 0 20px 0;
+                }
+                .email-button {
+                    display: inline-block;
+                    background: #0b1f3a;
+                    color: #ffffff !important;
+                    padding: 12px 28px;
+                    border-radius: 8px;
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+                .email-button:hover {
+                    background: #102a4c;
+                }
+                .email-footer {
+                    background: #f8fafc;
+                    padding: 16px 30px;
+                    text-align: center;
+                    color: #64748b;
+                    font-size: 12px;
+                    border-top: 1px solid #e6ebf2;
+                }
+                .email-footer a {
+                    color: #0b1f3a;
+                    text-decoration: none;
+                }
+                .text-center {
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="email-header">
+                    <h1>🔔 ' . $appName . '</h1>
+                    <div class="subtitle">' . ($isArabic ? 'نظام الإشعارات' : 'Notification System') . '</div>
+                </div>
+                <div class="email-body">
+                    <div class="email-title">' . htmlspecialchars($title) . '</div>
+                    <div class="email-message">' . nl2br(htmlspecialchars($message)) . '</div>';
+        
+        if ($actionUrl) {
+            $html .= '
+                    <div class="text-center">
+                        <a href="' . htmlspecialchars($actionUrl) . '" class="email-button">' . $buttonText . '</a>
+                    </div>';
+        }
+        
+        $html .= '
+                </div>
+                <div class="email-footer">
+                    ' . $footerText . '<br>
+                    <a href="' . ($actionUrl ?: 'https://uob.edu.bh') . '">' . ($isArabic ? 'زيارة المنصة' : 'Visit Platform') . '</a>
+                </div>
+            </div>
+        </body>
+        </html>';
+        
+        return $html;
+    }
+    
     public function createNotification(array $data): ?int {
-    if (!$this->db) return null;
-    
-    try {
-        $userId = $data['user_id'] ?? null;
-        if (!$userId && !empty($data['email'])) {
-            $userId = $this->getUserIdByEmail($data['email']);
-        }
-        if (!$userId) return null;
-        
-        // SIMPLE INSERT - Direct values, no boolean issues
-        $sql = "INSERT INTO notifications (
-                    user_id, title_ar, title_en, 
-                    message_ar, message_en,
-                    action_required, is_read, is_archived, is_deleted
-                ) VALUES (
-                    :user_id, :title_ar, :title_en, 
-                    :message_ar, :message_en,
-                    TRUE, FALSE, FALSE, FALSE
-                ) RETURNING notification_id";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':user_id' => $userId,
-            ':title_ar' => $data['title_ar'] ?? $data['title'] ?? '',
-            ':title_en' => $data['title_en'] ?? $data['title'] ?? '',
-            ':message_ar' => $data['message_ar'] ?? $data['message'] ?? '',
-            ':message_en' => $data['message_en'] ?? $data['message'] ?? ''
-        ]);
-        
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ? (int)$result['notification_id'] : null;
-        
-    } catch (PDOException $e) {
-        error_log("Notification creation error: " . $e->getMessage());
-        echo "❌ Database error: " . $e->getMessage() . "<br>";
-        return null;
-    }
-}
-    
-    public function createBulkNotifications(array $users, array $data): array {
-        $notificationIds = [];
-        foreach ($users as $user) {
-            if (is_array($user)) {
-                $data['user_id'] = $user['user_id'] ?? null;
-                $data['email'] = $user['email'] ?? '';
-            } else {
-                $data['user_id'] = $user;
-            }
-            $id = $this->createNotification($data);
-            if ($id) $notificationIds[] = $id;
-        }
-        return $notificationIds;
-    }
-    
-    public function getUserNotifications(int $userId, bool $unreadOnly = true, int $limit = 50): array {
-        if (!$this->db) return [];
+        if (!$this->db) return null;
         
         try {
-            $sql = "SELECT 
-                        n.*,
-                        u.first_name || ' ' || u.last_name as sender_name
-                    FROM notifications n
-                    LEFT JOIN users u ON n.user_id = u.user_id
-                    WHERE n.user_id = :user_id
-                    AND n.is_deleted = FALSE";
+            $userId = $data['user_id'] ?? null;
+            if (!$userId && !empty($data['email'])) {
+                $userId = $this->getUserIdByEmail($data['email']);
+            }
+            if (!$userId) return null;
             
-            if ($unreadOnly) {
-                $sql .= " AND n.is_read = FALSE";
+            // Get user email for sending notifications
+            $userEmail = null;
+            if ($userId) {
+                $stmt = $this->db->prepare("SELECT email FROM users WHERE user_id = :user_id");
+                $stmt->execute([':user_id' => $userId]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                $userEmail = $user['email'] ?? null;
             }
             
-            $sql .= " ORDER BY n.is_read ASC, n.created_at DESC LIMIT :limit";
+            // Set priority based on entity type
+            $priority = $data['priority'] ?? 'NORMAL';
+            $entityType = $data['entity_type'] ?? '';
             
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
+            if (empty($data['priority'])) {
+                if ($entityType === 'agreement' || $entityType === 'partnership') {
+                    $priority = 'HIGH';
+                } elseif ($entityType === 'initiative') {
+                    $priority = 'LOW';
+                } else {
+                    $priority = 'NORMAL';
+                }
+            }
             
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error fetching notifications: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    public function markAsRead(int $notificationId, int $userId): bool {
-        if (!$this->db) return false;
-        
-        try {
-            $sql = "UPDATE notifications 
-                    SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
-                    WHERE notification_id = :notification_id 
-                    AND user_id = :user_id
-                    AND is_read = FALSE
-                    RETURNING notification_id";
+            $allowedPriorities = ['HIGH', 'MEDIUM', 'NORMAL', 'LOW'];
+            if (!in_array($priority, $allowedPriorities)) {
+                $priority = 'NORMAL';
+            }
+            
+            $actionRequired = isset($data['action_required']) ? (bool)$data['action_required'] : true;
+            
+            $sql = "INSERT INTO notifications (
+                        user_id, title_ar, title_en, 
+                        message_ar, message_en,
+                        entity_type, entity_id, entity_code,
+                        priority, reminder_count, reminder_sent,
+                        action_required, action_url,
+                        is_read, is_archived, is_deleted
+                    ) VALUES (
+                        :user_id, :title_ar, :title_en, 
+                        :message_ar, :message_en,
+                        :entity_type, :entity_id, :entity_code,
+                        :priority, 0, FALSE,
+                        :action_required, :action_url,
+                        FALSE, FALSE, FALSE
+                    ) RETURNING notification_id";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':notification_id' => $notificationId,
-                ':user_id' => $userId
+                ':user_id' => $userId,
+                ':title_ar' => $data['title_ar'] ?? $data['title'] ?? '',
+                ':title_en' => $data['title_en'] ?? $data['title'] ?? '',
+                ':message_ar' => $data['message_ar'] ?? $data['message'] ?? '',
+                ':message_en' => $data['message_en'] ?? $data['message'] ?? '',
+                ':entity_type' => $entityType,
+                ':entity_id' => $data['entity_id'] ?? null,
+                ':entity_code' => $data['entity_code'] ?? null,
+                ':priority' => $priority,
+                ':action_required' => $actionRequired,
+                ':action_url' => $data['action_url'] ?? null
             ]);
             
-            return $stmt->rowCount() > 0;
-        } catch (PDOException $e) {
-            error_log("Error marking notification as read: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    public function markAllAsRead(int $userId): int {
-        if (!$this->db) return 0;
-        
-        try {
-            $sql = "UPDATE notifications 
-                    SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
-                    WHERE user_id = :user_id AND is_read = FALSE
-                    RETURNING notification_id";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user_id' => $userId]);
-            return $stmt->rowCount();
-        } catch (PDOException $e) {
-            error_log("Error marking all as read: " . $e->getMessage());
-            return 0;
-        }
-    }
-    
-    public function getUnreadCount(int $userId): int {
-        if (!$this->db) return 0;
-        
-        try {
-            $sql = "SELECT COUNT(*) as count 
-                    FROM notifications 
-                    WHERE user_id = :user_id AND is_read = FALSE AND is_deleted = FALSE";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user_id' => $userId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return (int)($result['count'] ?? 0);
+            $notificationId = $result ? (int)$result['notification_id'] : null;
+            
+            // ✅ Send email if user email exists and send_email is true
+            if ($notificationId && $userEmail && isset($data['send_email']) && $data['send_email'] === true) {
+                $lang = $_SESSION['lang'] ?? 'ar';
+                $isArabic = ($lang === 'ar');
+                
+                $title = $isArabic ? ($data['title_ar'] ?? $data['title'] ?? '') : ($data['title_en'] ?? $data['title'] ?? '');
+                $message = $isArabic ? ($data['message_ar'] ?? $data['message'] ?? '') : ($data['message_en'] ?? $data['message'] ?? '');
+                $actionUrl = $data['action_url'] ?? null;
+                
+                $emailContent = $this->buildEmailContent($title, $message, $actionUrl, $lang);
+                $this->sendEmail($userEmail, $title, $emailContent);
+            }
+            
+            return $notificationId;
+            
         } catch (PDOException $e) {
-            error_log("Error getting unread count: " . $e->getMessage());
-            return 0;
+            error_log("Notification creation error: " . $e->getMessage());
+            return null;
         }
     }
-}
-?>
+}  ?>

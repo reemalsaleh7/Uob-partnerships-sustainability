@@ -216,6 +216,17 @@ require_once __DIR__ . '/header.php';
         flex-direction: column;
     }
 }
+.reminder-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 600;
+    background: #fff8e1;
+    color: #f57f17;
+    border: 1px solid #ffcc02;
+    margin-left: 6px;
+}
 </style>
 
 <div class="notification-page">
@@ -263,6 +274,11 @@ require_once __DIR__ . '/header.php';
                         </div>
                         <div class="notification-meta">
                             <span><?= $notif['created_at'] ?></span>
+                            <?php if ($notif['reminder_count'] > 0): ?>
+                                <span class="reminder-badge">
+                                    🔔 <?= $isArabic ? 'تذكير' : 'Reminder' ?> <?= $notif['reminder_count'] ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                         <?php if ($isUnread): ?>
                             <div class="notification-actions">

@@ -272,17 +272,7 @@ const ToastManager = {
         });
     },
     
-    // Convenience methods
-    test() {
-        this.show(
-            '📌 اختبار الإشعارات',           // Arabic Title
-            '📌 Notification Test',          // English Title
-            'تم تشغيل نظام الإشعارات بنجاح!', // Arabic Message
-            'Notification system started successfully!', // English Message
-            'system',
-            5000
-        );
-    },
+    
     
     system(titleAr, titleEn, messageAr, messageEn, duration = 5000) {
         this.show(titleAr, titleEn, messageAr, messageEn, 'system', duration);
@@ -321,10 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ToastManager.init();
 });
 
-// Show test toast after 2 seconds
-setTimeout(() => {
-    ToastManager.test();
-}, 2000);
+
 // ============================================
 // Check for New Notifications (Polling)
 // ============================================

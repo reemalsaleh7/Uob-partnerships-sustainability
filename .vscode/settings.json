@@ -7,8 +7,8 @@
             "port": 5432,
             "driver": "PostgreSQL",
             "name": "Local PostgreSQL",
-            "database": "User",
-            "username": "postgres"
+            "username": "postgres",
+            "database": "UOB_Partnership_and_Initiative"
         }
     ]
 }
