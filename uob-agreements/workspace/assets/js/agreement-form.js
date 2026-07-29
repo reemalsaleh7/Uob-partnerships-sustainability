@@ -327,6 +327,11 @@
                 'Choose one of the four current partner organization types.'
             );
         }
+        if (!String(partner.website || '').trim()) {
+            warnings.push(
+                'Add the partner website before saving the Agreement.'
+            );
+        }
         if (warnings.length > 0) {
             const warning = document.createElement('p');
             warning.className = 'partner-data-warning';
@@ -666,6 +671,12 @@
         );
     }
 
+    function selectedPartnersHaveRequiredWebsites() {
+        return [...state.selectedPartnerIds].every((id) =>
+            Boolean(String(state.partners.get(id)?.website || '').trim())
+        );
+    }
+
     function isBahrainCountry(country) {
         return /^(?:kingdom\s+of\s+)?bahrain$/iu.test(
             String(country || '').trim()
@@ -710,6 +721,8 @@
                 'Use the existing Agreement or its lifecycle workflow instead of creating a duplicate.';
         } else if (!selectedPartnersHaveRequiredCountries()) {
             message = 'Every selected partner must have a country so local or international scope can be determined.';
+        } else if (!selectedPartnersHaveRequiredWebsites()) {
+            message = 'Edit the selected partner and add its website.';
         } else if (!selectedPartnersHaveRequiredTypes()) {
             message = 'Edit each selected partner and choose Public/government, Private, Academic, or Non-profit.';
         }
@@ -829,7 +842,8 @@
         const required = [
             control('new_partner_name'),
             control('new_partner_type'),
-            control('new_partner_country')
+            control('new_partner_country'),
+            control('new_partner_website')
         ];
         required.forEach((input) => {
             input.classList.toggle('is-invalid', !input.value.trim());
@@ -1135,6 +1149,8 @@
         range.id = `program_${index}_duration`;
         range.dataset.startTarget = `program_${index}_start_date`;
         range.dataset.endTarget = `program_${index}_end_date`;
+        range.dataset.rangeTriggerStart = `program_${index}_start_date`;
+        range.dataset.rangeTriggerEnd = `program_${index}_end_date`;
         row.querySelector('[data-label-for="duration"]')
             ?.setAttribute('for', range.id);
 
@@ -1202,8 +1218,11 @@
         if (!agreement.financial_currency) {
             control('financial_currency').value = 'BHD';
         }
+        const sdgs = Array.isArray(agreement.sdgs)
+            ? agreement.sdgs
+            : String(agreement.sdgs || '').split(/[,;/\s]+/).filter(Boolean);
         document.querySelectorAll('input[name="sdgs[]"]').forEach((checkbox) => {
-            checkbox.checked = (agreement.sdgs || []).map(Number)
+            checkbox.checked = sdgs.map(Number)
                 .includes(Number(checkbox.value));
         });
 
@@ -1555,7 +1574,7 @@
         const programsValid = validatePrograms(true);
         const nativeValid = form.checkValidity();
         form.querySelectorAll('input, select, textarea').forEach((input) => {
-            updateControlFeedback(input, true);
+            updateControlFeedback(input);
         });
         updateAllSectionStatuses();
 
@@ -1582,7 +1601,7 @@
         return true;
     }
 
-    function updateControlFeedback(input, force = false) {
+    function updateControlFeedback(input) {
         if (
             !input
             || ['hidden', 'button', 'submit', 'reset', 'checkbox', 'radio']
@@ -1592,10 +1611,9 @@
             return;
         }
         input.classList.remove('is-valid');
-        const shouldShow = force || input.dataset.touched === 'true';
         input.classList.toggle(
             'is-invalid',
-            shouldShow && !input.checkValidity()
+            state.validationAttempted && !input.checkValidity()
         );
     }
 
@@ -1888,7 +1906,14 @@
             } else {
                 resetPrograms();
             }
-            state.hasGovernanceDocument = (documents || []).some(
+            const documentRows = Array.isArray(documents)
+                ? documents
+                : (
+                    Array.isArray(documents?.documents)
+                        ? documents.documents
+                        : []
+                );
+            state.hasGovernanceDocument = documentRows.some(
                 (document) =>
                     document.document_type === 'GOVERNANCE_CLAUSES'
             );
@@ -1963,6 +1988,8 @@
         if (!button) return;
         const id = button.dataset.partnerId;
         selectPartner(id, !state.selectedPartnerIds.has(id));
+        elements.partnerSearch.value = '';
+        renderPartnerResults();
     });
     elements.selectedPartners.addEventListener('click', (event) => {
         const editButton = event.target.closest('[data-edit-partner]');
@@ -2073,7 +2100,6 @@
     form.addEventListener('focusout', (event) => {
         const section = event.target.closest('[data-form-section]');
         if (section) {
-            event.target.dataset.touched = 'true';
             updateControlFeedback(event.target);
             window.setTimeout(() => maybeAdvanceSection(section), 0);
         }

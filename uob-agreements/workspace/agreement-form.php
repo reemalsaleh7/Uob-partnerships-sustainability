@@ -245,7 +245,7 @@ $sdgs = [
                         </select>
                     </div>
                     <?php field('new_partner_country', 'Country *', 'text', 'col-md-3', 'maxlength="100" autocomplete="country-name"'); ?>
-                    <?php field('new_partner_website', 'Website', 'url', 'col-md-6', 'maxlength="255" placeholder="https://..."'); ?>
+                    <?php field('new_partner_website', 'Website *', 'url', 'col-md-6', 'maxlength="255" placeholder="https://..."'); ?>
                     <?php textArea('new_partner_profile', 'Brief partner profile', 'Describe the organization’s purpose, expertise, and relevance to the cooperation.', 3, 'maxlength="4000"'); ?>
                     <div class="col-12">
                         <div class="partner-lookup-actions">
@@ -549,9 +549,12 @@ $sdgs = [
                 </div>
                 <div class="col-12">
                     <label class="form-label" data-label-for="duration">Programme duration *</label>
-                    <input type="text" class="form-control" required readonly placeholder="Choose both dates in one calendar" data-date-range data-program-range data-start-target="" data-end-target="">
-                    <input type="hidden" data-program-field="start_date">
-                    <input type="hidden" data-program-field="end_date">
+                    <div class="date-range-pair" data-date-range-pair>
+                        <input type="text" class="form-control" required readonly placeholder="Select start" aria-label="Programme start date" data-program-field="start_date">
+                        <span class="date-range-separator">to</span>
+                        <input type="text" class="form-control" required readonly placeholder="Select end" aria-label="Programme end date" data-program-field="end_date">
+                    </div>
+                    <input type="text" class="visually-hidden" tabindex="-1" aria-hidden="true" required data-date-range data-program-range data-start-target="" data-end-target="" data-range-trigger-start="" data-range-trigger-end="">
                     <div class="date-range-summary" data-range-summary></div>
                     <div class="invalid-feedback">Select both programme dates.</div>
                 </div>

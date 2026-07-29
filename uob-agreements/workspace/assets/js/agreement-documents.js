@@ -319,7 +319,7 @@
                 link.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             } else if (action === 'delete') {
-                if (!window.confirm(`Delete ${fileName}? This cannot be undone.`)) {
+                if (!await WorkspaceDialog.confirm(`Delete ${fileName}? This cannot be undone.`, { confirmLabel: 'Delete document', danger: true })) {
                     return;
                 }
 

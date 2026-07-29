@@ -216,7 +216,9 @@ class PartnerService
         } elseif ($this->length($country) > 100) {
             $errors[] = 'Partner country must not exceed 100 characters';
         }
-        if ($website !== null) {
+        if ($website === null) {
+            $errors[] = 'Partner website is required';
+        } else {
             $scheme = strtolower((string) parse_url($website, PHP_URL_SCHEME));
             if (
                 filter_var($website, FILTER_VALIDATE_URL) === false

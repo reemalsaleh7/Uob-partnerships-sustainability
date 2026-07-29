@@ -344,8 +344,14 @@ final class AgreementClauseExtractionService
             'COORDINATOR' =>
                 '/\bco-?ordinator\b|\bfocal\s+point\b|منسق|نقطة\s+اتصال/iu',
             'SIGNATORY' =>
-                '/\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b|المفوض\s+بالتوقيع|المخول\s+بالتوقيع|التوقيع|الموقعون?/iu',
+                '/\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b|for\s+and\s+on\s+behalf\s+of|المفوض\s+بالتوقيع|المخول\s+بالتوقيع|التوقيع|الموقعون?|نيابة\s+عن/iu',
         ];
+
+        $anyRolePattern = '/\bco-?ordinator\b|\bfocal\s+point\b'
+            . '|\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b'
+            . '|for\s+and\s+on\s+behalf\s+of'
+            . '|منسق|نقطة\s+اتصال|المفوض\s+بالتوقيع'
+            . '|المخول\s+بالتوقيع|التوقيع|الموقعون?|نيابة\s+عن/iu';
 
         foreach ($paragraphs as $index => $paragraph) {
             foreach ($rolePatterns as $role => $rolePattern) {
@@ -353,26 +359,28 @@ final class AgreementClauseExtractionService
                     continue;
                 }
 
-                $context = array_slice(
+                $context = $this->contactContext(
                     $paragraphs,
-                    max(0, $index - 2),
-                    7
+                    $index,
+                    $anyRolePattern
                 );
                 $contextText = implode("\n", $context);
-                $partyType = preg_match(
-                    '/University\s+of\s+Bahrain|\bUOB\b|جامعة\s+البحرين/iu',
-                    $contextText
-                ) === 1 ? 'UOB' : 'PARTNER';
+                $partyType = $this->contactPartyType(
+                    $paragraph,
+                    $contextText,
+                    array_values($contacts),
+                    $role
+                );
                 $contact = [
                     'party_type' => $partyType,
                     'contact_role' => $role,
                     'full_name' => $this->labeledValue(
                         $context,
-                        '/(?:full\s+name|name|الاسم\s+الكامل|الاسم)\s*[:\-]\s*(.+)$/iu'
+                        '(?:full\s+name|name|الاسم\s+الكامل|الاسم)'
                     ),
                     'job_title' => $this->labeledValue(
                         $context,
-                        '/(?:job\s+title|title|position|designation|المسمى\s+الوظيفي|المنصب)\s*[:\-]\s*(.+)$/iu'
+                        '(?:job\s+title|title|position|designation|capacity|المسمى\s+الوظيفي|المنصب|الصفة)'
                     ),
                     'email' => '',
                     'phone' => '',
@@ -417,11 +425,89 @@ final class AgreementClauseExtractionService
         return array_values($contacts);
     }
 
-    private function labeledValue(array $paragraphs, string $pattern): string
+    /**
+     * Keep each coordinator/signatory's labels inside its own role block. This
+     * prevents a nearby person's name from being reused as another person's
+     * job title or contact value.
+     */
+    private function contactContext(
+        array $paragraphs,
+        int $roleIndex,
+        string $anyRolePattern
+    ): array {
+        $context = [(string) ($paragraphs[$roleIndex] ?? '')];
+        $limit = min(count($paragraphs), $roleIndex + 12);
+
+        for ($index = $roleIndex + 1; $index < $limit; $index++) {
+            $paragraph = (string) $paragraphs[$index];
+            if (preg_match($anyRolePattern, $paragraph) === 1) {
+                break;
+            }
+            $context[] = $paragraph;
+        }
+
+        return $context;
+    }
+
+    private function contactPartyType(
+        string $roleParagraph,
+        string $context,
+        array $contacts,
+        string $role
+    ): string {
+        $uobPattern =
+            '/University\s+of\s+Bahrain|\bUOB\b|جامعة\s+البحرين/iu';
+        $partnerPattern =
+            '/partner|second\s+party|الطرف\s+الثاني|الجهة\s+الشريكة/iu';
+
+        if (preg_match($uobPattern, $roleParagraph) === 1) {
+            return 'UOB';
+        }
+        if (preg_match($partnerPattern, $roleParagraph) === 1) {
+            return 'PARTNER';
+        }
+
+        $hasUob = preg_match($uobPattern, $context) === 1;
+        $hasPartner = preg_match($partnerPattern, $context) === 1;
+        if ($hasUob && !$hasPartner) {
+            return 'UOB';
+        }
+        if ($hasPartner && !$hasUob) {
+            return 'PARTNER';
+        }
+
+        foreach ($contacts as $contact) {
+            if (
+                ($contact['contact_role'] ?? null) === $role
+                && ($contact['party_type'] ?? null) === 'UOB'
+            ) {
+                return 'PARTNER';
+            }
+        }
+
+        return 'UOB';
+    }
+
+    private function labeledValue(array $paragraphs, string $labels): string
     {
-        foreach ($paragraphs as $paragraph) {
-            if (preg_match($pattern, $paragraph, $match) === 1) {
-                return trim($match[1]);
+        $inline = '/^\s*' . $labels . '\s*[:\-]\s*(.+?)\s*$/iu';
+        $standalone = '/^\s*' . $labels . '\s*[:\-]?\s*$/iu';
+        foreach ($paragraphs as $index => $paragraph) {
+            if (preg_match($inline, $paragraph, $match) === 1) {
+                $value = trim($match[1]);
+                if ($value !== '' && $this->length($value) <= 255) {
+                    return $value;
+                }
+            }
+            if (preg_match($standalone, $paragraph) === 1) {
+                $value = trim((string) ($paragraphs[$index + 1] ?? ''));
+                if (
+                    $value !== ''
+                    && $this->length($value) <= 255
+                    && preg_match('/[:@]/u', $value) !== 1
+                ) {
+                    return $value;
+                }
             }
         }
 
@@ -432,6 +518,15 @@ final class AgreementClauseExtractionService
     {
         $value = preg_replace($rolePattern, '', $paragraph, 1);
         $value = trim((string) $value, " \t\n\r\0\x0B:-|");
+        if (
+            $value === ''
+            || preg_match(
+                '/^(?:name|full\s+name|title|job\s+title|position|designation|الاسم|المنصب|المسمى\s+الوظيفي)$/iu',
+                $value
+            ) === 1
+        ) {
+            return '';
+        }
 
         return $this->length($value) <= 255 ? $value : '';
     }

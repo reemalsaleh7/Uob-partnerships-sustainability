@@ -6,6 +6,8 @@ $quick = in_array('--quick', $argv, true);
 $tests = [
     'DatabaseManagerSmokeTest.php',
     'AgreementFormExperienceSmokeTest.php',
+    'PublicPortalDatabaseIntegrationSmokeTest.php',
+    'WorkspaceExperienceSmokeTest.php',
     'ApiBoundarySmokeTest.php',
     'AuthenticationHardeningSmokeTest.php',
     'AgreementReleaseReadinessSmokeTest.php',

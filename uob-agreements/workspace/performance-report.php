@@ -20,6 +20,14 @@ workspaceHeader('Performance report', 'performance');
             <div class="d-flex flex-wrap align-items-center gap-3"><span data-report-status></span><span class="text-secondary" data-report-period></span><span class="text-danger fw-semibold d-none" data-report-overdue>Overdue</span></div>
         </div>
         <div class="d-flex flex-wrap gap-2 align-self-lg-end">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Download summary</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" type="button" data-export-report="pdf">PDF / print</button></li>
+                    <li><button class="dropdown-item" type="button" data-export-report="csv">CSV</button></li>
+                    <li><button class="dropdown-item" type="button" data-export-report="json">JSON</button></li>
+                </ul>
+            </div>
             <button class="btn btn-primary d-none" type="button" data-download-report-document>Download annual report</button>
             <a class="btn btn-outline-primary" href="#" data-report-agreement-link>Open Agreement</a>
         </div>

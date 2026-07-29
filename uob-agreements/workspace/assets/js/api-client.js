@@ -215,6 +215,17 @@
             : defaultPath;
     }
 
+    function workspacePath(value, defaultPath = 'agreements.php') {
+        const candidate = String(value || '').replace(/^\/+/, '');
+        const allowedPath = /^(index|profile|initiative-hub|agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review|performance-reports|performance-report|performance-dashboard)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
+        return allowedPath.test(candidate) ? candidate : defaultPath;
+    }
+
+    function agreementReviewUrl(id) {
+        const current = `${global.location.pathname.split('/').pop()}${global.location.search}`;
+        return `agreement.php?id=${encodeURIComponent(id)}&return_to=${encodeURIComponent(workspacePath(current, 'workflow-inbox.php'))}`;
+    }
+
     function loginPath() {
         const current = `${global.location.pathname.split('/').pop()}${global.location.search}`;
         return `login.php?to=${encodeURIComponent(current)}`;
@@ -334,11 +345,15 @@
 
         const sidebar = document.getElementById('workspaceSidebar');
         const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+        const workspaceApp = document.querySelector('.workspace-app');
 
         if (sidebar && sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
             sidebarToggle.dataset.bound = 'true';
             sidebarToggle.addEventListener('click', () => {
-                const isOpen = sidebar.classList.toggle('is-open');
+                const isMobile = window.innerWidth < 992;
+                const isOpen = isMobile
+                    ? sidebar.classList.toggle('is-open')
+                    : !workspaceApp.classList.toggle('sidebar-collapsed');
                 sidebarToggle.setAttribute('aria-expanded', String(isOpen));
             });
 
@@ -350,6 +365,14 @@
                     && !sidebarToggle.contains(event.target)
                 ) {
                     sidebar.classList.remove('is-open');
+                    sidebarToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') return;
+                sidebar.classList.remove('is-open');
+                if (window.innerWidth < 992) {
                     sidebarToggle.setAttribute('aria-expanded', 'false');
                 }
             });
@@ -459,6 +482,8 @@
         request,
         jsonBody,
         safeReturnPath,
+        workspacePath,
+        agreementReviewUrl,
         hasPermission,
         displayName,
         initials,

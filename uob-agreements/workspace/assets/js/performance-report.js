@@ -299,7 +299,7 @@
     });
 
     elements.submit.addEventListener('click', async () => {
-        if (state.busy || !window.confirm('Submit this report for management review?')) return;
+        if (state.busy || !await WorkspaceDialog.confirm('Submit this report for management review?', { confirmLabel: 'Submit report' })) return;
         clearMessages();
         busy(true);
         try {
@@ -319,7 +319,7 @@
             message(elements.alert, 'Explain the required changes before returning the report.');
             return;
         }
-        if (!window.confirm(decision === 'ACCEPT' ? 'Accept this performance report?' : 'Return this report for changes?')) return;
+        if (!await WorkspaceDialog.confirm(decision === 'ACCEPT' ? 'Accept this performance report?' : 'Return this report for changes?', { confirmLabel: decision === 'ACCEPT' ? 'Accept report' : 'Return report', danger: decision !== 'ACCEPT' })) return;
         clearMessages();
         busy(true);
         try {
@@ -351,6 +351,21 @@
             message(elements.alert, error.message || 'The annual report could not be downloaded.');
         } finally {
             busy(false);
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-export-report]');
+        if (!button || !state.report) return;
+        try {
+            WorkspaceExport.download(
+                `annual-report-${state.id}`,
+                state.report,
+                button.dataset.exportReport,
+                `Annual performance report · ${state.report.agreement_title}`
+            );
+        } catch (error) {
+            message(elements.alert, error.message || 'The report export could not be prepared.');
         }
     });
 

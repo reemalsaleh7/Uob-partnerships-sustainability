@@ -753,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       <div class="d-flex gap-2">
         <?php if (!$isLoggedIn): ?>
-          <a href="<?= $base ?>login.php?lang=<?= h($lang) ?>" class="btn btn-outline-primary btn-sm"><?= h(t('login')) ?></a>
+          <a href="<?= $base ?>workspace/login.php" class="btn btn-outline-primary btn-sm"><?= h(t('login')) ?></a>
         <?php else: ?>
           <a href="<?= $base ?>logout.php?lang=<?= h($lang) ?>" class="btn btn-outline-secondary btn-sm"><?= h(t('logout')) ?></a>
         <?php endif; ?>

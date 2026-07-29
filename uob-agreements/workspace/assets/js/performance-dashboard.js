@@ -8,6 +8,7 @@
         content: document.querySelector('[data-dashboard-content]'),
         agreementKpis: document.querySelector('[data-agreement-kpis]'),
         reportKpis: document.querySelector('[data-report-kpis]'),
+        insights: document.querySelector('[data-performance-insights]'),
         deadlines: document.querySelector('[data-dashboard-deadlines]'),
         metrics: document.querySelector('[data-dashboard-metrics]'),
         programs: document.querySelector('[data-program-health]'),
@@ -34,6 +35,19 @@
         return column;
     }
 
+    function insight(label, value, detail, tone = '') {
+        const panel = document.createElement('article');
+        panel.className = `dashboard-priority-card ${tone}`.trim();
+        const eyebrow = document.createElement('span');
+        eyebrow.textContent = label;
+        const strong = document.createElement('strong');
+        strong.textContent = value;
+        const copy = document.createElement('small');
+        copy.textContent = detail;
+        panel.append(eyebrow, strong, copy);
+        return panel;
+    }
+
     function render(payload) {
         elements.scope.textContent = payload.scope === 'OWN_PORTFOLIO'
             ? 'Your portfolio · Agreements you created and manage'
@@ -51,6 +65,20 @@
             card('Awaiting review', reports.submitted),
             card('Returned reports', reports.returned),
             card('Overdue reports', reports.overdue, Number(reports.overdue) > 0 ? 'kpi-danger' : '')
+        );
+        const reportable = Number(agreements.reportable_agreements || 0);
+        const accepted = Number(reports.accepted || 0);
+        const coverage = reportable > 0
+            ? Math.min(100, accepted / reportable * 100)
+            : 0;
+        const atRiskPrograms = (payload.programs || [])
+            .filter((item) => ['AT_RISK', 'DELAYED'].includes(item.progress_status))
+            .reduce((sum, item) => sum + Number(item.program_count || 0), 0);
+        const deadlines = (payload.deadlines || []).length;
+        elements.insights.replaceChildren(
+            insight('Reporting coverage', `${number(coverage)}%`, 'Accepted reports compared with reportable Agreements', coverage >= 80 ? 'is-clear' : 'is-warning'),
+            insight('Programme risk', number(atRiskPrograms), 'Executive programmes marked at risk or delayed', atRiskPrograms ? 'is-danger' : 'is-clear'),
+            insight('Next 30 days', number(deadlines), 'Reports due or already overdue in the selected year', deadlines ? 'is-warning' : 'is-clear')
         );
 
         elements.deadlines.replaceChildren();

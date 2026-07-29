@@ -50,8 +50,10 @@ function tl(string $ar, string $en): string {
 }
 
 /* ========= load data ========= */
-$agreementsPath = __DIR__ . '/data/agreements.csv';
-$agreements = read_csv_assoc($agreementsPath, 1); // header at line 2
+// Approved and active Agreements come from PostgreSQL. readAgreements() keeps
+// a controlled legacy fallback so the public portal can still render during a
+// temporary database outage.
+$agreements = readAgreements(true);
 
 $initiativeFiles = glob(__DIR__ . '/data/initiatives*.csv') ?: [];
 $allInitiatives = [];
@@ -171,6 +173,15 @@ foreach ($allCountries as $country) {
   foreach ($agreements as $a) {
     $c = norm_country($a['country'] ?? '');
     if ($c !== $country) continue;
+    if (
+        trim((string) ($a['latitude'] ?? '')) !== ''
+        && trim((string) ($a['longitude'] ?? '')) !== ''
+    ) {
+        $coord = [
+            'lat' => (float) $a['latitude'],
+            'lng' => (float) $a['longitude'],
+        ];
+    }
     $agreementsList[] = [
      'code' => $a['agreement_code'] ?? '',
      'name' => $a['agreement_name'] ?? '',

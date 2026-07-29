@@ -207,18 +207,6 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                 label: 'Implementing Unit',
                 field: 'Implementing Unit',
             },
-            {
-                id: 'qsRanking',
-                label: 'Supports QS Ranking',
-                field: 'Supports QS Ranking',
-                type: 'boolean',
-            },
-            {
-                id: 'greenMetric',
-                label: 'Supports UI GreenMetric',
-                field: 'Supports UI GreenMetric',
-                type: 'boolean',
-            }
         ];
 
         // Initialize advanced filters
@@ -770,13 +758,12 @@ const apiUrl = 'agreements-api.php';
                     sdgs: parseSDGs(agreement),
                     metrics: {
                         studentsExchanged: String(agreement["Students Exchanged"] || '0'),
+                        trainedStudents: String(agreement["Trained Students"] || '0'),
                         facultyExchanged: String(agreement["Faculty Exchanged"] || '0'),
                         jointPrograms: String(agreement["Joint Programs"] || '0')
                     },
-                    supportsQS: agreement["Supports QS Ranking"] || 'No',
-                    supportsGreenMetric: agreement["Supports UI GreenMetric"] || 'No',
                     website: agreement["Partner Website"] || '',
-                    agreementSigningLink: agreement["Agreement Signing Link"] || '',
+                    status: String(agreement["Status"] || '').toUpperCase(),
                     lat: parseFloat(agreement["Latitude"]) || 0,
                     lng: parseFloat(agreement["Longitude"]) || 0,
                     // Store raw fields for advanced filtering
@@ -784,18 +771,7 @@ const apiUrl = 'agreements-api.php';
                     "SDGs": agreement["SDGs"],
                     "Partner Type": agreement["Partner Type"],
                     "Implementing Unit": agreement["Implementing Unit"],
-                    "Supports QS Ranking": agreement["Supports QS Ranking"],
-                    "Supports UI GreenMetric": agreement["Supports UI GreenMetric"],
-                    "Status": (() => {
-                        const endDate = convertExcelDate(agreement["End Date"]);
-                        if (!endDate || endDate === 'Not specified') return '';
-                        const parts = endDate.split('/');
-                        if (parts.length !== 3) return '';
-                        const parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                        if (isNaN(parsed)) return '';
-                        const today = new Date(); today.setHours(0, 0, 0, 0);
-                        return parsed >= today ? 'Active' : 'Expired';
-                    })()
+                    "Status": agreement["Status"] || ''
                 }));
 
                 // Pre-build color map from all unique types
@@ -827,14 +803,15 @@ const apiUrl = 'agreements-api.php';
                 }
             });
 
-        function getAgreementStatus(endDate) {
+        function getAgreementStatus(endDate, publishedStatus = '') {
+            if (publishedStatus === 'ACTIVE') return 'active';
+            if (publishedStatus === 'EXPIRED') return 'expired';
             if (!endDate || endDate === 'Not specified') return null;
 
-            // Parse dd/mm/yyyy
             const parts = endDate.split('/');
-            if (parts.length !== 3) return null;
-
-            const parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            const parsed = parts.length === 3
+                ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+                : new Date(endDate);
             if (isNaN(parsed)) return null;
 
             const today = new Date();
@@ -1153,7 +1130,7 @@ const apiUrl = 'agreements-api.php';
                                         <div class="partnership-name" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                                             <span>${p.name}</span>
                                             ${(() => {
-                                                const status = getAgreementStatus(p.endDate);
+                                                const status = getAgreementStatus(p.endDate, p.status);
                                                 if (status === 'active') return '<span style="font-size:0.72rem; font-weight:700; background:#d1fae5; color:#065f46; border-radius:20px; padding:2px 8px; white-space:nowrap;">Active</span>';
                                                 if (status === 'expired') return '<span style="font-size:0.72rem; font-weight:700; background:#fee2e2; color:#991b1b; border-radius:20px; padding:2px 8px; white-space:nowrap;">Expired</span>';
                                                 return '';

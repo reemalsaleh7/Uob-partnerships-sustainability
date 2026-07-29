@@ -958,6 +958,11 @@ class AgreementService {
                     'Every selected partner must have a country so Agreement scope can be derived',
                 ];
             }
+            if (trim((string) ($partner['website'] ?? '')) === '') {
+                return [
+                    'Every selected partner must have a website',
+                ];
+            }
             if (!in_array(
                 strtoupper(trim((string) ($partner['partner_type'] ?? ''))),
                 self::PARTNER_TYPES,

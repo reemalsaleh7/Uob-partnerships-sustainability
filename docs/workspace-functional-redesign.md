@@ -49,10 +49,14 @@ marked used and cannot be replayed.
 ### All authenticated users
 
 - Receive a role-aware Overview page.
+- Arrive on Overview after successful authentication from the public portal.
 - Receive a real Profile page showing University ID, contact information,
   active positions, roles, permissions, last login, and security controls.
-- Use one responsive sidebar for Agreements, Initiatives, performance, account,
-  and public-portal navigation.
+- Use one responsive sliding/collapsible sidebar for Agreements, Initiatives,
+  performance, account, and public-portal navigation.
+- Receive role-specific priority cards: work requiring action, records moving
+  through review, reporting deadlines, programme risk, and relevant next
+  actions.
 
 ## Review timeline
 
@@ -70,6 +74,25 @@ The Agreement detail screen renders:
 - when the current stage started;
 - who completed earlier stages; and
 - expandable workflow activity history.
+
+Skipped workflow stages are removed from the visible timeline. In particular,
+Finance does not appear when Initial VP selected Legal-only review. Agreement
+and lifecycle details use grouped accordions instead of one dense field grid.
+Field-comment pages carry a validated `return_to` path so **Back to Agreement
+review** returns to the exact stage page that opened them.
+
+Confirmation actions use the shared Bootstrap dialog styled with the
+University palette rather than browser-native popups.
+
+## Export formats
+
+Agreement records, lifecycle requests, and annual-report summaries can be
+exported as JSON, flattened CSV, or a print-ready view that the browser can
+save as PDF. The original annual-report evidence file remains available
+through the separately authorized secure-document download.
+
+Exports contain only data already returned to the authenticated viewer. They
+do not bypass record or document authorization.
 
 ## Performance scope
 

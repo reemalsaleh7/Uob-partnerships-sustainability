@@ -596,6 +596,33 @@ textarea.form-control {
     background: #fffafa;
 }
 
+.workspace-confirm-modal .modal-content {
+    overflow: hidden;
+    border: 1px solid rgba(201, 162, 39, 0.24);
+    border-radius: 1.25rem;
+    box-shadow: 0 28px 70px rgba(2, 8, 23, 0.28);
+}
+
+.workspace-confirm-modal .modal-header {
+    padding: 1.25rem 1.4rem;
+    background:
+        radial-gradient(24rem 10rem at 0 0, rgba(201, 162, 39, 0.14), transparent 65%),
+        #fff;
+    border-bottom-color: var(--uob-border);
+}
+
+.workspace-confirm-modal .modal-body {
+    padding: 1.4rem;
+    color: #334155;
+    line-height: 1.7;
+}
+
+.workspace-confirm-modal .modal-footer {
+    padding: 1rem 1.4rem;
+    background: #f8fafc;
+    border-top-color: var(--uob-border);
+}
+
 .review-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1720,6 +1747,7 @@ textarea.form-control {
         radial-gradient(28rem 20rem at -10% 0%, rgba(201, 162, 39, 0.22), transparent 60%),
         linear-gradient(180deg, #102a49 0%, #091b31 58%, #071526 100%);
     box-shadow: 1rem 0 3rem rgba(6, 20, 36, 0.12);
+    transition: transform 220ms ease;
 }
 
 .workspace-brand {
@@ -1905,6 +1933,15 @@ textarea.form-control {
     min-height: 100vh;
     margin-left: var(--workspace-sidebar);
     flex-direction: column;
+    transition: margin-left 220ms ease;
+}
+
+.workspace-app.sidebar-collapsed .workspace-sidebar {
+    transform: translateX(-105%);
+}
+
+.workspace-app.sidebar-collapsed .workspace-stage {
+    margin-left: 0;
 }
 
 .workspace-topbar {
@@ -1970,7 +2007,7 @@ textarea.form-control {
 }
 
 .workspace-menu-button {
-    display: none;
+    display: block;
     width: 2.5rem;
     height: 2.5rem;
     padding: 0.55rem;
@@ -2801,5 +2838,244 @@ textarea.form-control {
     .workspace-footer {
         align-items: flex-start;
         flex-direction: column;
+    }
+}
+
+/* Portal, record, and workflow refinement */
+.record-section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-priority-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-priority-card {
+    display: grid;
+    min-height: 8.5rem;
+    align-content: center;
+    padding: 1.2rem 1.3rem;
+    color: var(--workspace-ink);
+    background: #fff;
+    border: 1px solid var(--uob-border);
+    border-left: 0.3rem solid #7891ad;
+    border-radius: 1rem;
+    box-shadow: var(--uob-shadow);
+    text-decoration: none;
+}
+
+.dashboard-priority-card:hover {
+    color: var(--workspace-ink);
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+}
+
+.dashboard-priority-card > span {
+    color: var(--uob-muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dashboard-priority-card > strong {
+    margin: 0.2rem 0;
+    color: var(--uob-navy);
+    font-size: 1.8rem;
+    font-weight: 900;
+}
+
+.dashboard-priority-card > small {
+    color: var(--uob-muted);
+    line-height: 1.5;
+}
+
+.dashboard-priority-card.is-danger {
+    border-left-color: var(--workspace-danger);
+}
+
+.dashboard-priority-card.is-warning {
+    border-left-color: var(--workspace-warning);
+}
+
+.dashboard-priority-card.is-clear {
+    border-left-color: var(--workspace-success);
+}
+
+.record-accordion {
+    align-self: start;
+}
+
+.record-accordion > summary,
+.lifecycle-form-card > summary {
+    display: flex;
+    min-height: 4.8rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.35rem;
+    color: var(--workspace-ink);
+    cursor: pointer;
+    list-style: none;
+    background: linear-gradient(180deg, #fff, #fbfcfe);
+}
+
+.record-accordion > summary::-webkit-details-marker,
+.lifecycle-form-card > summary::-webkit-details-marker {
+    display: none;
+}
+
+.record-accordion > summary::after,
+.lifecycle-form-card > summary::after {
+    width: 0.65rem;
+    height: 0.65rem;
+    flex: 0 0 auto;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    content: "";
+    transform: rotate(45deg);
+    transition: transform 180ms ease;
+}
+
+.record-accordion[open] > summary::after,
+.lifecycle-form-card[open] > summary::after {
+    transform: rotate(225deg);
+}
+
+.record-accordion > summary strong,
+.record-accordion > summary small,
+.lifecycle-form-card > summary strong,
+.lifecycle-form-card > summary small {
+    display: block;
+}
+
+.record-accordion > summary strong,
+.lifecycle-form-card > summary strong {
+    font-size: 0.92rem;
+    font-weight: 900;
+}
+
+.record-accordion > summary small,
+.lifecycle-form-card > summary small {
+    margin-top: 0.2rem;
+    color: var(--uob-muted);
+    font-size: 0.68rem;
+}
+
+.record-accordion[open] > summary,
+.lifecycle-form-card[open] > summary {
+    border-bottom: 1px solid var(--uob-border);
+}
+
+.lifecycle-form-card > summary {
+    justify-content: flex-start;
+}
+
+.lifecycle-form-card > summary > span:nth-child(2) {
+    flex: 1;
+}
+
+.lifecycle-form-card > summary > b {
+    color: var(--uob-muted);
+    font-size: 0.68rem;
+}
+
+.lifecycle-form-card.is-complete > summary > b {
+    color: var(--workspace-success);
+}
+
+.lifecycle-form-card.needs-attention > summary > b,
+.lifecycle-form-card.needs-attention .agreement-section-number {
+    color: var(--workspace-danger);
+}
+
+.lifecycle-form-card.needs-attention {
+    border-color: rgba(186, 61, 79, 0.45);
+}
+
+.lifecycle-form-toolbar {
+    position: sticky;
+    z-index: 1010;
+    top: 5rem;
+}
+
+.detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.review-decision-panel {
+    padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.review-decision-panel + .review-decision-panel {
+    border-top: 1px solid var(--uob-border);
+}
+
+.review-danger-zone {
+    background: linear-gradient(180deg, #fff, #fff9f9);
+}
+
+.workspace-card .table-responsive {
+    scrollbar-color: #b7c2cf transparent;
+}
+
+@media (max-width: 991.98px) {
+    .record-section-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lifecycle-form-toolbar {
+        top: 4.6rem;
+    }
+
+    .workspace-sidebar {
+        box-shadow: 1.25rem 0 3rem rgba(6, 20, 36, 0.28);
+    }
+
+    .dashboard-priority-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .date-range-pair {
+        grid-template-columns: 1fr;
+    }
+
+    .date-range-separator {
+        padding: 0.1rem;
+        text-align: center;
+    }
+
+    .detail-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .detail-actions > .btn,
+    .detail-actions > .dropdown {
+        flex: 1 1 10rem;
+    }
+
+    .detail-actions > .dropdown > .btn {
+        width: 100%;
+    }
+
+    .record-accordion > summary,
+    .lifecycle-form-card > summary {
+        padding: 1rem;
+    }
+
+    .workspace-table th,
+    .workspace-table td {
+        padding: 0.75rem;
     }
 }

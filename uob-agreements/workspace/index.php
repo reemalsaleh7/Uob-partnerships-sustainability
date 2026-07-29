@@ -24,6 +24,8 @@ workspaceHeader('Overview', 'dashboard');
         <span class="dashboard-role-chip" data-dashboard-role></span>
     </section>
 
+    <section class="dashboard-priority-grid mt-4" data-dashboard-priorities aria-label="Priority briefing"></section>
+
     <div class="dashboard-section-title">
         <div>
             <h2>What you can do</h2>

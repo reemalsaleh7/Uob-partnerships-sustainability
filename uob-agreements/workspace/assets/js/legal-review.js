@@ -70,7 +70,9 @@
         document.querySelector('[data-agreement-status]').replaceChildren(
             AgreementApi.createStatusBadge(agreement.status)
         );
-        elements.openAgreement.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+        elements.openAgreement.href = AgreementApi.agreementReviewUrl(
+            agreement.agreement_id
+        );
     }
 
     function setBusy(isBusy, action = '') {
@@ -162,7 +164,7 @@
             return;
         }
 
-        if (!window.confirm('Approve the Legal review for this Agreement?')) {
+        if (!await WorkspaceDialog.confirm('Approve the Legal review for this Agreement?', { confirmLabel: 'Approve Legal review' })) {
             return;
         }
 
@@ -194,7 +196,7 @@
             return;
         }
 
-        if (!window.confirm('Send this Legal change request to the VP for routing?')) {
+        if (!await WorkspaceDialog.confirm('Send this Legal change request to the VP for routing?', { confirmLabel: 'Send change request' })) {
             return;
         }
 

@@ -355,4 +355,61 @@ agreementFormAssert(
     'Article 1 and Article 2 extraction are grouped incorrectly'
 );
 
+$contactExtractor = new ReflectionMethod(
+    AgreementClauseExtractionService::class,
+    'extractContacts'
+);
+$contactExtractor->setAccessible(true);
+$contacts = $contactExtractor->invoke($extractor, [
+    'University of Bahrain Coordinator',
+    'Name: Dr Aisha Ahmed',
+    'Job title: Director of Partnerships',
+    'Email: aisha@uob.example',
+    'Partner Coordinator',
+    'Name: Mr Daniel Smith',
+    'Position: International Office Manager',
+    'Email: daniel@partner.example',
+    'For and on behalf of the University of Bahrain',
+    'Full name: Prof Mariam Ali',
+    'Capacity: President',
+    'For and on behalf of the partner organization',
+    'Full name: Dr John Lee',
+    'Designation: Chief Executive Officer',
+]);
+$contactsByRole = [];
+foreach ($contacts as $contact) {
+    $contactsByRole[
+        ($contact['party_type'] ?? '')
+        . ':'
+        . ($contact['contact_role'] ?? '')
+    ] = $contact;
+}
+agreementFormAssert(
+    ($contactsByRole['UOB:COORDINATOR']['full_name'] ?? '')
+        === 'Dr Aisha Ahmed'
+        && ($contactsByRole['UOB:COORDINATOR']['job_title'] ?? '')
+            === 'Director of Partnerships'
+        && ($contactsByRole['PARTNER:COORDINATOR']['full_name'] ?? '')
+            === 'Mr Daniel Smith'
+        && ($contactsByRole['PARTNER:COORDINATOR']['job_title'] ?? '')
+            === 'International Office Manager'
+        && ($contactsByRole['UOB:SIGNATORY']['full_name'] ?? '')
+            === 'Prof Mariam Ali'
+        && ($contactsByRole['UOB:SIGNATORY']['job_title'] ?? '')
+            === 'President'
+        && ($contactsByRole['PARTNER:SIGNATORY']['full_name'] ?? '')
+            === 'Dr John Lee'
+        && ($contactsByRole['PARTNER:SIGNATORY']['job_title'] ?? '')
+            === 'Chief Executive Officer',
+    'Coordinator and signatory names or job titles are assigned incorrectly'
+);
+agreementFormAssert(
+    str_contains(
+        $javascript,
+        "state.validationAttempted && !input.checkValidity()"
+    )
+        && !str_contains($javascript, "dataset.touched = 'true'"),
+    'Fields must not show red validation before a save attempt'
+);
+
 echo "Agreement form experience smoke test passed.\n";
