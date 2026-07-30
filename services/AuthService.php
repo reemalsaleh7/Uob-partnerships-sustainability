@@ -32,7 +32,7 @@ class AuthService {
 
         try {
             if (!password_verify($password, $user['password_hash'])) {
-                $this->userRepo->incrementFailedAttempts($userId);
+                $this->userRepo->recordFailedLogin($userId);
                 $this->userRepo->commit();
                 return ['success' => false, 'error' => 'Invalid credentials'];
             }
@@ -78,7 +78,7 @@ class AuthService {
         }
     }
 
-    public function isAuthenticated(): bool {
+       public function isAuthenticated(): bool {
         return isset($_SESSION['user_id']);
     }
 
@@ -96,6 +96,34 @@ class AuthService {
             'roles' => $this->permissionService->getRoleNames($userId),
             'permissions' => $this->permissionService->getPermissionCodes($userId),
             'positions' => $this->userRepo->getActivePositions($userId),
+        ];
+    }
+
+    public function createLegacyInitiativeHandoff(): array
+    {
+        if (!$this->isAuthenticated()) {
+            throw new DomainException('Authentication required.');
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+
+        if ($userId <= 0) {
+            throw new DomainException('Authentication required.');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $expiresAt = new DateTimeImmutable('+5 minutes');
+
+        $this->userRepo->createLegacyHandoff(
+            $userId,
+            $tokenHash,
+            $expiresAt
+        );
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->format(DATE_ATOM),
         ];
     }
 }

@@ -24,10 +24,13 @@ if (preg_match('/\A[a-f0-9]{64}\z/D', $token) !== 1) {
 $allowedTarget = preg_match(
     '/\A(?:request-initiative|initiatives|agreements|sdg)\.php(?:\?[A-Za-z0-9_=&%.-]*)?\z/D',
     $target
+) === 1 || preg_match(
+    '/\Aworkspace\/initiative-module\/(?:index|initiative-dashboard|initiative-create|initiative-view|initiative-edit)\.php(?:\?[A-Za-z0-9_=&%.-]*)?\z/D',
+    $target
 ) === 1;
 
 if (!$allowedTarget) {
-    $target = 'request-initiative.php?lang=en';
+    $target = 'workspace/initiative-module/index.php';
 }
 
 $db = Database::connect();
@@ -66,13 +69,14 @@ try {
 
     $db->commit();
     session_regenerate_id(true);
+    $_SESSION['user_id'] = (int) $user['user_id'];
+    $_SESSION['workspace_user_id'] = (int) $user['user_id'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['role'] = in_array(
         $user['is_administrator'],
         [true, 1, '1', 't', 'true'],
         true
     ) ? 'admin' : 'user';
-    $_SESSION['workspace_user_id'] = (int) $user['user_id'];
 
     header('Location: ' . $target, true, 303);
     exit;

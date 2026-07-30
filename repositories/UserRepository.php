@@ -159,19 +159,26 @@ class UserRepository {
              WHERE user_id = :user_id
                AND (used_at IS NOT NULL OR expires_at < NOW())'
         );
-        $delete->execute(['user_id' => $userId]);
+
+        $delete->execute([
+        'user_id' => $userId,
+        ]);
 
         $insert = $this->db->prepare(
-            'INSERT INTO workspace_legacy_handoffs (
-                user_id, token_hash, expires_at
+            "INSERT INTO workspace_legacy_handoffs (
+                user_id,
+                token_hash,
+                expires_at
              ) VALUES (
-                :user_id, :token_hash, :expires_at
-             )'
+                :user_id,
+                :token_hash,
+                NOW() + INTERVAL '5 minutes'
+             )"
         );
+
         $insert->execute([
             'user_id' => $userId,
             'token_hash' => $tokenHash,
-            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
         ]);
     }
 }

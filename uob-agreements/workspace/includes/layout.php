@@ -8,6 +8,23 @@ function workspaceHeader(
 ): void {
     $GLOBALS['workspace_is_login_page'] = $activePage === '';
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $scriptName = str_replace(
+        '\\',
+        '/',
+        (string) ($_SERVER['SCRIPT_NAME'] ?? '')
+        );
+
+    $workspacePosition = strpos($scriptName, '/workspace/');
+
+    $workspaceBase = $workspacePosition !== false
+        ? substr($scriptName, 0, $workspacePosition + strlen('/workspace/'))
+        : './';
+
+    $safeWorkspaceBase = htmlspecialchars(
+        $workspaceBase,
+        ENT_QUOTES,
+        'UTF-8'
+    );
     $active = static fn (string $page): string =>
         $activePage === $page ? ' active' : '';
     $isLoginPage = $activePage === '';
@@ -21,6 +38,7 @@ function workspaceHeader(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="{$safeWorkspaceBase}">
     <title>{$safeTitle} | UOB Partnerships Workspace</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
@@ -182,6 +200,22 @@ HTML;
         $safeScript = htmlspecialchars((string) $script, ENT_QUOTES, 'UTF-8');
         echo "    <script src=\"{$safeScript}\"></script>\n";
     }
-
+    echo <<<HTML
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+    if (
+        typeof AgreementApi !== 'undefined'
+        && document.body.classList.contains('workspace-body')
+        && !document.body.classList.contains('workspace-login-body')
+    ) {
+        try {
+            await AgreementApi.requireSession();
+        } catch (error) {
+            console.error('Workspace session initialization failed:', error);
+        }
+    }
+});
+</script>
+HTML;
     echo "</body>\n</html>\n";
 }

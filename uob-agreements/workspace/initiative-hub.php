@@ -11,43 +11,40 @@ workspaceHeader('Initiative hub', 'initiatives');
     <p class="eyebrow mb-2">Initiatives</p>
     <h1>Move an idea from your department to University approval.</h1>
     <p>
-        Faculty and Department Heads can propose initiatives. The request then moves through Department,
-        College, Vice President, and President approval.
+        Create, follow, and manage University initiatives through the approved workflow.
     </p>
-    <span class="dashboard-role-chip" data-initiative-access>Checking your initiative access…</span>
+    <span class="dashboard-role-chip" data-initiative-access>Initiative workspace</span>
 </section>
 
 <div class="dashboard-section-title">
     <div>
         <h2>Initiative actions</h2>
-        <p>The Initiative module remains connected while its teammate completes the new workflow implementation.</p>
+        <p>Create a new initiative or review existing initiatives.</p>
     </div>
 </div>
 
 <section class="dashboard-action-grid">
-    <a
-        class="dashboard-action d-none"
-        href="#"
-        data-create-initiative
-        data-legacy-initiative="request-initiative.php?lang=en"
-    >
-        <strong>Start an initiative request</strong>
-        <small>Propose an initiative from your college or department.</small>
-        <span>Start request →</span>
+    <a class="dashboard-action" href="#" data-legacy-initiative="workspace/initiative-module/initiative-create.php">
+        <strong>Start an initiative</strong>
+        <small>Create a new initiative draft and optionally link an existing Agreement.</small>
+        <span>Start →</span>
     </a>
-    <a class="dashboard-action" href="../initiatives.php?lang=en">
-        <strong>Browse initiatives</strong>
-        <small>Explore submitted and published University initiatives.</small>
-        <span>Open catalogue →</span>
+
+    <a class="dashboard-action" href="#" data-legacy-initiative="workspace/initiative-module/index.php">
+        <strong>Open Initiative Workspace</strong>
+        <small>View your initiatives and their approval progress.</small>
+        <span>Open workspace →</span>
     </a>
+
     <a class="dashboard-action" href="agreements.php">
         <strong>Find an active Agreement</strong>
-        <small>Review live partnership objectives and start an Initiative from the selected Agreement.</small>
-        <span>Choose a partnership →</span>
+        <small>Review an existing Agreement before linking it to an Initiative.</small>
+        <span>Browse Agreements →</span>
     </a>
+
     <a class="dashboard-action" href="../sdg.php?lang=en">
         <strong>Choose SDG outcomes</strong>
-        <small>Understand the 17 Sustainable Development Goals before submitting.</small>
+        <small>Review Sustainable Development Goals before submitting.</small>
         <span>Explore SDGs →</span>
     </a>
 </section>
@@ -58,14 +55,14 @@ workspaceHeader('Initiative hub', 'initiatives');
             <div class="workspace-card-header">
                 <div>
                     <h2 class="h5 mb-1">Initiative approval path</h2>
-                    <p class="small text-secondary mb-0">Who acts after you submit.</p>
+                    <p class="small text-secondary mb-0">The workflow used after submission.</p>
                 </div>
             </div>
             <div class="workflow-timeline">
-                <div class="timeline-step is-current"><span class="timeline-marker">1</span><strong>Creator</strong><small>Faculty or Department Head</small></div>
-                <div class="timeline-step"><span class="timeline-marker">2</span><strong>Department</strong><small>Department Head review</small></div>
-                <div class="timeline-step"><span class="timeline-marker">3</span><strong>College</strong><small>Dean approval</small></div>
-                <div class="timeline-step"><span class="timeline-marker">4</span><strong>VP Office</strong><small>University review</small></div>
+                <div class="timeline-step is-current"><span class="timeline-marker">1</span><strong>Creator</strong><small>Create and submit</small></div>
+                <div class="timeline-step"><span class="timeline-marker">2</span><strong>Department Head</strong><small>Department review</small></div>
+                <div class="timeline-step"><span class="timeline-marker">3</span><strong>Dean</strong><small>College approval</small></div>
+                <div class="timeline-step"><span class="timeline-marker">4</span><strong>Vice President</strong><small>University review</small></div>
                 <div class="timeline-step"><span class="timeline-marker">5</span><strong>President</strong><small>Final approval</small></div>
             </div>
         </section>
@@ -77,10 +74,10 @@ workspaceHeader('Initiative hub', 'initiatives');
                 <p class="mb-2">Prepare:</p>
                 <ul class="ps-3 mb-0">
                     <li class="mb-2">A clear objective and expected impact.</li>
-                    <li class="mb-2">Your executing department or college.</li>
-                    <li class="mb-2">Target beneficiaries and measurable outcomes.</li>
-                    <li class="mb-2">Related Agreement, if the activity uses a partnership.</li>
-                    <li>Relevant SDGs and supporting evidence.</li>
+                    <li class="mb-2">The initiative type and planned dates.</li>
+                    <li class="mb-2">Expected budget, when applicable.</li>
+                    <li class="mb-2">A related Agreement, when applicable.</li>
+                    <li>Relevant supporting information.</li>
                 </ul>
             </div>
         </section>
