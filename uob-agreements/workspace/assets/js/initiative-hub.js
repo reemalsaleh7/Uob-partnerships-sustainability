@@ -1,38 +1,65 @@
 (function () {
     'use strict';
 
-    (async function initialize() {
-        const createLink = document.querySelector('[data-create-initiative]');
-        const accessLabel = document.querySelector('[data-initiative-access]');
+    async function initializeInitiativeHub() {
+        const createInitiativeElements = document.querySelectorAll(
+            '[data-create-initiative]'
+        );
+
+        const initiativeAccessElement = document.querySelector(
+            '[data-initiative-access]'
+        );
 
         try {
             const user = await AgreementApi.requireSession();
 
-            const canCreate =
-                AgreementApi.hasPermission(user, 'CREATE_INITIATIVE')
-                || (
-                    Array.isArray(user.roles)
-                    && user.roles.includes('Initiative Creator')
+            const canCreateInitiative = AgreementApi.hasPermission(
+                user,
+                'CREATE_INITIATIVE'
+            );
+
+            createInitiativeElements.forEach((element) => {
+                element.classList.toggle(
+                    'd-none',
+                    !canCreateInitiative
                 );
 
-            if (createLink) {
-                createLink.classList.toggle('d-none', !canCreate);
-                createLink.href =
-                    'initiative-module/initiative-create.php';
-            }
+                element.setAttribute(
+                    'aria-hidden',
+                    canCreateInitiative ? 'false' : 'true'
+                );
+            });
 
-            if (accessLabel) {
-                accessLabel.textContent = canCreate
-                    ? 'You are authorized to propose initiatives'
-                    : 'You can explore initiatives; creation is not assigned to your role';
+            if (initiativeAccessElement) {
+                initiativeAccessElement.textContent =
+                    canCreateInitiative
+                        ? 'You are authorized to propose initiatives'
+                        : 'You can review initiatives assigned to your role';
             }
         } catch (error) {
-            console.error('Initiative hub error:', error);
+            createInitiativeElements.forEach((element) => {
+                element.classList.add('d-none');
+                element.setAttribute('aria-hidden', 'true');
+            });
 
-            if (accessLabel) {
-                accessLabel.textContent =
+            if (initiativeAccessElement) {
+                initiativeAccessElement.textContent =
                     'Initiative access could not be checked';
             }
+
+            console.error(
+                'Initiative hub initialization failed:',
+                error
+            );
         }
-    })();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initializeInitiativeHub
+        );
+    } else {
+        initializeInitiativeHub();
+    }
 })();

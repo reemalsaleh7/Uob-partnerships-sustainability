@@ -6,6 +6,9 @@ require_once __DIR__ . '/initiative-common.php';
 require_once __DIR__ . '/../includes/layout.php';
 
 $uid = initiativeUserId();
+
+initiativeRequireCreatePermission();
+
 $db = initiativeDb();
 
 $agreements = $db->query(
@@ -341,7 +344,7 @@ workspaceHeader('Create initiative', 'initiatives');
         <div class="d-flex justify-content-end gap-2 mt-4">
             <a
                 class="btn btn-outline-secondary"
-                href="../initiative-hub.php"
+                href="initiative-hub.php"
             >
                 Cancel
             </a>

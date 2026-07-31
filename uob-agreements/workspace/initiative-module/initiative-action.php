@@ -1,1 +1,492 @@
-<?php require_once __DIR__.'/initiative-common.php';$uid=initiativeUserId();initiativeVerifyCsrf();$id=(int)($_POST['initiative_id']??0);$action=$_POST['action']??'';$comments=trim($_POST['comments']??'');$db=initiativeDb();$i=initiativeLoad($id);try{$db->beginTransaction();if($action==='submit'){if(!initiativeCanEdit($i,$uid))throw new RuntimeException('Initiative cannot be submitted.');$t=$db->query("SELECT workflow_template_id FROM workflow_templates WHERE name='Initiative Approval' AND is_active=TRUE")->fetchColumn();if(!$t)throw new RuntimeException('Initiative Approval workflow template is missing.');$s=$db->prepare("INSERT INTO workflow_instances(workflow_template_id,entity_type,entity_id,current_step,status,started_by) VALUES(:t,'INITIATIVE',:id,2,'IN_PROGRESS',:uid) RETURNING workflow_instance_id");$s->execute(['t'=>$t,'id'=>$id,'uid'=>$uid]);$wi=(int)$s->fetchColumn();$steps=$db->prepare("INSERT INTO workflow_instance_steps(workflow_instance_id,step_order,assigned_unit_id,assigned_position_id,status,started_at,completed_at,approved_by,approved_at) SELECT :wi,step_order,required_unit_id,required_position_id,CASE WHEN step_order=1 THEN 'APPROVED' ELSE 'PENDING' END,CASE WHEN step_order IN(1,2) THEN CURRENT_TIMESTAMP END,CASE WHEN step_order=1 THEN CURRENT_TIMESTAMP END,CASE WHEN step_order=1 THEN :uid END,CASE WHEN step_order=1 THEN CURRENT_TIMESTAMP END FROM workflow_template_steps WHERE workflow_template_id=:t ORDER BY step_order");$steps->execute(['wi'=>$wi,'uid'=>$uid,'t'=>$t]);$db->prepare("UPDATE initiatives SET status='UNDER_REVIEW',submitted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE initiative_id=:id")->execute(['id'=>$id]);}else{$wi=$db->prepare("SELECT workflow_instance_id,current_step FROM workflow_instances WHERE entity_type='INITIATIVE' AND entity_id=:id AND status='IN_PROGRESS' ORDER BY started_at DESC LIMIT 1 FOR UPDATE");$wi->execute(['id'=>$id]);$wf=$wi->fetch();if(!$wf)throw new RuntimeException('No active workflow.');$step=$db->prepare("SELECT instance_step_id,step_order FROM workflow_instance_steps WHERE workflow_instance_id=:wi AND step_order=:step FOR UPDATE");$step->execute(['wi'=>$wf['workflow_instance_id'],'step'=>$wf['current_step']]);$st=$step->fetch();if(!$st)throw new RuntimeException('Current workflow step missing.');if($action==='approve'){$db->prepare("UPDATE workflow_instance_steps SET status='APPROVED',approved_by=:u,approved_at=CURRENT_TIMESTAMP,completed_at=CURRENT_TIMESTAMP,comments=:c WHERE instance_step_id=:s")->execute(['u'=>$uid,'c'=>$comments,'s'=>$st['instance_step_id']]);$max=$db->prepare("SELECT MAX(step_order) FROM workflow_instance_steps WHERE workflow_instance_id=:wi");$max->execute(['wi'=>$wf['workflow_instance_id']]);$m=(int)$max->fetchColumn();if((int)$st['step_order'] >= $m){$db->prepare("UPDATE workflow_instances SET status='COMPLETED',completed_at=CURRENT_TIMESTAMP WHERE workflow_instance_id=:wi")->execute(['wi'=>$wf['workflow_instance_id']]);$db->prepare("UPDATE initiatives SET status='APPROVED',final_decision_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE initiative_id=:id")->execute(['id'=>$id]);}else{$next=(int)$st['step_order']+1;$db->prepare("UPDATE workflow_instances SET current_step=:n WHERE workflow_instance_id=:wi")->execute(['n'=>$next,'wi'=>$wf['workflow_instance_id']]);$db->prepare("UPDATE workflow_instance_steps SET started_at=COALESCE(started_at,CURRENT_TIMESTAMP) WHERE workflow_instance_id=:wi AND step_order=:n")->execute(['wi'=>$wf['workflow_instance_id'],'n'=>$next]);}}elseif($action==='request_changes'){$db->prepare("UPDATE workflow_instance_steps SET status='CHANGES_REQUESTED',comments=:c,completed_at=CURRENT_TIMESTAMP WHERE instance_step_id=:s")->execute(['c'=>$comments,'s'=>$st['instance_step_id']]);$db->prepare("UPDATE workflow_instances SET status='CHANGES_REQUESTED' WHERE workflow_instance_id=:wi")->execute(['wi'=>$wf['workflow_instance_id']]);$db->prepare("UPDATE initiatives SET status='REVISION_REQUIRED',revision_count=revision_count+1,updated_at=CURRENT_TIMESTAMP WHERE initiative_id=:id")->execute(['id'=>$id]);}elseif($action==='reject'){$db->prepare("UPDATE workflow_instance_steps SET status='REJECTED',approved_by=:u,completed_at=CURRENT_TIMESTAMP,comments=:c WHERE instance_step_id=:s")->execute(['u'=>$uid,'c'=>$comments,'s'=>$st['instance_step_id']]);$db->prepare("UPDATE workflow_instances SET status='REJECTED',completed_at=CURRENT_TIMESTAMP WHERE workflow_instance_id=:wi")->execute(['wi'=>$wf['workflow_instance_id']]);$db->prepare("UPDATE initiatives SET status='REJECTED',final_decision_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE initiative_id=:id")->execute(['id'=>$id]);}else throw new RuntimeException('Unknown action.');}$db->commit();header('Location: initiative-view.php?id='.$id);exit;}catch(Throwable $e){if($db->inTransaction())$db->rollBack();http_response_code(400);echo initiativeH($e->getMessage());}
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/initiative-common.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method not allowed.');
+}
+
+$userId = initiativeUserId();
+
+initiativeVerifyCsrf();
+
+$initiativeId = (int) ($_POST['initiative_id'] ?? 0);
+$action = trim((string) ($_POST['action'] ?? ''));
+$comments = trim((string) ($_POST['comments'] ?? ''));
+
+$db = initiativeDb();
+
+try {
+    $db->beginTransaction();
+
+    $initiativeStatement = $db->prepare(
+        "SELECT *
+         FROM initiatives
+         WHERE initiative_id = :initiative_id
+         FOR UPDATE"
+    );
+
+    $initiativeStatement->execute([
+        'initiative_id' => $initiativeId,
+    ]);
+
+    $initiative = $initiativeStatement->fetch();
+
+    if (!$initiative) {
+        throw new RuntimeException('Initiative not found.');
+    }
+
+    initiativeRequireView($initiative, $userId);
+
+    if ($action === 'submit') {
+        if (!initiativeCanEdit($initiative, $userId)) {
+            throw new RuntimeException(
+                'Initiative cannot be submitted.'
+            );
+        }
+
+        if (initiativeActiveWorkflow($initiativeId, true)) {
+            throw new RuntimeException(
+                'This initiative already has an active approval workflow.'
+            );
+        }
+
+        $templateStatement = $db->query(
+            "SELECT workflow_template_id
+             FROM workflow_templates
+             WHERE name = 'Initiative Approval'
+               AND is_active = TRUE
+             ORDER BY workflow_template_id DESC
+             LIMIT 1"
+        );
+
+        $workflowTemplateId = (int) $templateStatement->fetchColumn();
+
+        if ($workflowTemplateId <= 0) {
+            throw new RuntimeException(
+                'Initiative Approval workflow template is missing.'
+            );
+        }
+
+        $route = initiativeBuildApprovalRoute($userId);
+
+        $workflowStatement = $db->prepare(
+            "INSERT INTO workflow_instances (
+                workflow_template_id,
+                entity_type,
+                entity_id,
+                current_step,
+                status,
+                started_by
+             ) VALUES (
+                :workflow_template_id,
+                'INITIATIVE',
+                :initiative_id,
+                2,
+                'IN_PROGRESS',
+                :started_by
+             )
+             RETURNING workflow_instance_id"
+        );
+
+        $workflowStatement->execute([
+            'workflow_template_id' => $workflowTemplateId,
+            'initiative_id' => $initiativeId,
+            'started_by' => $userId,
+        ]);
+
+        $workflowInstanceId =
+            (int) $workflowStatement->fetchColumn();
+
+        initiativeInsertDynamicWorkflowSteps(
+            $db,
+            $workflowInstanceId,
+            $userId,
+            $route
+        );
+
+        $openRevision = initiativeOpenRevision($initiativeId);
+
+        if ($openRevision) {
+            $revisionStatement = $db->prepare(
+                "UPDATE initiative_revision_rounds
+                 SET status = 'RESUBMITTED',
+                     resolved_at = CURRENT_TIMESTAMP,
+                     resolved_by = :resolved_by
+                 WHERE revision_round_id = :revision_round_id"
+            );
+
+            $revisionStatement->execute([
+                'resolved_by' => $userId,
+                'revision_round_id' =>
+                    (int) $openRevision['revision_round_id'],
+            ]);
+
+            $eventType = 'RESUBMITTED';
+        } else {
+            $eventType = 'SUBMITTED';
+        }
+
+        $updateInitiative = $db->prepare(
+            "UPDATE initiatives
+             SET status = 'UNDER_REVIEW',
+                 submitted_at = COALESCE(
+                     submitted_at,
+                     CURRENT_TIMESTAMP
+                 ),
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE initiative_id = :initiative_id"
+        );
+
+        $updateInitiative->execute([
+            'initiative_id' => $initiativeId,
+        ]);
+
+        initiativeEvent(
+            $initiativeId,
+            $userId,
+            $eventType,
+            [
+                'workflow_instance_id' => $workflowInstanceId,
+            ]
+        );
+
+        initiativeNotifyCurrentApprovers(
+            $initiativeId,
+            (string) $initiative['title']
+        );
+    } else {
+        $workflow = initiativeActiveWorkflow(
+            $initiativeId,
+            true
+        );
+
+        if (!$workflow) {
+            throw new RuntimeException('No active workflow.');
+        }
+
+        $step = initiativeCurrentWorkflowStep(
+            $initiativeId,
+            true
+        );
+
+        if (!$step) {
+            throw new RuntimeException(
+                'Current workflow step is missing.'
+            );
+        }
+
+        if (!initiativeUserMatchesStep($userId, $step)) {
+            throw new RuntimeException(
+                'You are not assigned to the current approval step.'
+            );
+        }
+
+        if ((string) $step['step_status'] !== 'PENDING') {
+            throw new RuntimeException(
+                'This approval step has already been completed.'
+            );
+        }
+
+        if (
+            in_array(
+                $action,
+                ['request_changes', 'reject'],
+                true
+            )
+            && $comments === ''
+        ) {
+            throw new RuntimeException(
+                'Comments are required for this decision.'
+            );
+        }
+
+        if ($action === 'approve') {
+            $approveStatement = $db->prepare(
+                "UPDATE workflow_instance_steps
+                 SET status = 'APPROVED',
+                     approved_by = :approved_by,
+                     approved_at = CURRENT_TIMESTAMP,
+                     completed_at = CURRENT_TIMESTAMP,
+                     comments = :comments
+                 WHERE instance_step_id = :instance_step_id"
+            );
+
+            $approveStatement->execute([
+                'approved_by' => $userId,
+                'comments' => $comments,
+                'instance_step_id' =>
+                    (int) $step['instance_step_id'],
+            ]);
+
+            $maximumStepStatement = $db->prepare(
+                "SELECT MAX(step_order)
+                 FROM workflow_instance_steps
+                 WHERE workflow_instance_id =
+                     :workflow_instance_id"
+            );
+
+            $maximumStepStatement->execute([
+                'workflow_instance_id' =>
+                    (int) $workflow['workflow_instance_id'],
+            ]);
+
+            $maximumStep =
+                (int) $maximumStepStatement->fetchColumn();
+
+            if ((int) $step['step_order'] >= $maximumStep) {
+                $completeWorkflow = $db->prepare(
+                    "UPDATE workflow_instances
+                     SET status = 'COMPLETED',
+                         completed_at = CURRENT_TIMESTAMP
+                     WHERE workflow_instance_id =
+                         :workflow_instance_id"
+                );
+
+                $completeWorkflow->execute([
+                    'workflow_instance_id' =>
+                        (int) $workflow['workflow_instance_id'],
+                ]);
+
+                $approveInitiative = $db->prepare(
+                    "UPDATE initiatives
+                     SET status = 'APPROVED',
+                         final_decision_at = CURRENT_TIMESTAMP,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE initiative_id = :initiative_id"
+                );
+
+                $approveInitiative->execute([
+                    'initiative_id' => $initiativeId,
+                ]);
+
+                initiativeEvent(
+                    $initiativeId,
+                    $userId,
+                    'APPROVED',
+                    [
+                        'comments' => $comments,
+                    ]
+                );
+
+                initiativeNotify(
+                    (int) $initiative['created_by'],
+                    $initiativeId,
+                    'APPROVED',
+                    'Initiative request approved',
+                    (string) $initiative['title']
+                );
+            } else {
+                $nextStep = (int) $step['step_order'] + 1;
+
+                $moveWorkflow = $db->prepare(
+                    "UPDATE workflow_instances
+                     SET current_step = :current_step
+                     WHERE workflow_instance_id =
+                         :workflow_instance_id"
+                );
+
+                $moveWorkflow->execute([
+                    'current_step' => $nextStep,
+                    'workflow_instance_id' =>
+                        (int) $workflow['workflow_instance_id'],
+                ]);
+
+                $startNextStep = $db->prepare(
+                    "UPDATE workflow_instance_steps
+                     SET started_at = COALESCE(
+                         started_at,
+                         CURRENT_TIMESTAMP
+                     )
+                     WHERE workflow_instance_id =
+                         :workflow_instance_id
+                       AND step_order = :step_order"
+                );
+
+                $startNextStep->execute([
+                    'workflow_instance_id' =>
+                        (int) $workflow['workflow_instance_id'],
+                    'step_order' => $nextStep,
+                ]);
+
+                initiativeEvent(
+                    $initiativeId,
+                    $userId,
+                    'STEP_APPROVED',
+                    [
+                        'step' => (int) $step['step_order'],
+                        'comments' => $comments,
+                    ]
+                );
+
+                initiativeNotifyCurrentApprovers(
+                    $initiativeId,
+                    (string) $initiative['title']
+                );
+            }
+        } elseif ($action === 'request_changes') {
+            $requestChangesStep = $db->prepare(
+                "UPDATE workflow_instance_steps
+                 SET status = 'CHANGES_REQUESTED',
+                     completed_at = CURRENT_TIMESTAMP,
+                     comments = :comments
+                 WHERE instance_step_id = :instance_step_id"
+            );
+
+            $requestChangesStep->execute([
+                'comments' => $comments,
+                'instance_step_id' =>
+                    (int) $step['instance_step_id'],
+            ]);
+
+            $requestChangesWorkflow = $db->prepare(
+                "UPDATE workflow_instances
+                 SET status = 'CHANGES_REQUESTED',
+                     completed_at = CURRENT_TIMESTAMP
+                 WHERE workflow_instance_id =
+                     :workflow_instance_id"
+            );
+
+            $requestChangesWorkflow->execute([
+                'workflow_instance_id' =>
+                    (int) $workflow['workflow_instance_id'],
+            ]);
+
+            $requestChangesInitiative = $db->prepare(
+                "UPDATE initiatives
+                 SET status = 'REVISION_REQUIRED',
+                     revision_count = revision_count + 1,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE initiative_id = :initiative_id"
+            );
+
+            $requestChangesInitiative->execute([
+                'initiative_id' => $initiativeId,
+            ]);
+
+            $revisionRoundStatement = $db->prepare(
+                "INSERT INTO initiative_revision_rounds (
+                    initiative_id,
+                    workflow_instance_id,
+                    round_number,
+                    requested_by,
+                    request_comments
+                 )
+                 SELECT
+                    :initiative_id,
+                    :workflow_instance_id,
+                    COALESCE(MAX(round_number), 0) + 1,
+                    :requested_by,
+                    :request_comments
+                 FROM initiative_revision_rounds
+                 WHERE initiative_id = :initiative_id
+                 RETURNING revision_round_id"
+            );
+
+            $revisionRoundStatement->execute([
+                'initiative_id' => $initiativeId,
+                'workflow_instance_id' =>
+                    (int) $workflow['workflow_instance_id'],
+                'requested_by' => $userId,
+                'request_comments' => $comments,
+            ]);
+
+            initiativeEvent(
+                $initiativeId,
+                $userId,
+                'CHANGES_REQUESTED',
+                [
+                    'comments' => $comments,
+                ]
+            );
+
+            initiativeNotify(
+                (int) $initiative['created_by'],
+                $initiativeId,
+                'CHANGES_REQUESTED',
+                'Changes requested',
+                (string) $initiative['title']
+            );
+        } elseif ($action === 'reject') {
+            $rejectStep = $db->prepare(
+                "UPDATE workflow_instance_steps
+                 SET status = 'REJECTED',
+                     approved_by = :rejected_by,
+                     completed_at = CURRENT_TIMESTAMP,
+                     comments = :comments
+                 WHERE instance_step_id = :instance_step_id"
+            );
+
+            $rejectStep->execute([
+                'rejected_by' => $userId,
+                'comments' => $comments,
+                'instance_step_id' =>
+                    (int) $step['instance_step_id'],
+            ]);
+
+            $rejectWorkflow = $db->prepare(
+                "UPDATE workflow_instances
+                 SET status = 'REJECTED',
+                     completed_at = CURRENT_TIMESTAMP
+                 WHERE workflow_instance_id =
+                     :workflow_instance_id"
+            );
+
+            $rejectWorkflow->execute([
+                'workflow_instance_id' =>
+                    (int) $workflow['workflow_instance_id'],
+            ]);
+
+            $rejectInitiative = $db->prepare(
+                "UPDATE initiatives
+                 SET status = 'REJECTED',
+                     final_decision_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE initiative_id = :initiative_id"
+            );
+
+            $rejectInitiative->execute([
+                'initiative_id' => $initiativeId,
+            ]);
+
+            initiativeEvent(
+                $initiativeId,
+                $userId,
+                'REJECTED',
+                [
+                    'comments' => $comments,
+                ]
+            );
+
+            initiativeNotify(
+                (int) $initiative['created_by'],
+                $initiativeId,
+                'REJECTED',
+                'Initiative request rejected',
+                (string) $initiative['title']
+            );
+        } else {
+            throw new RuntimeException('Unknown action.');
+        }
+    }
+
+    $db->commit();
+
+    header(
+        'Location: initiative-view.php?id=' . $initiativeId,
+        true,
+        303
+    );
+
+    exit;
+} catch (Throwable $exception) {
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+
+    http_response_code(400);
+    exit(initiativeH($exception->getMessage()));
+}
