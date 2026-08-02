@@ -147,9 +147,13 @@ class AgreementLifecycleRepository
             'SELECT
                 lr.*,
                 a.title AS agreement_title,
-                a.status AS agreement_status
+                a.agreement_code,
+                a.status AS agreement_status,
+                NULLIF(TRIM(CONCAT(u.first_name, \' \', u.last_name)), \'\')
+                    AS requester_name
              FROM agreement_lifecycle_requests lr
              JOIN agreements a ON a.agreement_id = lr.agreement_id
+             JOIN users u ON u.user_id = lr.requested_by
              WHERE ' . $where . '
              ORDER BY lr.updated_at DESC, lr.lifecycle_request_id DESC'
         );

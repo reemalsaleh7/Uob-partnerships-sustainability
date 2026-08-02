@@ -15,7 +15,6 @@ class AgreementRepository {
         'effective_date',
         'signing_date',
         'auto_renew',
-        'fixed_term_months',
         'renewal_term_months',
         'non_renewal_notice_months',
         'termination_notice_months',
@@ -139,10 +138,21 @@ class AgreementRepository {
             SELECT
                 a.*,
                 ap.partner_id,
-                p.organization_name AS partner_name
+                p.organization_name AS partner_name,
+                NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
+                    AS creator_name,
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
             LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            LEFT JOIN users cu ON cu.user_id = a.created_by
+            LEFT JOIN organizational_units ou
+                ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             ORDER BY a.created_at DESC, ap.partner_id
         ');
         return $stmt->fetchAll();
@@ -157,13 +167,24 @@ class AgreementRepository {
             SELECT
                 a.*,
                 ap.partner_id,
-                p.organization_name AS partner_name
+                p.organization_name AS partner_name,
+                NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
+                    AS creator_name,
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
             LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            LEFT JOIN users cu ON cu.user_id = a.created_by
+            LEFT JOIN organizational_units ou
+                ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             WHERE
                 a.created_by = :creator_user_id
-                OR a.status IN (\'APPROVED\', \'ACTIVE\', \'EXPIRED\')
+                OR a.status IN (\'APPROVED\', \'ACTIVE\')
                 OR (
                     a.status = \'UNDER_REVIEW\'
                     AND EXISTS (
@@ -215,7 +236,7 @@ class AgreementRepository {
             WHERE a.agreement_id = :agreement_id
               AND (
                   a.created_by = :creator_user_id
-                  OR a.status IN (\'APPROVED\', \'ACTIVE\', \'EXPIRED\')
+                  OR a.status IN (\'APPROVED\', \'ACTIVE\')
                   OR (
                       a.status = \'UNDER_REVIEW\'
                       AND EXISTS (
@@ -412,8 +433,7 @@ class AgreementRepository {
         $partnerStatement = $this->db->prepare('
             SELECT
                 p.partner_id, p.organization_name, p.partner_type, p.country,
-                p.city, p.profile, p.website, p.logo_url,
-                p.latitude, p.longitude
+                p.city, p.website, p.logo_url, p.latitude, p.longitude
             FROM agreement_partners ap
             JOIN partners p ON p.partner_id = ap.partner_id
             WHERE ap.agreement_id = :agreement_id

@@ -5,6 +5,10 @@
         agreements: [],
         query: '',
         status: '',
+        type: '',
+        partner: '',
+        updatedFrom: '',
+        updatedTo: '',
         scope: 'ACTIVE',
         user: null,
         canCreateInitiative: false
@@ -18,11 +22,55 @@
         tableBody: document.getElementById('agreement-table-body'),
         search: document.getElementById('agreement-search'),
         status: document.getElementById('agreement-status'),
+        type: document.getElementById('agreement-type'),
+        partner: document.getElementById('agreement-partner'),
+        updatedFrom: document.getElementById('agreement-updated-from'),
+        updatedTo: document.getElementById('agreement-updated-to'),
+        clearFilters: document.querySelector('[data-clear-agreement-filters]'),
         summary: document.querySelector('[data-result-summary]'),
         create: document.querySelector('[data-create-agreement]'),
         description: document.querySelector('[data-agreement-page-description]'),
         facultyNote: document.querySelector('[data-faculty-agreement-note]'),
         scopeButtons: [...document.querySelectorAll('[data-agreement-scope]')]
+    };
+
+    const searchSchema = {
+        any: (agreement) => [
+            agreement.agreement_id,
+            agreement.agreement_code,
+            agreement.title,
+            agreement.title_ar,
+            agreement.agreement_type,
+            agreement.status,
+            agreement.creator_name,
+            agreement.responsible_unit_name,
+            agreement.description,
+            agreement.objectives,
+            agreement.focus_areas,
+            agreement.collaboration_areas,
+            agreement.geographic_scope,
+            agreement.start_date,
+            agreement.end_date,
+            agreement.updated_at,
+            ...agreement.partner_ids,
+            ...agreement.partner_names
+        ],
+        id: 'agreement_id',
+        code: 'agreement_code',
+        title: (agreement) => [agreement.title, agreement.title_ar],
+        type: 'agreement_type',
+        status: 'status',
+        partner: (agreement) => [
+            ...agreement.partner_ids,
+            ...agreement.partner_names
+        ],
+        creator: (agreement) => [agreement.created_by, agreement.creator_name],
+        owner: (agreement) => [agreement.created_by, agreement.creator_name],
+        unit: (agreement) => [agreement.responsible_unit_id, agreement.responsible_unit_name],
+        scope: 'geographic_scope',
+        start: 'start_date',
+        end: 'end_date',
+        updated: 'updated_at'
     };
 
     function normalizeRows(rows) {
@@ -57,8 +105,6 @@
     }
 
     function filteredRows() {
-        const query = state.query.toLowerCase();
-
         return state.agreements.filter((agreement) => {
             const isMine = Number(agreement.created_by) === Number(state.user?.user_id);
             const scopeMatches = state.scope === 'ALL'
@@ -67,19 +113,26 @@
                 || (state.scope === 'MINE' && isMine);
             const statusMatches = !state.status
                 || agreement.status === state.status;
-
-            const searchValue = [
-                agreement.agreement_id,
-                agreement.title,
-                agreement.agreement_type,
-                agreement.status,
-                ...agreement.partner_ids,
-                ...agreement.partner_names
-            ].join(' ').toLowerCase();
+            const typeMatches = !state.type
+                || agreement.agreement_type === state.type;
+            const partnerMatches = !state.partner
+                || agreement.partner_names.includes(state.partner);
+            const updatedMatches = UobAdvancedSearch.inDateRange(
+                agreement.updated_at,
+                state.updatedFrom,
+                state.updatedTo
+            );
 
             return scopeMatches
                 && statusMatches
-                && (!query || searchValue.includes(query));
+                && typeMatches
+                && partnerMatches
+                && updatedMatches
+                && UobAdvancedSearch.matches(
+                    agreement,
+                    state.query,
+                    searchSchema
+                );
         });
     }
 
@@ -188,19 +241,59 @@
         });
     }
 
-    function loadStatusOptions() {
-        const statuses = Array.from(new Set(
-            state.agreements
-                .map((agreement) => agreement.status)
-                .filter(Boolean)
-        )).sort();
-
-        statuses.forEach((status) => {
+    function loadSelectOptions(select, values, format = (value) => value) {
+        Array.from(new Set(values.filter(Boolean))).sort().forEach((value) => {
             const option = document.createElement('option');
-            option.value = status;
-            option.textContent = status.replaceAll('_', ' ');
-            elements.status.appendChild(option);
+            option.value = value;
+            option.textContent = format(value);
+            select.appendChild(option);
         });
+    }
+
+    function loadFilterOptions() {
+        loadSelectOptions(
+            elements.status,
+            state.agreements.map((agreement) => agreement.status),
+            (status) => status.replaceAll('_', ' ')
+        );
+        loadSelectOptions(
+            elements.type,
+            state.agreements.map((agreement) => agreement.agreement_type)
+        );
+        loadSelectOptions(
+            elements.partner,
+            state.agreements.flatMap((agreement) => agreement.partner_names)
+        );
+    }
+
+    function setFiltersEnabled(enabled) {
+        [
+            elements.search,
+            elements.status,
+            elements.type,
+            elements.partner,
+            elements.updatedFrom,
+            elements.updatedTo,
+            elements.clearFilters
+        ].forEach((element) => {
+            element.disabled = !enabled;
+        });
+    }
+
+    function clearFilters() {
+        state.query = '';
+        state.status = '';
+        state.type = '';
+        state.partner = '';
+        state.updatedFrom = '';
+        state.updatedTo = '';
+        elements.search.value = '';
+        elements.status.value = '';
+        elements.type.value = '';
+        elements.partner.value = '';
+        elements.updatedFrom.value = '';
+        elements.updatedTo.value = '';
+        render();
     }
 
     function showError(error) {
@@ -236,9 +329,8 @@
             state.agreements = normalizeRows(rows);
 
             updateScopeCounts();
-            loadStatusOptions();
-            elements.search.disabled = false;
-            elements.status.disabled = false;
+            loadFilterOptions();
+            setFiltersEnabled(true);
             elements.loading.classList.add('d-none');
             selectScope('ACTIVE');
         } catch (error) {
@@ -255,6 +347,28 @@
         state.status = elements.status.value;
         render();
     });
+
+    elements.type.addEventListener('change', () => {
+        state.type = elements.type.value;
+        render();
+    });
+
+    elements.partner.addEventListener('change', () => {
+        state.partner = elements.partner.value;
+        render();
+    });
+
+    elements.updatedFrom.addEventListener('change', () => {
+        state.updatedFrom = elements.updatedFrom.value;
+        render();
+    });
+
+    elements.updatedTo.addEventListener('change', () => {
+        state.updatedTo = elements.updatedTo.value;
+        render();
+    });
+
+    elements.clearFilters.addEventListener('click', clearFilters);
 
     elements.scopeButtons.forEach((button) => {
         button.addEventListener('click', () => {
