@@ -17,47 +17,82 @@ function parseDateAnySdg(string $s): int {
   return $ts !== false ? $ts : 0;
 }
 
+function normalizeSdgDigitsGoal(string $text): string {
+  $arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩','۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  $latin  = ['0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9'];
+
+  return str_replace($arabic, $latin, $text);
+}
+
 function extractSdgNumbersFromText(string $text): array {
+  $text = normalizeSdgDigitsGoal(trim($text));
+
+  if ($text === '') {
+    return [];
+  }
+
+  $text = str_replace(['،', ';', '|', '/', '\\'], ',', $text);
+
   $out = [];
-  if (preg_match_all('/(?:SDG\s*)?([1-9]|1[0-7])\b/u', $text, $m)) {
-    foreach ($m[1] as $n) {
+
+  if (preg_match_all('/(?:SDG|Goal|الهدف|هدف)?\s*#?\s*(1[0-7]|[1-9])(?=\D|$)/iu', $text, $matches)) {
+    foreach ($matches[1] as $n) {
       $v = (int)$n;
-      if ($v >= 1 && $v <= 17) $out[$v] = true;
+
+      if ($v >= 1 && $v <= 17) {
+        $out[$v] = true;
+      }
     }
   }
+
   return array_keys($out);
 }
 
 function extractInitiativeSdgs(array $it): array {
-  $texts = [
-    (string)($it['sdg_primary'] ?? ''),
-    (string)($it['sdg_secondary'] ?? ''),
-    (string)($it['SDGs'] ?? ''),
+  $candidateKeys = [
+    'sdgs',
+    'SDGs',
+    'SDG',
+    'sdg_primary',
+    'sdg_secondary',
+    'sdg_goals',
+    'SDG الأساسي',
+    'SDG ثانوي',
+    'الأهداف المرتبطة',
+    'الاهداف المرتبطة',
+    'أهداف التنمية المستدامة المرتبطة',
   ];
 
   $nums = [];
-  foreach ($texts as $txt) {
-    foreach (extractSdgNumbersFromText($txt) as $n) {
-      $nums[$n] = true;
+
+  foreach ($candidateKeys as $key) {
+    if (!empty($it[$key])) {
+      foreach (extractSdgNumbersFromText((string)$it[$key]) as $n) {
+        $nums[$n] = true;
+      }
     }
   }
+
   return array_keys($nums);
 }
 
 function extractAgreementSdgs(array $ag): array {
   $candidateKeys = [
-    'أهداف التنمية المستدامة المرتبطة',
-    'الاهداف المرتبطة',
-    'الأهداف المرتبطة',
+    'sdgs',
     'SDGs',
     'SDG',
-    'SDG الأساسي',
-    'SDG ثانوي',
     'sdg_primary',
     'sdg_secondary',
+    'sdg_goals',
+    'SDG الأساسي',
+    'SDG ثانوي',
+    'الأهداف المرتبطة',
+    'الاهداف المرتبطة',
+    'أهداف التنمية المستدامة المرتبطة',
   ];
 
   $nums = [];
+
   foreach ($candidateKeys as $key) {
     if (!empty($ag[$key])) {
       foreach (extractSdgNumbersFromText((string)$ag[$key]) as $n) {
@@ -65,8 +100,13 @@ function extractAgreementSdgs(array $ag): array {
       }
     }
   }
+
   return array_keys($nums);
 }
+
+
+
+
 
 function getArrSdg($name): array {
   $v = $_GET[$name] ?? [];
@@ -108,6 +148,7 @@ if ($selectedSdg < 1 || $selectedSdg > 17) {
 
 $allInitiatives = loadAllInitiatives();
 $allAgreements  = function_exists('readAgreements') ? readAgreements() : [];
+
 
 $isAdmin = (($_SESSION['role'] ?? '') === 'admin');
 
