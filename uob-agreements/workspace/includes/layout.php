@@ -281,7 +281,6 @@ HTML;
     );
 
     echo <<<HTML
-<<<<<<< HEAD
     <div class="modal fade workspace-confirm-modal" id="workspace-confirm-modal" tabindex="-1" aria-labelledby="workspace-confirm-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -304,14 +303,12 @@ HTML;
     <script src="assets/js/api-client.js?v=20260802-agreement-detail-v2"></script>
     <script src="assets/js/export-utils.js?v=20260802-agreement-detail-v2"></script>
     <script src="assets/js/ui-dialog.js?v=20260802-agreement-detail-v2"></script>
-=======
     <script>window.WorkspaceI18nConfig = {$i18nConfig};</script>
     <script src="assets/js/workspace-i18n.js?v=20260802-phase17b"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/api-client.js?v=20260722-showcase-data"></script>
     <script src="assets/js/sidebar-initiative.js?v=20260801-phase11c"></script>
     <script src="assets/js/workspace-sidebar-polish.js?v=20260802-phase16"></script>
->>>>>>> origin/FDB
 HTML;
 
     foreach ($scripts as $script) {
