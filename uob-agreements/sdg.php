@@ -34,7 +34,6 @@ $T = [
     'filter_none' => 'بدون عناصر',
     'filter_undef' => 'غير محدد',
     'about_title' => 'عن أهداف التنمية المستدامة',
-    'about_desc' => 'تستعرض هذه الصفحة مساهمة جامعة البحرين في أهداف التنمية المستدامة من خلال المبادرات والاتفاقيات والأنشطة المرتبطة بكل هدف. اضغط على أي هدف لعرض جميع العناصر الداعمة له.',
     'goal_label' => 'هدف التنمية المستدامة',
     'goal_items' => 'إجمالي العناصر',
     'goal_initiatives' => 'المبادرات',
@@ -59,7 +58,6 @@ $T = [
     'filter_none' => 'Without Items',
     'filter_undef' => 'Unspecified',
     'about_title' => 'About the SDGs',
-    'about_desc' => 'This page presents the University of Bahrain’s contribution to the Sustainable Development Goals through initiatives, agreements, and related activities. Click any goal to view all supporting items.',
     'goal_label' => 'Sustainable Development Goal',
     'goal_items' => 'Total Items',
     'goal_initiatives' => 'Initiatives',
@@ -1118,15 +1116,7 @@ html[dir="ltr"] .sdgUnspecifiedCard{
   </div>
 </section>
 
-<section class="sdg-about-section">
-  <div class="container">
-    <div class="sdg-about-box" style="direction:<?= $isArabic ? 'rtl' : 'ltr' ?>;">
-      <h2><?= h(tt('about_title')) ?></h2>
-      <div class="line"></div>
-      <p><?= h(tt('about_desc')) ?></p>
-    </div>
-  </div>
-</section>
+
 
 <script>
 (function(){

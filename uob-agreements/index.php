@@ -370,25 +370,7 @@ height: clamp(430px, 52vw, 700px);
 
 </section>
 
-<!-- ABOUT -->
-<section class="landing-section" id="about">
-  <div class="container">
 
-<div class="landing-text about-text-only uob-reveal zoom">
-        <h2 class="landing-h2"><?= h(tl('عن البوابة', 'About the Portal')) ?></h2>
-
-      <div class="landing-underline"></div>
-
-      <p class="landing-p">
-        <?= h(tl(
-          'بوابة الاستدامة والشراكات في جامعة البحرين هي منصة رسمية لعرض الشراكات والاتفاقيات والمبادرات الأكاديمية المرتبطة بالاستدامة. تساعد البوابة على تنظيم البيانات، رفع الشفافية، وتسهيل الوصول للمعلومات للطلبة والجهات المعنية.',
-          'The portal is the official hub for showcasing UOB partnerships, agreements, and sustainability initiatives. It supports transparency, structured documentation, and meaningful collaboration.'
-        )) ?>
-      </p>
-    </div>
-
-  </div>
-</section>
 
 <!-- SERVICES WITHOUT IMAGES -->
 <section class="landing-section landing-alt" id="services">

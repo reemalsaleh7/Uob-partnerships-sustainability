@@ -1170,7 +1170,6 @@ html[dir="ltr"] body .ag-news-next{
   startAuto();
 })();
 </script>
-<section class="sdg-sectionX sdg-sectionX-alt">
   <div class="container">
     <section class="ag-split">
 

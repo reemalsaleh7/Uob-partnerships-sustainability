@@ -32,8 +32,6 @@ $isArabic = ($lang === 'ar');
 $T = [
   'ar' => [
     'page_title' => 'مبادرات جامعة البحرين',
-    'about_title' => 'عن مبادرات جامعة البحرين',
-    'about_desc' => 'منصة رقمية لعرض مبادرات جامعة البحرين وربطها بأهداف التنمية المستدامة والاتفاقيات والتصنيفات العالمية، بما يسهّل الاستعراض والتحليل والوصول إلى المعلومات التفصيلية.',
     'total_initiatives' => 'إجمالي المبادرات',
     'filtered_results' => 'نتائج الفلترة',
     'sdgs_count' => 'أهداف التنمية',
@@ -79,8 +77,6 @@ $T = [
   ],
   'en' => [
     'page_title' => 'University of Bahrain Initiatives',
-    'about_title' => 'About UOB Initiatives',
-    'about_desc' => 'A digital platform for presenting University of Bahrain initiatives and linking them with the Sustainable Development Goals, agreements, and global rankings for easier browsing and analysis.',
     'total_initiatives' => 'Total Initiatives',
     'filtered_results' => 'Filtered Results',
     'sdgs_count' => 'SDGs',
@@ -571,7 +567,8 @@ html body .sdg-heroX-overlay{
   background:transparent !important;
 }
 .latest-section-bg{
-  background:#b89a68 !important;
+  
+  background: #f6f6f6; !important;
   padding-top:90px !important;
   padding-bottom:85px !important;
   overflow:hidden !important;
@@ -583,7 +580,7 @@ html body .sdg-heroX-overlay{
   margin-bottom:0 !important;
 }
 .latest-section-bg .sdg-centerX h2{
-  color:#ffffff !important;
+  color:#0b1f3a !important;
 }
 
 .latest-section-bg .sdg-lineX.center{
@@ -890,33 +887,7 @@ html body .landing-actions .hero-main-btn{
       direction:rtl !important;
     ">
 
-      <h2 style="
-        margin:0 auto !important;
-        max-width:760px !important;
-        color:#0b1f3a !important;
-        font-size:42px !important;
-        font-weight:950 !important;
-        line-height:1.25 !important;
-        text-align:center !important;
-      ">
-        <?= h(tt('about_title')) ?>
-      </h2>
-
-<div class="sdg-lineX center" style="margin:22px auto 30px !important; background:#b89a68 !important;"></div>
-
-      <p style="
-        max-width:820px !important;
-        margin:0 auto !important;
-        color:#0b1f3a !important;
-        font-size:20px !important;
-        font-weight:850 !important;
-        line-height:1.9 !important;
-        text-align:center !important;
-      ">
-        <?= h(tt('about_desc')) ?>
-      </p>
-
-    </div>
+     
 
   </div>
 </section>
@@ -924,7 +895,7 @@ html body .landing-actions .hero-main-btn{
     <div class="container">
     <div class="sdg-centerX">
       <h2><?= h(tt('latest_initiatives')) ?></h2>
-      <div class="sdg-lineX center" style="background:#f6f9fc !important;"></div>
+      <div class="sdg-lineX center" style="background:#b89a68 !important;"></div>
     </div>
 
     <div class="latest-clean-slider">
