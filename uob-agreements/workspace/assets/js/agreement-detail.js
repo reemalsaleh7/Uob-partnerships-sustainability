@@ -36,11 +36,9 @@
     };
 
     function setText(selector, value) {
-        const element = document.querySelector(selector);
-
-        if (element) {
+        document.querySelectorAll(selector).forEach((element) => {
             element.textContent = value ?? '—';
-        }
+        });
     }
 
     function yesNo(value) {
@@ -66,6 +64,64 @@
     }
 
     function renderRelatedRecords(agreement) {
+        const partnerSummary = document.querySelector('[data-partner-summary]');
+        partnerSummary.replaceChildren();
+        if (!(agreement.partners || []).length) {
+            partnerSummary.append(summaryItem('Partner organization', 'No partner organization recorded.'));
+        } else {
+            agreement.partners.forEach((partner) => {
+                const card = document.createElement('article');
+                card.className = 'partner-summary-card';
+                const name = document.createElement('h3');
+                name.className = 'h6 mb-2';
+                name.textContent = partner.organization_name || `Partner #${partner.partner_id}`;
+                const details = document.createElement('dl');
+                details.className = 'partner-summary-details mb-0';
+
+                const addDetail = (label, value) => {
+                    if (!value) return;
+                    const row = document.createElement('div');
+                    const term = document.createElement('dt');
+                    const description = document.createElement('dd');
+                    term.textContent = label;
+                    description.textContent = value;
+                    row.append(term, description);
+                    details.append(row);
+                };
+
+                addDetail('Type', partner.partner_type);
+                addDetail('Location', [partner.city, partner.country].filter(Boolean).join(', '));
+
+                if (partner.website) {
+                    const row = document.createElement('div');
+                    const term = document.createElement('dt');
+                    const description = document.createElement('dd');
+                    const link = document.createElement('a');
+                    term.textContent = 'Website';
+                    const website = String(partner.website).trim();
+                    const candidate = /^[a-z][a-z0-9+.-]*:/i.test(website)
+                        ? website
+                        : `https://${website}`;
+                    link.textContent = website;
+                    try {
+                        const url = new URL(candidate);
+                        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Unsupported protocol');
+                        link.href = url.toString();
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                    } catch (error) {
+                        link.removeAttribute('href');
+                    }
+                    description.append(link);
+                    row.append(term, description);
+                    details.append(row);
+                }
+
+                card.append(name, details);
+                partnerSummary.append(card);
+            });
+        }
+
         const contacts = document.querySelector('[data-contact-summary]');
         contacts.replaceChildren();
         if (!(agreement.contacts || []).length) {
@@ -90,6 +146,8 @@
                 summaryItem('Responsible entity', program.responsible_entity)
             );
         });
+        const outcomes = document.querySelector('[data-outcome-summary]');
+        outcomes.replaceChildren();
         (agreement.metrics || []).forEach((metric) => {
             const label = String(metric.metric_code).replaceAll('_', ' ').toLowerCase();
             const value = [
@@ -97,10 +155,13 @@
                 metric.actual_value != null ? `Actual: ${metric.actual_value}` : '',
                 metric.notes
             ].filter(Boolean).join(' · ');
-            programs.append(summaryItem(label, value));
+            outcomes.append(summaryItem(label, value));
         });
-        if (!(agreement.executive_programs || []).length && !(agreement.metrics || []).length) {
-            programs.append(summaryItem('Programs and outcomes', 'No executive program or outcome metrics recorded.'));
+        if (!(agreement.executive_programs || []).length) {
+            programs.append(summaryItem('Executive program', 'No executive program recorded.'));
+        }
+        if (!(agreement.metrics || []).length) {
+            outcomes.append(summaryItem('Exchange outcomes', 'No outcome metrics recorded.'));
         }
 
         const relationships = agreement.relationships || [];
@@ -149,20 +210,19 @@
             )
         );
         setText('[data-agreement-description]', agreement.description || 'No description provided.');
-        setText('[data-created-by]', agreement.created_by);
+        setText(
+            '[data-created-by]',
+            [
+                agreement.created_by_name || `User #${agreement.created_by}`,
+                agreement.created_by_email,
+                agreement.created_by_university_id
+            ].filter(Boolean).join(' · ')
+        );
         setText('[data-created-at]', AgreementApi.formatDate(agreement.created_at));
         setText('[data-updated-at]', AgreementApi.formatDate(agreement.updated_at));
 
-        const originTarget = document.querySelector('[data-record-origin]');
-        originTarget.replaceChildren(
-            AgreementApi.createRecordOriginBadge(agreement.record_origin)
-        );
-        const originDetail = {
-            LEGACY_IMPORT: `Imported from ${agreement.legacy_source_file || 'the verified legacy source'}${agreement.legacy_source_row_number ? `, row ${agreement.legacy_source_row_number}` : ''}.`,
-            DEVELOPMENT: 'Test data created with a development identity or DEMO code; it is not a real legacy Agreement.',
-            NEW_SYSTEM: 'Official record created through the new Agreement system.'
-        }[agreement.record_origin] || 'Record origin has not been classified.';
-        setText('[data-record-origin-detail]', originDetail);
+        const origin = document.querySelector('[data-record-origin]');
+        origin.replaceWith(AgreementApi.createRecordOriginBadge(agreement.record_origin));
 
         [
             'title_ar', 'geographic_scope', 'start_date', 'end_date',
@@ -444,6 +504,16 @@
         try {
             const id = agreementId();
             state.agreementId = id;
+            const returnTo = new URLSearchParams(window.location.search)
+                .get('return_to');
+            const back = document.querySelector('[data-context-back]');
+            if (returnTo && back) {
+                back.href = AgreementApi.workspacePath(
+                    returnTo,
+                    'agreements.php'
+                );
+                back.textContent = '← Back to Agreement review';
+            }
             const user = await AgreementApi.requireSession('VIEW_AGREEMENT');
 
             const [agreement, versions, timeline] = await Promise.all([
@@ -479,10 +549,11 @@
 
         const isRevision = state.agreement.status === 'REVISION_REQUIRED';
 
-        const confirmed = window.confirm(
+        const confirmed = await WorkspaceDialog.confirm(
             isRevision
                 ? 'Resubmit this revised Agreement? It will return to Initial VP review.'
-                : 'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.'
+                : 'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.',
+            { confirmLabel: isRevision ? 'Resubmit Agreement' : 'Submit for review' }
         );
 
         if (!confirmed) {
@@ -509,6 +580,22 @@
             elements.alert.classList.remove('d-none');
             elements.alert.focus();
             setSubmitBusy(false);
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-export-agreement]');
+        if (!button || !state.agreement) return;
+        try {
+            WorkspaceExport.download(
+                `agreement-${state.agreementId}`,
+                state.agreement,
+                button.dataset.exportAgreement,
+                `Agreement ${state.agreement.agreement_code || `#${state.agreementId}`}`
+            );
+        } catch (error) {
+            elements.alert.textContent = error.message || 'The Agreement export could not be prepared.';
+            elements.alert.classList.remove('d-none');
         }
     });
 

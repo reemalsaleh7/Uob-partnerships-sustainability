@@ -130,8 +130,14 @@ class AgreementRepository {
                 ali.source_row_number AS legacy_source_row_number,
                 ali.source_record_id AS legacy_source_record_id,
                 ali.import_warnings AS legacy_import_warnings,
-                ali.imported_at AS legacy_imported_at
+                ali.imported_at AS legacy_imported_at,
+                NULLIF(TRIM(CONCAT(creator.first_name, \' \', creator.last_name)), \'\')
+                    AS created_by_name,
+                creator.email AS created_by_email,
+                creator.university_id AS created_by_university_id
             FROM agreements a
+            LEFT JOIN users creator
+                ON creator.user_id = a.created_by
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
             LEFT JOIN agreement_legacy_imports ali
@@ -256,8 +262,14 @@ class AgreementRepository {
                 ali.source_row_number AS legacy_source_row_number,
                 ali.source_record_id AS legacy_source_record_id,
                 ali.import_warnings AS legacy_import_warnings,
-                ali.imported_at AS legacy_imported_at
+                ali.imported_at AS legacy_imported_at,
+                NULLIF(TRIM(CONCAT(creator.first_name, \' \', creator.last_name)), \'\')
+                    AS created_by_name,
+                creator.email AS created_by_email,
+                creator.university_id AS created_by_university_id
             FROM agreements a
+            LEFT JOIN users creator
+                ON creator.user_id = a.created_by
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
             LEFT JOIN agreement_legacy_imports ali

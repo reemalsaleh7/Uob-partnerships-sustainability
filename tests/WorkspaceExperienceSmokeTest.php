@@ -22,6 +22,7 @@ $dashboard = workspaceSource('uob-agreements/workspace/index.php');
 $dashboardJs = workspaceSource('uob-agreements/workspace/assets/js/dashboard.js');
 $agreementPage = workspaceSource('uob-agreements/workspace/agreement.php');
 $agreementJs = workspaceSource('uob-agreements/workspace/assets/js/agreement-detail.js');
+$agreementForm = workspaceSource('uob-agreements/workspace/agreement-form.php');
 $routes = workspaceSource('routes/agreements.php');
 $authRoutes = workspaceSource('routes/auth.php');
 $authService = workspaceSource('services/AuthService.php');
@@ -89,6 +90,30 @@ workspaceAssert(
 workspaceAssert(
     str_contains($agreementJs, 'assigned_reviewer_names'),
     'Review timeline does not display the assigned reviewer'
+);
+workspaceAssert(
+    str_contains($agreementPage, 'agreement-detail-grid')
+        && str_contains($agreementPage, 'agreement-overview-card')
+        && str_contains($agreementPage, 'agreement-program-card')
+        && str_contains($agreementPage, 'agreement-record-card'),
+    'Agreement detail page is missing the guided card layout'
+);
+workspaceAssert(
+    str_contains($agreementPage, 'data-record-origin')
+        && str_contains($apiClient, 'createRecordOriginBadge'),
+    'Agreement detail page is missing a supported record-origin badge'
+);
+workspaceAssert(
+    str_contains($agreementJs, 'agreement-form.php?id=')
+        && str_contains($agreementForm, 'agreement-form-toolbar')
+        && str_contains($agreementForm, 'agreement-form-section'),
+    'Agreement editing is not routed through the redesigned comprehensive form'
+);
+workspaceAssert(
+    str_contains($dashboard, 'data-dashboard-priorities')
+        && str_contains($workspaceStyles, '.dashboard-priority-card > strong')
+        && str_contains($workspaceStyles, '.dashboard-priority-card > small'),
+    'Overview priority cards are missing the layout that separates labels, counts, and descriptions'
 );
 workspaceAssert(
     str_contains($routes, '/workflow-timeline$#'),
