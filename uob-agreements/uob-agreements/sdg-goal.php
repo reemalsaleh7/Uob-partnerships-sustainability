@@ -6,6 +6,7 @@ $hidePageHeader = true;
 $mainContainer = false;
 
 require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/includes/sdg-utils.php';
 
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isArabic = ($lang === 'ar');
@@ -80,7 +81,6 @@ function extractAgreementSdgs(array $ag): array {
   $candidateKeys = [
     'sdgs',
     'SDGs',
-    'sdgs',
     'SDG',
     'sdg_primary',
     'sdg_secondary',
@@ -147,29 +147,26 @@ if ($selectedSdg < 1 || $selectedSdg > 17) {
   exit;
 }
 
-$allInitiatives = loadAllInitiatives();
-$allAgreements  = function_exists('readAgreements') ? readAgreements() : [];
+$allInitiatives = function_exists('loadAllInitiatives') ? loadAllInitiatives(false) : [];
+$allAgreements  = function_exists('readAgreements') ? readAgreements(false) : [];
 
 
 $isAdmin = (($_SESSION['role'] ?? '') === 'admin');
 
-if (!$isAdmin) {
-  $allInitiatives = array_values(array_filter($allInitiatives, function($it){
-    return trim((string)($it['status'] ?? 'معتمد')) === 'معتمد';
-  }));
-}
+$allInitiatives = array_values(array_filter($allInitiatives, fn($row) => sdgInitiativeIsVisible($row, $isAdmin)));
+$allAgreements = array_values(array_filter($allAgreements, fn($row) => sdgAgreementIsVisible($row, $isAdmin)));
 
 $selectedInitiatives = [];
 $selectedAgreements = [];
 
 foreach ($allInitiatives as $it) {
-  if (in_array($selectedSdg, extractInitiativeSdgs($it), true)) {
+  if (in_array($selectedSdg, sdgNumbersFromRow($it), true)) {
     $selectedInitiatives[] = $it;
   }
 }
 
 foreach ($allAgreements as $ag) {
-  if (in_array($selectedSdg, extractAgreementSdgs($ag), true)) {
+  if (in_array($selectedSdg, sdgNumbersFromRow($ag), true)) {
     $selectedAgreements[] = $ag;
   }
 }

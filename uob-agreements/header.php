@@ -666,11 +666,17 @@ document.addEventListener('DOMContentLoaded', function () {
     </button>
 
     <div class="collapse navbar-collapse" id="mainNav">
-<ul class="navbar-nav mx-auto mb-2 mb-lg-0 align-items-lg-center">        <li class="nav-item">
+<ul class="navbar-nav mx-auto mb-2 mb-lg-0 align-items-lg-center">     
+     <li class="nav-item">
           <a class="nav-link" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
             <?= h(t('home')) ?>
           </a>
         </li>
+        <li class="nav-item">
+           <a class="nav-link" href="<?= $base ?>about.php?lang=<?= h($lang) ?>">
+           <?= $lang === 'ar' ? 'عن البوابة' : 'ABOUT' ?>
+           </a>
+         </li>
         <li class="nav-item">
           <a class="nav-link" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
             <?= h(t('agreements')) ?>
