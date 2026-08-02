@@ -129,7 +129,18 @@ try {
         exit;
     }
 
-    if (preg_match('#^/partners(?:/|$)#', $requestPath)) {
+    if (
+        str_starts_with($requestPath, '/initiative-requests')
+        || $requestPath === '/initiative-eligible-collaborators'
+        || $requestPath === '/initiative-access'
+    ) {
+        require dirname(__DIR__)
+            . '/routes/initiative-workflow.php';
+
+        exit;
+    }
+
+    if ($requestPath === '/partners') {
         require dirname(__DIR__) . '/routes/partners.php';
         exit;
     }

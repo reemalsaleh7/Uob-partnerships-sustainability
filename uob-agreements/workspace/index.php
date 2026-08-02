@@ -70,4 +70,8 @@ workspaceHeader('Overview', 'dashboard');
     </div>
 </div>
 
-<?php workspaceFooter(['assets/js/dashboard.js?v=20260722-showcase-data']); ?>
+<?php
+workspaceFooter([
+    'assets/js/dashboard.js?v=20260722-showcase-data',
+    'assets/js/dashboard-initiative-integration.js?v=20260801-phase11b',
+]);
