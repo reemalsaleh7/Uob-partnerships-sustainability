@@ -21,7 +21,14 @@ $mainContainer = false;
 $notificationService = new NotificationService();
 $email = $_SESSION['user_email'];
 $userId = $notificationService->getUserIdByEmail($email);
-
+// echo '<pre>';
+// var_dump([
+//     'session_email' => $email,
+//     'user_id' => $userId,
+//     'unreadOnly' => $unreadOnly ?? null
+// ]);
+// echo '</pre>';
+// exit;
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -42,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get notifications
 $unreadOnly = isset($_GET['filter']) && $_GET['filter'] === 'unread';
-$notifications = $notificationService->getUserNotifications($userId, $unreadOnly, 100);
+$notifications = $notificationService->getUserNotifications($userId, !$unreadOnly, 100);
 $unreadCount = $notificationService->getUnreadCount($userId);
 
 require_once __DIR__ . '/header.php';
@@ -282,18 +289,38 @@ require_once __DIR__ . '/header.php';
                         </div>
                         <?php if ($isUnread): ?>
                             <div class="notification-actions">
+
+                            <!-- Unread Only -->
+                            <a
+                                href="?filter=unread&lang=<?= urlencode($lang) ?>"
+                                class="btn <?= $unreadOnly ? 'btn-primary' : 'btn-secondary' ?>"
+                            >
+                                📌 <?= $isArabic ? 'غير المقروءة' : 'Unread Only' ?>
+                            </a>
+
+                            <!-- All Notifications -->
+                            <a
+                                href="?filter=all&lang=<?= urlencode($lang) ?>"
+                                class="btn <?= !$unreadOnly ? 'btn-primary' : 'btn-secondary' ?>"
+                            >
+                                📋 <?= $isArabic ? 'كل الإشعارات' : 'All Notifications' ?>
+                            </a>
+
+                            <!-- Mark All as Read -->
+                            <?php if ($unreadCount > 0): ?>
                                 <form method="post" style="display:inline;">
-                                    <input type="hidden" name="notification_id" value="<?= $notif['notification_id'] ?>">
-                                    <button type="submit" name="action" value="mark_read" class="btn btn-success btn-sm">
-                                        ✅ <?= $isArabic ? 'تحديد كمقروءة' : 'Mark as Read' ?>
+                                    <button
+                                        type="submit"
+                                        name="action"
+                                        value="mark_all_read"
+                                        class="btn btn-primary"
+                                    >
+                                        ✅ <?= $isArabic ? 'تحديد الكل كمقروء' : 'Mark All Read' ?>
                                     </button>
                                 </form>
-                                <?php if ($notif['action_url']): ?>
-                                    <a href="<?= h($notif['action_url']) ?>" class="btn btn-primary btn-sm">
-                                        👉 <?= $isArabic ? 'عرض التفاصيل' : 'View Details' ?>
-                                    </a>
-                                <?php endif; ?>
-                            </div>
+                            <?php endif; ?>
+
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>

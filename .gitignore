@@ -4,3 +4,5 @@
 !/storage/private/web.config
 !/storage/private/**/.gitkeep
 
+/config/email.local.php
+/config/database.local.php

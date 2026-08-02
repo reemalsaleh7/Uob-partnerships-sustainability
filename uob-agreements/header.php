@@ -1,750 +1,2105 @@
 <?php
+// ============================================================
 // header.php (ROOT)
+// ============================================================
+
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/services/NotificationService.php';
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-// Get unread notification count for the bell
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+
+// ============================================================
+// NOTIFICATION UNREAD COUNT
+// ============================================================
+
 $unreadCount = 0;
-if (isset($_SESSION['user_email'])) {
-    require_once __DIR__ . '/services/NotificationService.php';
-    $notifService = new NotificationService();
-    $userId = $notifService->getUserIdByEmail($_SESSION['user_email']);
-    if ($userId) {
-        $unreadCount = $notifService->getUnreadCount($userId);
+
+if (!empty($_SESSION['user_email'])) {
+
+    try {
+
+        $notifService = new NotificationService();
+
+        $userId = $notifService->getUserIdByEmail(
+            $_SESSION['user_email']
+        );
+
+        if ($userId) {
+            $unreadCount = $notifService->getUnreadCount(
+                (int) $userId
+            );
+        }
+
+    } catch (Throwable $e) {
+
+        error_log(
+            'Header notification error: ' .
+            $e->getMessage()
+        );
+
+        $unreadCount = 0;
     }
 }
-/** Language (session + ?lang=ar/en) */
+
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+
 $supportedLang = ['ar', 'en'];
+
 if (isset($_GET['lang'])) {
-  $lg = strtolower(trim($_GET['lang']));
-  if (in_array($lg, $supportedLang, true)) $_SESSION['lang'] = $lg;
+
+    $lg = strtolower(
+        trim($_GET['lang'])
+    );
+
+    if (in_array($lg, $supportedLang, true)) {
+        $_SESSION['lang'] = $lg;
+    }
 }
+
 $lang = $_SESSION['lang'] ?? 'ar';
+
 $isRtl = ($lang === 'ar');
 
 
+// ============================================================
+// TRANSLATION FUNCTION
+// Supports one or two parameters
+// ============================================================
+
+function t(
+    string $key,
+    ?string $english = null
+): string {
+
+    global $lang;
+
+    $currentLang = $_SESSION['lang'] ?? 'ar';
 
 
+    // If English and direct English text is provided
+    if (
+        $currentLang === 'en' &&
+        $english !== null
+    ) {
+        return $english;
+    }
 
 
-// دالة الترجمة المحسنة - تدعم معامل واحد أو معاملين
-function t(string $key, string $english = null): string {
-  global $lang;
-  $currentLang = $_SESSION['lang'] ?? 'ar';
-  
-  // إذا كانت اللغة إنجليزية وتم توفير نص إنجليزي مباشر
-  if ($currentLang === 'en' && $english !== null) {
-    return $english;
-  }
-  
-  $dict = [
-    'ar' => [
-      'app_name' => 'الشراكات والأثر المستدام – جامعة البحرين',
-      'search_initiative' => 'بحث عن مبادرة...',
-      'home' => 'الرئيسية',
-      'agreements' => 'الاتفاقيات',
-      'initiatives' => 'المبادرات',
-      'sdg' => 'SDG',
-      'add_agreement' => 'إضافة اتفاقية',
-      'add_initiative' => 'إضافة مبادرة',
-      'login' => 'تسجيل الدخول',
-      'logout' => 'تسجيل الخروج',
-      'english' => 'English',
-      'arabic' => 'العربية',
-      // إضافة المفاتيح الجديدة للصفحة
-      'add_initiative_page_title' => 'إضافة مبادرة',
-      'add_initiative_hero_title' => 'إضافة مبادرة جديدة',
-      'add_initiative_hero_desc' => 'استخدم النموذج الشامل لإضافة مبادرة جديدة وربطها بالاتفاقيات والفئات المستهدفة وأهداف التنمية المستدامة.',
-      'available_agreements' => 'عدد الاتفاقيات المتاحة للربط',
-      'approved_types' => 'أنواع المبادرات المعتمدة',
-      'multiple_targets' => 'فئات مستهدفة متعددة',
-      'sdg_goals' => 'أهداف التنمية المستدامة',
-      'goals' => 'هدف',
-      'initiative_form' => 'نموذج إدخال المبادرة',
-      'fill_required_fields' => 'يرجى تعبئة جميع الحقول الإلزامية بدقة',
-      'general_info' => 'معلومات عامة',
-      'timing_location' => 'التوقيت والموقع',
-      'beneficiaries_impact' => 'المستفيدون والأثر',
-      'rankings_sdgs' => 'التصنيفات والتنمية المستدامة',
-      'documentation_notes' => 'التوثيق والملاحظات',
-      'basic_data_agreement' => 'البيانات الأساسية وربط الاتفاقية',
-      'related_agreement_question' => 'هل هذه المبادرة متعلقة باتفاقية قائمة؟',
-      'yes_related' => 'نعم، المبادرة مرتبطة باتفاقية قائمة',
-      'no_related' => 'لا، المبادرة مستقلة وغير مرتبطة باتفاقية',
-      'select_agreement' => 'اختيار الاتفاقية',
-      'select_placeholder' => 'اختر اتفاقية...',
-      'agreement_select_help' => 'عند اختيار الاتفاقية ستظهر بياناتها أسفل الحقل مباشرة.',
-      'agreement_name' => 'اسم الاتفاقية',
-      'agreement_type' => 'نوع الاتفاقية',
-      'partner_entity' => 'الجهة المتعاونة',
-      'country' => 'الدولة',
-      'responsible_entity' => 'الجهة المعنية بالتنفيذ',
-      'agreement_status' => 'حالة الاتفاقية',
-      'initiative_number' => 'رقم المبادرة',
-      'initiative_title' => 'عنوان المبادرة',
-      'executing_entity' => 'الجهة المنفذة داخل الجامعة',
-      'initiative_coordinator' => 'منسق المبادرة',
-      'initiative_type' => 'نوع المبادرة',
-      'brief_summary' => 'نبذة مختصرة عن المبادرة',
-      'start_date' => 'تاريخ تنفيذ المبادرة',
-      'end_date' => 'تاريخ انتهاء المبادرة',
-      'location_question' => 'أين تم تنفيذ المبادرة؟',
-      'inside_university' => 'داخل الجامعة',
-      'outside_university' => 'خارج الجامعة',
-      'outside_location_label' => 'إذا كانت خارج الجامعة، أين؟',
-      'description_objectives' => 'نبذة عن المبادرة وأهدافها',
-      'target_group' => 'الفئة المستهدفة (يمكن اختيار أكثر من فئة)',
-      'beneficiaries_male' => 'عدد المستفيدين - الذكور',
-      'beneficiaries_female' => 'عدد المستفيدين - الإناث',
-      'youth_question' => 'هل الفئة المستفيدة من فئة الشباب (18 إلى 35)؟',
-      'yes' => 'نعم',
-      'no' => 'لا',
-      'achieved_outputs' => 'المخرجات التي تم تحقيقها',
-      'qs_support' => 'هل تدعم QS؟',
-      'greenmetric_support' => 'هل تدعم GreenMetric؟',
-      'sdg_question' => 'هل هذه المبادرة تخدم أهداف التنمية المستدامة؟',
-      'select_sdg_goals' => 'اختر الأهداف المناسبة (اختيار متعدد)',
-      'published_question' => 'هل نُشرت المبادرة على موقع الجامعة؟',
-      'news_link' => 'رابط خبر المبادرة',
-      'images_link' => 'رابط الصور / الأدلة',
-      'entity_notes' => 'ملاحظات الجهة المنفذة',
-      'vppd_notes' => 'ملاحظات VPPD',
-      'previous' => 'السابق',
-      'next' => 'التالي',
-      'cancel' => 'إلغاء',
-      'save' => 'حفظ المبادرة',
-      'initiative_added_success' => 'تمت إضافة المبادرة بنجاح.',
-      'go_to_initiatives' => 'الذهاب إلى قائمة المبادرات',
-      'example_number' => 'مثال: 1 أو 2025001',
-      'write_title' => 'اكتب عنوان المبادرة بشكل واضح',
-      'example_entity' => 'مثال: كلية الهندسة',
-      'coordinator_name' => 'اسم منسق المبادرة',
-      'select_type' => 'اختر النوع...',
-      'optional' => 'اختياري',
-      'example_location' => 'مثال: مقر الجهة الشريكة / محافظة / مدينة / دولة',
-      'write_description' => 'اكتب وصف المبادرة، أهدافها، نطاقها، وطريقة التنفيذ',
-      'example_outputs' => 'مثال: عدد الورش المنفذة، الأدلة، التقارير، الشهادات، التوصيات...',
-      'select' => 'اختر...',
-      'google_drive_link' => 'رابط Google Drive أو أي رابط أدلة',
-      'additional_notes' => 'أي ملاحظات إضافية خاصة بالجهة المنفذة',
-      'required_field' => 'يرجى تحديد هل المبادرة مرتبطة باتفاقية قائمة أم لا.',
-      'agreement_required' => 'اختيار الاتفاقية مطلوب.',
-      'title_required' => 'عنوان المبادرة مطلوب.',
-      'type_required' => 'نوع المبادرة مطلوب.',
-      'entity_required' => 'الجهة المنفذة مطلوبة.',
-      'date_required' => 'تاريخ تنفيذ المبادرة مطلوب.',
-      'location_required' => 'يرجى تحديد موقع تنفيذ المبادرة.',
-      'outside_location_required' => 'يرجى كتابة مكان تنفيذ المبادرة خارج الجامعة.',
-      'sdg_required' => 'اختر هدف تنمية مستدامة واحدًا على الأقل.',
-      'news_link_required' => 'رابط خبر المبادرة مطلوب عند اختيار نعم.',
-    ],
-    'en' => [
-      'app_name' => 'UOB Partnerships & Sustainable Impact',
-      'search_initiative' => 'Search initiatives...',
-      'home' => 'Home',
-      'agreements' => 'Agreements',
-      'initiatives' => 'Initiatives',
-      'sdg' => 'SDGs',
-      'add_agreement' => 'Add Agreement',
-      'add_initiative' => 'Add Initiative',
-      'login' => 'Login',
-      'logout' => 'Logout',
-      'english' => 'English',
-      'arabic' => 'Arabic',
-      'add_initiative_page_title' => 'Add Initiative',
-      'add_initiative_hero_title' => 'Add New Initiative',
-      'add_initiative_hero_desc' => 'Use the comprehensive form to add a new initiative and link it to agreements, target groups, and sustainable development goals.',
-      'available_agreements' => 'Available agreements to link',
-      'approved_types' => 'Approved initiative types',
-      'multiple_targets' => 'Multiple target groups',
-      'sdg_goals' => 'Sustainable Development Goals',
-      'goals' => 'Goals',
-      'initiative_form' => 'Initiative Entry Form',
-      'fill_required_fields' => 'Please fill all required fields accurately',
-      'general_info' => 'General Info',
-      'timing_location' => 'Timing & Location',
-      'beneficiaries_impact' => 'Beneficiaries & Impact',
-      'rankings_sdgs' => 'Rankings & SDGs',
-      'documentation_notes' => 'Documentation & Notes',
-      'basic_data_agreement' => 'Basic Data & Agreement Linking',
-      'related_agreement_question' => 'Is this initiative related to an existing agreement?',
-      'yes_related' => 'Yes, the initiative is linked to an existing agreement',
-      'no_related' => 'No, the initiative is independent and not linked to an agreement',
-      'select_agreement' => 'Select Agreement',
-      'select_placeholder' => 'Select an agreement...',
-      'agreement_select_help' => 'When you select an agreement, its data will appear below the field.',
-      'agreement_name' => 'Agreement Name',
-      'agreement_type' => 'Agreement Type',
-      'partner_entity' => 'Partner Entity',
-      'country' => 'Country',
-      'responsible_entity' => 'Responsible Entity',
-      'agreement_status' => 'Agreement Status',
-      'initiative_number' => 'Initiative Number',
-      'initiative_title' => 'Initiative Title',
-      'executing_entity' => 'Executing Entity within the University',
-      'initiative_coordinator' => 'Initiative Coordinator',
-      'initiative_type' => 'Initiative Type',
-      'brief_summary' => 'Brief Summary about the initiative',
-      'start_date' => 'Initiative Start Date',
-      'end_date' => 'Initiative End Date',
-      'location_question' => 'Where was the initiative implemented?',
-      'inside_university' => 'Inside the University',
-      'outside_university' => 'Outside the University',
-      'outside_location_label' => 'If outside the university, where?',
-      'description_objectives' => 'Initiative Description & Objectives',
-      'target_group' => 'Target Group (Multiple selections allowed)',
-      'beneficiaries_male' => 'Number of Beneficiaries - Male',
-      'beneficiaries_female' => 'Number of Beneficiaries - Female',
-      'youth_question' => 'Are the beneficiaries from the youth category (18-35)?',
-      'yes' => 'Yes',
-      'no' => 'No',
-      'achieved_outputs' => 'Achieved Outputs',
-      'qs_support' => 'Does it support QS?',
-      'greenmetric_support' => 'Does it support GreenMetric?',
-      'sdg_question' => 'Does this initiative serve the Sustainable Development Goals?',
-      'select_sdg_goals' => 'Select appropriate goals (Multiple selections)',
-      'published_question' => 'Has the initiative been published on the university website?',
-      'news_link' => 'Initiative News Link',
-      'images_link' => 'Images / Evidence Link',
-      'entity_notes' => 'Executing Entity Notes',
-      'vppd_notes' => 'VPPD Notes',
-      'previous' => 'Previous',
-      'next' => 'Next',
-      'cancel' => 'Cancel',
-      'save' => 'Save Initiative',
-      'initiative_added_success' => 'Initiative added successfully.',
-      'go_to_initiatives' => 'Go to initiatives list',
-      'example_number' => 'Example: 1 or 2025001',
-      'write_title' => 'Write the initiative title clearly',
-      'example_entity' => 'Example: College of Engineering',
-      'coordinator_name' => 'Initiative coordinator name',
-      'select_type' => 'Select type...',
-      'optional' => 'Optional',
-      'example_location' => 'Example: Partner headquarters / Governorate / City / Country',
-      'write_description' => 'Write the initiative description, objectives, scope, and implementation method',
-      'example_outputs' => 'Example: Number of workshops conducted, evidence, reports, certificates, recommendations...',
-      'select' => 'Select...',
-      'google_drive_link' => 'Google Drive link or any evidence link',
-      'additional_notes' => 'Any additional notes from the executing entity',
-      'required_field' => 'Please specify whether the initiative is related to an existing agreement or not.',
-      'agreement_required' => 'Agreement selection is required.',
-      'title_required' => 'Initiative title is required.',
-      'type_required' => 'Initiative type is required.',
-      'entity_required' => 'Executing entity is required.',
-      'date_required' => 'Initiative start date is required.',
-      'location_required' => 'Please specify the initiative location.',
-      'outside_location_required' => 'Please write the location outside the university.',
-      'sdg_required' => 'Select at least one Sustainable Development Goal.',
-      'news_link_required' => 'Initiative news link is required when selecting Yes.',
-    ],
-  ];
-  
-  // إذا كان المفتاح موجوداً في القاموس
-  if (isset($dict[$currentLang][$key])) {
-    return $dict[$currentLang][$key];
-  }
-  
-  // إذا كان المفتاح غير موجود ولم يتم توفير نص إنجليزي بديل
-  if ($english !== null) {
-    return $english;
-  }
-  
-  return $key;
+    $dict = [
+
+        // ====================================================
+        // ARABIC
+        // ====================================================
+
+        'ar' => [
+
+            'app_name' =>
+                'الشراكات والأثر المستدام – جامعة البحرين',
+
+            'search_initiative' =>
+                'بحث عن مبادرة...',
+
+            'home' =>
+                'الرئيسية',
+
+            'agreements' =>
+                'الاتفاقيات',
+
+            'initiatives' =>
+                'المبادرات',
+
+            'sdg' =>
+                'SDG',
+
+            'add_agreement' =>
+                'إضافة اتفاقية',
+
+            'add_initiative' =>
+                'إضافة مبادرة',
+
+            'login' =>
+                'تسجيل الدخول',
+
+            'logout' =>
+                'تسجيل الخروج',
+
+            'english' =>
+                'English',
+
+            'arabic' =>
+                'العربية',
+
+
+            // Add Initiative Page
+
+            'add_initiative_page_title' =>
+                'إضافة مبادرة',
+
+            'add_initiative_hero_title' =>
+                'إضافة مبادرة جديدة',
+
+            'add_initiative_hero_desc' =>
+                'استخدم النموذج الشامل لإضافة مبادرة جديدة وربطها بالاتفاقيات والفئات المستهدفة وأهداف التنمية المستدامة.',
+
+            'available_agreements' =>
+                'عدد الاتفاقيات المتاحة للربط',
+
+            'approved_types' =>
+                'أنواع المبادرات المعتمدة',
+
+            'multiple_targets' =>
+                'فئات مستهدفة متعددة',
+
+            'sdg_goals' =>
+                'أهداف التنمية المستدامة',
+
+            'goals' =>
+                'هدف',
+
+            'initiative_form' =>
+                'نموذج إدخال المبادرة',
+
+            'fill_required_fields' =>
+                'يرجى تعبئة جميع الحقول الإلزامية بدقة',
+
+            'general_info' =>
+                'معلومات عامة',
+
+            'timing_location' =>
+                'التوقيت والموقع',
+
+            'beneficiaries_impact' =>
+                'المستفيدون والأثر',
+
+            'rankings_sdgs' =>
+                'التصنيفات والتنمية المستدامة',
+
+            'documentation_notes' =>
+                'التوثيق والملاحظات',
+
+            'basic_data_agreement' =>
+                'البيانات الأساسية وربط الاتفاقية',
+
+            'related_agreement_question' =>
+                'هل هذه المبادرة متعلقة باتفاقية قائمة؟',
+
+            'yes_related' =>
+                'نعم، المبادرة مرتبطة باتفاقية قائمة',
+
+            'no_related' =>
+                'لا، المبادرة مستقلة وغير مرتبطة باتفاقية',
+
+            'select_agreement' =>
+                'اختيار الاتفاقية',
+
+            'select_placeholder' =>
+                'اختر اتفاقية...',
+
+            'agreement_select_help' =>
+                'عند اختيار الاتفاقية ستظهر بياناتها أسفل الحقل مباشرة.',
+
+            'agreement_name' =>
+                'اسم الاتفاقية',
+
+            'agreement_type' =>
+                'نوع الاتفاقية',
+
+            'partner_entity' =>
+                'الجهة المتعاونة',
+
+            'country' =>
+                'الدولة',
+
+            'responsible_entity' =>
+                'الجهة المعنية بالتنفيذ',
+
+            'agreement_status' =>
+                'حالة الاتفاقية',
+
+            'initiative_number' =>
+                'رقم المبادرة',
+
+            'initiative_title' =>
+                'عنوان المبادرة',
+
+            'executing_entity' =>
+                'الجهة المنفذة داخل الجامعة',
+
+            'initiative_coordinator' =>
+                'منسق المبادرة',
+
+            'initiative_type' =>
+                'نوع المبادرة',
+
+            'brief_summary' =>
+                'نبذة مختصرة عن المبادرة',
+
+            'start_date' =>
+                'تاريخ تنفيذ المبادرة',
+
+            'end_date' =>
+                'تاريخ انتهاء المبادرة',
+
+            'location_question' =>
+                'أين تم تنفيذ المبادرة؟',
+
+            'inside_university' =>
+                'داخل الجامعة',
+
+            'outside_university' =>
+                'خارج الجامعة',
+
+            'outside_location_label' =>
+                'إذا كانت خارج الجامعة، أين؟',
+
+            'description_objectives' =>
+                'نبذة عن المبادرة وأهدافها',
+
+            'target_group' =>
+                'الفئة المستهدفة (يمكن اختيار أكثر من فئة)',
+
+            'beneficiaries_male' =>
+                'عدد المستفيدين - الذكور',
+
+            'beneficiaries_female' =>
+                'عدد المستفيدين - الإناث',
+
+            'youth_question' =>
+                'هل الفئة المستفيدة من فئة الشباب (18 إلى 35)؟',
+
+            'yes' =>
+                'نعم',
+
+            'no' =>
+                'لا',
+
+            'achieved_outputs' =>
+                'المخرجات التي تم تحقيقها',
+
+            'qs_support' =>
+                'هل تدعم QS؟',
+
+            'greenmetric_support' =>
+                'هل تدعم GreenMetric؟',
+
+            'sdg_question' =>
+                'هل هذه المبادرة تخدم أهداف التنمية المستدامة؟',
+
+            'select_sdg_goals' =>
+                'اختر الأهداف المناسبة (اختيار متعدد)',
+
+            'published_question' =>
+                'هل نُشرت المبادرة على موقع الجامعة؟',
+
+            'news_link' =>
+                'رابط خبر المبادرة',
+
+            'images_link' =>
+                'رابط الصور / الأدلة',
+
+            'entity_notes' =>
+                'ملاحظات الجهة المنفذة',
+
+            'vppd_notes' =>
+                'ملاحظات VPPD',
+
+            'previous' =>
+                'السابق',
+
+            'next' =>
+                'التالي',
+
+            'cancel' =>
+                'إلغاء',
+
+            'save' =>
+                'حفظ المبادرة',
+
+            'initiative_added_success' =>
+                'تمت إضافة المبادرة بنجاح.',
+
+            'go_to_initiatives' =>
+                'الذهاب إلى قائمة المبادرات',
+
+            'example_number' =>
+                'مثال: 1 أو 2025001',
+
+            'write_title' =>
+                'اكتب عنوان المبادرة بشكل واضح',
+
+            'example_entity' =>
+                'مثال: كلية الهندسة',
+
+            'coordinator_name' =>
+                'اسم منسق المبادرة',
+
+            'select_type' =>
+                'اختر النوع...',
+
+            'optional' =>
+                'اختياري',
+
+            'example_location' =>
+                'مثال: مقر الجهة الشريكة / محافظة / مدينة / دولة',
+
+            'write_description' =>
+                'اكتب وصف المبادرة، أهدافها، نطاقها، وطريقة التنفيذ',
+
+            'example_outputs' =>
+                'مثال: عدد الورش المنفذة، الأدلة، التقارير، الشهادات، التوصيات...',
+
+            'select' =>
+                'اختر...',
+
+            'google_drive_link' =>
+                'رابط Google Drive أو أي رابط أدلة',
+
+            'additional_notes' =>
+                'أي ملاحظات إضافية خاصة بالجهة المنفذة',
+
+            'required_field' =>
+                'يرجى تحديد هل المبادرة مرتبطة باتفاقية قائمة أم لا.',
+
+            'agreement_required' =>
+                'اختيار الاتفاقية مطلوب.',
+
+            'title_required' =>
+                'عنوان المبادرة مطلوب.',
+
+            'type_required' =>
+                'نوع المبادرة مطلوب.',
+
+            'entity_required' =>
+                'الجهة المنفذة مطلوبة.',
+
+            'date_required' =>
+                'تاريخ تنفيذ المبادرة مطلوب.',
+
+            'location_required' =>
+                'يرجى تحديد موقع تنفيذ المبادرة.',
+
+            'outside_location_required' =>
+                'يرجى كتابة مكان تنفيذ المبادرة خارج الجامعة.',
+
+            'sdg_required' =>
+                'اختر هدف تنمية مستدامة واحدًا على الأقل.',
+
+            'news_link_required' =>
+                'رابط خبر المبادرة مطلوب عند اختيار نعم.',
+        ],
+
+
+        // ====================================================
+        // ENGLISH
+        // ====================================================
+
+        'en' => [
+
+            'app_name' =>
+                'UOB Partnerships & Sustainable Impact',
+
+            'search_initiative' =>
+                'Search initiatives...',
+
+            'home' =>
+                'Home',
+
+            'agreements' =>
+                'Agreements',
+
+            'initiatives' =>
+                'Initiatives',
+
+            'sdg' =>
+                'SDGs',
+
+            'add_agreement' =>
+                'Add Agreement',
+
+            'add_initiative' =>
+                'Add Initiative',
+
+            'login' =>
+                'Login',
+
+            'logout' =>
+                'Logout',
+
+            'english' =>
+                'English',
+
+            'arabic' =>
+                'Arabic',
+
+
+            // Add Initiative Page
+
+            'add_initiative_page_title' =>
+                'Add Initiative',
+
+            'add_initiative_hero_title' =>
+                'Add New Initiative',
+
+            'add_initiative_hero_desc' =>
+                'Use the comprehensive form to add a new initiative and link it to agreements, target groups, and sustainable development goals.',
+
+            'available_agreements' =>
+                'Available agreements to link',
+
+            'approved_types' =>
+                'Approved initiative types',
+
+            'multiple_targets' =>
+                'Multiple target groups',
+
+            'sdg_goals' =>
+                'Sustainable Development Goals',
+
+            'goals' =>
+                'Goals',
+
+            'initiative_form' =>
+                'Initiative Entry Form',
+
+            'fill_required_fields' =>
+                'Please fill all required fields accurately',
+
+            'general_info' =>
+                'General Info',
+
+            'timing_location' =>
+                'Timing & Location',
+
+            'beneficiaries_impact' =>
+                'Beneficiaries & Impact',
+
+            'rankings_sdgs' =>
+                'Rankings & SDGs',
+
+            'documentation_notes' =>
+                'Documentation & Notes',
+
+            'basic_data_agreement' =>
+                'Basic Data & Agreement Linking',
+
+            'related_agreement_question' =>
+                'Is this initiative related to an existing agreement?',
+
+            'yes_related' =>
+                'Yes, the initiative is linked to an existing agreement',
+
+            'no_related' =>
+                'No, the initiative is independent and not linked to an agreement',
+
+            'select_agreement' =>
+                'Select Agreement',
+
+            'select_placeholder' =>
+                'Select an agreement...',
+
+            'agreement_select_help' =>
+                'When you select an agreement, its data will appear below the field.',
+
+            'agreement_name' =>
+                'Agreement Name',
+
+            'agreement_type' =>
+                'Agreement Type',
+
+            'partner_entity' =>
+                'Partner Entity',
+
+            'country' =>
+                'Country',
+
+            'responsible_entity' =>
+                'Responsible Entity',
+
+            'agreement_status' =>
+                'Agreement Status',
+
+            'initiative_number' =>
+                'Initiative Number',
+
+            'initiative_title' =>
+                'Initiative Title',
+
+            'executing_entity' =>
+                'Executing Entity within the University',
+
+            'initiative_coordinator' =>
+                'Initiative Coordinator',
+
+            'initiative_type' =>
+                'Initiative Type',
+
+            'brief_summary' =>
+                'Brief Summary about the initiative',
+
+            'start_date' =>
+                'Initiative Start Date',
+
+            'end_date' =>
+                'Initiative End Date',
+
+            'location_question' =>
+                'Where was the initiative implemented?',
+
+            'inside_university' =>
+                'Inside the University',
+
+            'outside_university' =>
+                'Outside the University',
+
+            'outside_location_label' =>
+                'If outside the university, where?',
+
+            'description_objectives' =>
+                'Initiative Description & Objectives',
+
+            'target_group' =>
+                'Target Group (Multiple selections allowed)',
+
+            'beneficiaries_male' =>
+                'Number of Beneficiaries - Male',
+
+            'beneficiaries_female' =>
+                'Number of Beneficiaries - Female',
+
+            'youth_question' =>
+                'Are the beneficiaries from the youth category (18-35)?',
+
+            'yes' =>
+                'Yes',
+
+            'no' =>
+                'No',
+
+            'achieved_outputs' =>
+                'Achieved Outputs',
+
+            'qs_support' =>
+                'Does it support QS?',
+
+            'greenmetric_support' =>
+                'Does it support GreenMetric?',
+
+            'sdg_question' =>
+                'Does this initiative serve the Sustainable Development Goals?',
+
+            'select_sdg_goals' =>
+                'Select appropriate goals (Multiple selections)',
+
+            'published_question' =>
+                'Has the initiative been published on the university website?',
+
+            'news_link' =>
+                'Initiative News Link',
+
+            'images_link' =>
+                'Images / Evidence Link',
+
+            'entity_notes' =>
+                'Executing Entity Notes',
+
+            'vppd_notes' =>
+                'VPPD Notes',
+
+            'previous' =>
+                'Previous',
+
+            'next' =>
+                'Next',
+
+            'cancel' =>
+                'Cancel',
+
+            'save' =>
+                'Save Initiative',
+
+            'initiative_added_success' =>
+                'Initiative added successfully.',
+
+            'go_to_initiatives' =>
+                'Go to initiatives list',
+
+            'example_number' =>
+                'Example: 1 or 2025001',
+
+            'write_title' =>
+                'Write the initiative title clearly',
+
+            'example_entity' =>
+                'Example: College of Engineering',
+
+            'coordinator_name' =>
+                'Initiative coordinator name',
+
+            'select_type' =>
+                'Select type...',
+
+            'optional' =>
+                'Optional',
+
+            'example_location' =>
+                'Example: Partner headquarters / Governorate / City / Country',
+
+            'write_description' =>
+                'Write the initiative description, objectives, scope, and implementation method',
+
+            'example_outputs' =>
+                'Example: Number of workshops conducted, evidence, reports, certificates, recommendations...',
+
+            'select' =>
+                'Select...',
+
+            'google_drive_link' =>
+                'Google Drive link or any evidence link',
+
+            'additional_notes' =>
+                'Any additional notes from the executing entity',
+
+            'required_field' =>
+                'Please specify whether the initiative is related to an existing agreement or not.',
+
+            'agreement_required' =>
+                'Agreement selection is required.',
+
+            'title_required' =>
+                'Initiative title is required.',
+
+            'type_required' =>
+                'Initiative type is required.',
+
+            'entity_required' =>
+                'Executing entity is required.',
+
+            'date_required' =>
+                'Initiative start date is required.',
+
+            'location_required' =>
+                'Please specify the initiative location.',
+
+            'outside_location_required' =>
+                'Please write the location outside the university.',
+
+            'sdg_required' =>
+                'Select at least one Sustainable Development Goal.',
+
+            'news_link_required' =>
+                'Initiative news link is required when selecting Yes.',
+        ],
+    ];
+
+
+    // Return translated value
+    if (
+        isset($dict[$currentLang][$key])
+    ) {
+        return $dict[$currentLang][$key];
+    }
+
+
+    // Fallback to provided English text
+    if ($english !== null) {
+        return $english;
+    }
+
+
+    // Fallback to key
+    return $key;
 }
 
-$pageTitle = $pageTitle ?? t('app_name');
-$pageSubtitle = $pageSubtitle ?? '';
-$breadcrumb = $breadcrumb ?? [];
 
-// Layout flags (optional)
-$hidePageHeader = $hidePageHeader ?? false;
-$mainContainer = $mainContainer ?? true;
+// ============================================================
+// PAGE VARIABLES
+// ============================================================
 
-// admin base
-$currentFilePath = $_SERVER['PHP_SELF'] ?? '';
+$pageTitle =
+    $pageTitle ??
+    t('app_name');
 
-$isAdmin = str_contains($currentFilePath, '/admin/');
-$isPartnership = str_contains($currentFilePath, '/partnership/');
+$pageSubtitle =
+    $pageSubtitle ??
+    '';
 
-$base = ($isAdmin || $isPartnership) ? '../' : '';
+$breadcrumb =
+    $breadcrumb ??
+    [];
 
-$logoPath = $base . 'assets/image/THEM/uob_logo.png';
-$isLoggedIn = !empty($_SESSION['user_email']);
 
+// ============================================================
+// LAYOUT FLAGS
+// ============================================================
+
+$hidePageHeader =
+    $hidePageHeader ??
+    false;
+
+$mainContainer =
+    $mainContainer ??
+    true;
+
+
+// ============================================================
+// DETERMINE CURRENT LOCATION
+// ============================================================
+
+$currentFilePath =
+    $_SERVER['PHP_SELF'] ??
+    '';
+
+$isAdmin =
+    str_contains(
+        $currentFilePath,
+        '/admin/'
+    );
+
+$isPartnership =
+    str_contains(
+        $currentFilePath,
+        '/partnership/'
+    );
+
+
+$base =
+    (
+        $isAdmin ||
+        $isPartnership
+    )
+    ? '../'
+    : '';
+
+
+// ============================================================
+// LOGO
+// ============================================================
+
+$logoPath =
+    $base .
+    'assets/image/THEM/uob_logo.png';
+
+
+// ============================================================
+// LOGIN STATUS
+// ============================================================
+
+$isLoggedIn =
+    !empty(
+        $_SESSION['user_email']
+    );
+
+
+// ============================================================
+// UPDATES COUNT
+// ============================================================
 
 $updatesCount = 0;
 
 if ($isLoggedIn) {
-  $notificationsFile = __DIR__ . '/data/notifications.csv';
 
-  if (file_exists($notificationsFile) && ($fp = fopen($notificationsFile, 'r')) !== false) {
-    $header = fgetcsv($fp);
+    $notificationsFile =
+        __DIR__ .
+        '/data/notifications.csv';
 
-    if ($header) {
-      $header = array_map('trim', $header);
 
-      while (($row = fgetcsv($fp)) !== false) {
-        $row = array_pad($row, count($header), '');
-        $n = array_combine($header, $row);
+    if (
+        file_exists(
+            $notificationsFile
+        ) &&
+        (
+            $fp =
+            fopen(
+                $notificationsFile,
+                'r'
+            )
+        ) !== false
+    ) {
 
-        if (
-          trim($n['status'] ?? '') === 'active' &&
-          trim($n['target_type'] ?? '') === 'all' &&
-          trim($n['is_read'] ?? '0') === '0'
-        ) {
-          $updatesCount++;
+        $header =
+            fgetcsv(
+                $fp
+            );
+
+
+        if ($header) {
+
+            $header =
+                array_map(
+                    'trim',
+                    $header
+                );
+
+
+            while (
+                (
+                    $row =
+                    fgetcsv(
+                        $fp
+                    )
+                ) !== false
+            ) {
+
+                $row =
+                    array_pad(
+                        $row,
+                        count($header),
+                        ''
+                    );
+
+
+                $n =
+                    array_combine(
+                        $header,
+                        $row
+                    );
+
+
+                if (
+                    trim(
+                        $n['status'] ??
+                        ''
+                    ) === 'active'
+
+                    &&
+
+                    trim(
+                        $n['target_type'] ??
+                        ''
+                    ) === 'all'
+
+                    &&
+
+                    trim(
+                        $n['is_read'] ??
+                        '0'
+                    ) === '0'
+                ) {
+
+                    $updatesCount++;
+                }
+            }
         }
-      }
-    }
 
-    fclose($fp);
-  }
+
+        fclose(
+            $fp
+        );
+    }
 }
 
-/* preserve current query when switching language */
-$currentPath = strtok($_SERVER['REQUEST_URI'] ?? ($_SERVER['PHP_SELF'] ?? ''), '?');
-$currentQuery = $_GET ?? [];
-unset($currentQuery['lang']);
 
-$langSwitchQueryEn = http_build_query(array_merge($currentQuery, ['lang' => 'en']));
-$langSwitchQueryAr = http_build_query(array_merge($currentQuery, ['lang' => 'ar']));
+// ============================================================
+// LANGUAGE SWITCH URLs
+// ============================================================
 
-$langSwitchUrlEn = $currentPath . ($langSwitchQueryEn ? ('?' . $langSwitchQueryEn) : '');
-$langSwitchUrlAr = $currentPath . ($langSwitchQueryAr ? ('?' . $langSwitchQueryAr) : '');
+$currentPath =
+    strtok(
+        $_SERVER['REQUEST_URI'] ??
+        (
+            $_SERVER['PHP_SELF'] ??
+            ''
+        ),
+        '?'
+    );
+
+
+$currentQuery =
+    $_GET ??
+    [];
+
+
+unset(
+    $currentQuery['lang']
+);
+
+
+$langSwitchQueryEn =
+    http_build_query(
+        array_merge(
+            $currentQuery,
+            [
+                'lang' => 'en'
+            ]
+        )
+    );
+
+
+$langSwitchQueryAr =
+    http_build_query(
+        array_merge(
+            $currentQuery,
+            [
+                'lang' => 'ar'
+            ]
+        )
+    );
+
+
+$langSwitchUrlEn =
+    $currentPath .
+    (
+        $langSwitchQueryEn
+        ? '?' . $langSwitchQueryEn
+        : ''
+    );
+
+
+$langSwitchUrlAr =
+    $currentPath .
+    (
+        $langSwitchQueryAr
+        ? '?' . $langSwitchQueryAr
+        : ''
+    );
+
 ?>
+
 <!doctype html>
-<html lang="<?= h($lang) ?>" dir="<?= $isRtl ? 'rtl' : 'ltr' ?>">
+
+<html
+    lang="<?= h($lang) ?>"
+    dir="<?= $isRtl ? 'rtl' : 'ltr' ?>"
+>
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= h($pageTitle) ?></title>
-  <link rel="icon" type="image/png" href="<?= $base ?>assets/image/THEM/uob.png">
 
-  <?php if ($isRtl): ?>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <?php else: ?>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <?php endif; ?>
+    <meta charset="utf-8">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="<?= $base ?>css/style.css?v=3005" rel="stylesheet">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
 
-  <?php if (!empty($extraCss)): ?>
-  <?php foreach ($extraCss as $cssFile): ?>
-    <link href="<?= $base . h($cssFile) ?>?v=1" rel="stylesheet">
-  <?php endforeach; ?>
-<?php endif; ?>
+    <title>
+        <?= h($pageTitle) ?>
+    </title>
 
-<?php if (!empty($extraHead)) echo $extraHead; ?>
 
-<<style>
-.updates-dot{
-  position:absolute;
-  top:4px;
-  right:-2px;
-  width:9px;
-  height:9px;
-  background:#d4af37;
-  border-radius:50%;
-  display:inline-block;
-  box-shadow:0 0 0 3px rgba(212,175,55,.18);
-}
+    <link
+        rel="icon"
+        type="image/png"
+        href="<?= $base ?>assets/image/THEM/uob.png"
+    >
 
-[dir="rtl"] .updates-dot{
-  right:auto;
-  left:-2px;
-}
 
-/* BRAND TITLE CONTROL */
-html body .uob-navbar .navbar-brand span {
-  font-size: 1rem !important;
-  font-weight: 950 !important;
-  color: #0b1f3a !important;
-  white-space: nowrap !important;
-}
+    <?php if ($isRtl): ?>
 
-html body .uob-navbar .navbar-brand img {
-  height: 34px !important;
-  width: auto !important;
-}
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
+            rel="stylesheet"
+        >
 
-</style>
-</head>
-<body>
-  <script>
-document.addEventListener('DOMContentLoaded', function () {
-  document.body.childNodes.forEach(function (node) {
-    if (node.nodeType === 3 && node.textContent.trim() === '<') {
-      node.remove();
-    }
-  });
-});
-</script>
-<style>
-/* Notification Bell Styles */
-.notification-bell {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-}
-
-.notification-bell .badge {
-    position: absolute;
-    top: -8px;
-    right: -10px;
-    background: #e74c3c;
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-    border: 2px solid white;
-}
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-.notification-bell .fa-bell {
-    font-size: 20px;
-    color: #333;
-}
-/* Toast Notification Styles */
-.toast-container {
-    position: fixed;
-    top: 80px;
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 380px;
-    width: 100%;
-}
-
-/* RTL (Arabic) - Top Left */
-[dir="rtl"] .toast-container {
-    left: 20px;
-    right: auto;
-}
-
-/* LTR (English) - Top Right */
-[dir="ltr"] .toast-container {
-    right: 20px;
-    left: auto;
-}
-
-.toast-notification {
-    background: #0b1f3a;
-    color: white;
-    padding: 16px 20px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    border-right: 5px solid #c9a227;
-    animation: slideIn 0.5s ease, fadeOut 0.5s ease 4.5s forwards;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-width: 280px;
-    max-width: 380px;
-}
-
-/* RTL (Arabic) - Slide from Left */
-[dir="rtl"] .toast-notification {
-    border-right: none;
-    border-left: 5px solid #c9a227;
-    animation: slideInLeft 0.5s ease, fadeOutLeft 0.5s ease 4.5s forwards;
-}
-
-/* LTR (English) - Slide from Right */
-[dir="ltr"] .toast-notification {
-    border-right: 5px solid #c9a227;
-    border-left: none;
-    animation: slideInRight 0.5s ease, fadeOutRight 0.5s ease 4.5s forwards;
-}
-
-.toast-notification .toast-icon {
-    font-size: 24px;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.toast-notification .toast-content {
-    flex: 1;
-}
-
-.toast-notification .toast-title {
-    font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 4px;
-    color: #fff;
-}
-
-.toast-notification .toast-message {
-    font-size: 13px;
-    opacity: 0.85;
-    line-height: 1.4;
-}
-
-.toast-notification .toast-time {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-top: 4px;
-}
-
-.toast-notification .toast-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    opacity: 0.6;
-    padding: 0 4px;
-    flex-shrink: 0;
-}
-
-.toast-notification .toast-close:hover {
-    opacity: 1;
-}
-
-/* Slide Animations */
-@keyframes slideInRight {
-    from {
-        transform: translateX(120%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideInLeft {
-    from {
-        transform: translateX(-120%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes fadeOutRight {
-    to {
-        opacity: 0;
-        transform: translateX(50px);
-    }
-}
-
-@keyframes fadeOutLeft {
-    to {
-        opacity: 0;
-        transform: translateX(-50px);
-    }
-}
-</style>
-</head>
-<body>
-<!-- Toast Notification Container -->
-<div id="toastContainer" class="toast-container"></div>
-<!-- Utility bar -->
-<div class="uob-utility-bar border-bottom">
-  <div class="container d-flex align-items-center gap-3 py-2">
-    <form class="<?= $isRtl ? 'ms-auto' : 'me-auto' ?> uob-search" action="<?= $base ?>initiatives.php" method="get">
-      <input name="q" class="form-control form-control-sm" type="search" placeholder="<?= h(t('search_initiative')) ?>">
-      <input type="hidden" name="lang" value="<?= h($lang) ?>">
-    </form>
-
-    <?php if ($lang === 'ar'): ?>
-      <a class="uob-link" href="<?= h($langSwitchUrlEn) ?>"><?= h(t('english')) ?></a>
     <?php else: ?>
-      <a class="uob-link" href="<?= h($langSwitchUrlAr) ?>"><?= h(t('arabic')) ?></a>
+
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        >
+
     <?php endif; ?>
-  </div>
+
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+
+    <link
+        href="<?= $base ?>css/style.css?v=3005"
+        rel="stylesheet"
+    >
+
+
+    <?php if (!empty($extraCss)): ?>
+
+        <?php foreach ($extraCss as $cssFile): ?>
+
+            <link
+                href="<?= $base . h($cssFile) ?>?v=1"
+                rel="stylesheet"
+            >
+
+        <?php endforeach; ?>
+
+    <?php endif; ?>
+
+
+    <?php if (!empty($extraHead)): ?>
+
+        <?= $extraHead ?>
+
+    <?php endif; ?>
+
+
+    <style>
+
+        /* =====================================================
+           UPDATES DOT
+        ===================================================== */
+
+        .updates-dot {
+
+            position: absolute;
+
+            top: 4px;
+
+            right: -2px;
+
+            width: 9px;
+
+            height: 9px;
+
+            background: #d4af37;
+
+            border-radius: 50%;
+
+            display: inline-block;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(212, 175, 55, .18);
+        }
+
+
+        [dir="rtl"] .updates-dot {
+
+            right: auto;
+
+            left: -2px;
+        }
+
+
+        /* =====================================================
+           BRAND TITLE
+        ===================================================== */
+
+        html body
+        .uob-navbar
+        .navbar-brand
+        span {
+
+            font-size: 1rem !important;
+
+            font-weight: 950 !important;
+
+            color: #0b1f3a !important;
+
+            white-space: nowrap !important;
+        }
+
+
+        html body
+        .uob-navbar
+        .navbar-brand
+        img {
+
+            height: 34px !important;
+
+            width: auto !important;
+        }
+
+
+        /* =====================================================
+           NOTIFICATION BELL
+        ===================================================== */
+
+        .notification-bell {
+
+            position: relative;
+
+            display: inline-block;
+
+            cursor: pointer;
+        }
+
+
+        .notification-bell .badge {
+
+            position: absolute;
+
+            top: -8px;
+
+            right: -10px;
+
+            background: #e74c3c;
+
+            color: white;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            min-width: 20px;
+
+            height: 20px;
+
+            border-radius: 50%;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 0 5px;
+
+            border: 2px solid white;
+        }
+
+
+        .notification-bell
+        .fa-bell {
+
+            font-size: 20px;
+
+            color: #333;
+        }
+
+
+        /* =====================================================
+           TOAST NOTIFICATIONS
+        ===================================================== */
+
+        .toast-container {
+
+            position: fixed;
+
+            top: 80px;
+
+            z-index: 99999;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 10px;
+
+            max-width: 380px;
+
+            width: 100%;
+        }
+
+
+        /* RTL - Top Left */
+
+        [dir="rtl"]
+        .toast-container {
+
+            left: 20px;
+
+            right: auto;
+        }
+
+
+        /* LTR - Top Right */
+
+        [dir="ltr"]
+        .toast-container {
+
+            right: 20px;
+
+            left: auto;
+        }
+
+
+        .toast-notification {
+
+            background: #0b1f3a;
+
+            color: white;
+
+            padding: 16px 20px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 10px 40px
+                rgba(0, 0, 0, 0.2);
+
+            border-right:
+                5px solid #c9a227;
+
+            animation:
+                slideIn 0.5s ease,
+                fadeOut 0.5s ease 4.5s forwards;
+
+            display: flex;
+
+            align-items: flex-start;
+
+            gap: 12px;
+
+            min-width: 280px;
+
+            max-width: 380px;
+        }
+
+
+        /* RTL Toast */
+
+        [dir="rtl"]
+        .toast-notification {
+
+            border-right: none;
+
+            border-left:
+                5px solid #c9a227;
+
+            animation:
+                slideInLeft 0.5s ease,
+                fadeOutLeft 0.5s ease 4.5s forwards;
+        }
+
+
+        /* LTR Toast */
+
+        [dir="ltr"]
+        .toast-notification {
+
+            border-right:
+                5px solid #c9a227;
+
+            border-left: none;
+
+            animation:
+                slideInRight 0.5s ease,
+                fadeOutRight 0.5s ease 4.5s forwards;
+        }
+
+
+        .toast-notification
+        .toast-icon {
+
+            font-size: 24px;
+
+            flex-shrink: 0;
+
+            margin-top: 2px;
+        }
+
+
+        .toast-notification
+        .toast-content {
+
+            flex: 1;
+        }
+
+
+        .toast-notification
+        .toast-title {
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+            margin-bottom: 4px;
+
+            color: #fff;
+        }
+
+
+        .toast-notification
+        .toast-message {
+
+            font-size: 13px;
+
+            opacity: 0.85;
+
+            line-height: 1.4;
+        }
+
+
+        .toast-notification
+        .toast-time {
+
+            font-size: 11px;
+
+            opacity: 0.6;
+
+            margin-top: 4px;
+        }
+
+
+        .toast-notification
+        .toast-close {
+
+            background: none;
+
+            border: none;
+
+            color: white;
+
+            font-size: 18px;
+
+            cursor: pointer;
+
+            opacity: 0.6;
+
+            padding: 0 4px;
+
+            flex-shrink: 0;
+        }
+
+
+        .toast-notification
+        .toast-close:hover {
+
+            opacity: 1;
+        }
+
+
+        /* =====================================================
+           SLIDE ANIMATIONS
+        ===================================================== */
+
+        @keyframes slideInRight {
+
+            from {
+
+                transform:
+                    translateX(120%);
+
+                opacity: 0;
+            }
+
+            to {
+
+                transform:
+                    translateX(0);
+
+                opacity: 1;
+            }
+        }
+
+
+        @keyframes slideInLeft {
+
+            from {
+
+                transform:
+                    translateX(-120%);
+
+                opacity: 0;
+            }
+
+            to {
+
+                transform:
+                    translateX(0);
+
+                opacity: 1;
+            }
+        }
+
+
+        @keyframes fadeOutRight {
+
+            to {
+
+                opacity: 0;
+
+                transform:
+                    translateX(50px);
+            }
+        }
+
+
+        @keyframes fadeOutLeft {
+
+            to {
+
+                opacity: 0;
+
+                transform:
+                    translateX(-50px);
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     TOAST NOTIFICATION CONTAINER
+========================================================= -->
+
+<div
+    id="toastContainer"
+    class="toast-container"
+></div>
+
+
+<!-- =========================================================
+     UTILITY BAR
+========================================================= -->
+
+<div class="uob-utility-bar border-bottom">
+
+    <div
+        class="container d-flex align-items-center gap-3 py-2"
+    >
+
+        <form
+            class="<?= $isRtl ? 'ms-auto' : 'me-auto' ?> uob-search"
+            action="<?= $base ?>initiatives.php"
+            method="get"
+        >
+
+            <input
+                name="q"
+                class="form-control form-control-sm"
+                type="search"
+                placeholder="<?= h(t('search_initiative')) ?>"
+            >
+
+            <input
+                type="hidden"
+                name="lang"
+                value="<?= h($lang) ?>"
+            >
+
+        </form>
+
+
+        <?php if ($lang === 'ar'): ?>
+
+            <a
+                class="uob-link"
+                href="<?= h($langSwitchUrlEn) ?>"
+            >
+                <?= h(t('english')) ?>
+            </a>
+
+        <?php else: ?>
+
+            <a
+                class="uob-link"
+                href="<?= h($langSwitchUrlAr) ?>"
+            >
+                <?= h(t('arabic')) ?>
+            </a>
+
+        <?php endif; ?>
+
+    </div>
+
 </div>
 
-<nav class="navbar navbar-expand-lg bg-white border-bottom uob-navbar">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
-      <img src="<?= h($logoPath) ?>" alt="UOB Logo" style="height:40px;width:auto;">
-      <span class="fw-bold"><?= h(t('app_name')) ?></span>
-    </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+<!-- =========================================================
+     MAIN NAVBAR
+========================================================= -->
 
-    <div class="collapse navbar-collapse" id="mainNav">
-      <ul class="navbar-nav <?= $isRtl ? 'me-auto' : 'ms-auto' ?> mb-2 mb-lg-0 align-items-lg-center">
-        <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>index.php?lang=<?= h($lang) ?>">
-            <?= h(t('home')) ?>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>">
-            <?= h(t('agreements')) ?>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>">
-            <?= h(t('initiatives')) ?>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>">
-            <?= h(t('sdg')) ?>
-          </a>
-        </li>
+<nav
+    class="navbar navbar-expand-lg bg-white border-bottom uob-navbar"
+>
 
-         <li class="nav-item">
-            <a class="nav-link" href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>">
-              <?= $lang === 'ar' ? 'خريطة الاتفاقيات' : 'Partnership Map' ?>
-           </a>
-         </li>
+    <div class="container">
 
 
-<?php if ($isLoggedIn): ?>
-  <!-- DEBUG: isLoggedIn=<?= $isLoggedIn ? 'true' : 'false' ?>, unreadCount=<?= $unreadCount ?>, updatesCount=<?= $updatesCount ?> -->
-  <li class="nav-item">
-    <a class="nav-link position-relative" href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>">
-      <?= $isRtl ? 'المستجدات' : 'Updates' ?>
-      <?php if ($updatesCount > 0): ?>
-        <span class="updates-dot"></span>
-      <?php endif; ?>
-    </a>
-  </li>
+        <!-- BRAND -->
 
-  <!-- 🔔 Notification Bell -->
-<li class="nav-item" style="display:flex; align-items:center;">
-    <a class="nav-link position-relative" href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>" 
-       style="font-size:22px; padding:0 10px; display:flex; align-items:center; gap:2px;">
-        🔔
-        <?php if ($unreadCount > 0): ?>
-            <span class="badge" style="
-                position:absolute;
-                top:-5px;
-                right:-5px;
-                background:#e74c3c;
-                color:white;
-                font-size:11px;
-                font-weight:bold;
-                min-width:20px;
-                height:20px;
-                border-radius:50%;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                padding:0 5px;
-                border:2px solid white;
-            ">
-                <?= min($unreadCount, 99) ?>
+        <a
+            class="navbar-brand d-flex align-items-center gap-2"
+            href="<?= $base ?>index.php?lang=<?= h($lang) ?>"
+        >
+
+            <img
+                src="<?= h($logoPath) ?>"
+                alt="UOB Logo"
+                style="height:40px;width:auto;"
+            >
+
+            <span class="fw-bold">
+                <?= h(t('app_name')) ?>
             </span>
-        <?php endif; ?>
-    </a>
-</li>
-<?php endif; ?>
 
-<?php if (($_SESSION['user_email'] ?? '') === 'admin@uob.edu.bh'): ?>
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle admin-dropdown-btn"
-       href="<?= $base ?>admin/dashboard.php?lang=<?= h($lang) ?>"
-       role="button"
-       data-bs-toggle="dropdown"
-       aria-expanded="false">
-      <?= $isRtl ? 'لوحة الأدمن' : 'Admin Dashboard' ?>
-    </a>
-
-    <ul class="dropdown-menu admin-dropdown-menu">
-      <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/dashboard.php?lang=<?= h($lang) ?>">
-          <?= $isRtl ? 'الرئيسية' : 'Dashboard Home' ?>
         </a>
-      </li>
-
-      <li><hr class="dropdown-divider"></li>
-
-      <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/add-agreement.php?lang=<?= h($lang) ?>">
-          <?= $isRtl ? 'إضافة اتفاقية' : 'Add Agreement' ?>
-        </a>
-      </li>
-
-      <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-initiative-requests.php?lang=<?= h($lang) ?>">
-          <?= $isRtl ? 'طلبات موافقة المبادرات' : 'Initiative Approval Requests' ?>
-        </a>
-      </li>
-
-      <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-initiatives.php?lang=<?= h($lang) ?>">
-          <?= $isRtl ? 'مراجعة المبادرات' : 'Review Initiatives' ?>
-        </a>
-      </li>
-
-      <li>
-        <a class="dropdown-item" href="<?= $base ?>admin/review-agreements.php?lang=<?= h($lang) ?>">
-          <?= $isRtl ? 'مراجعة الاتفاقيات' : 'Review Agreements' ?>
-        </a>
-      </li>
-    </ul>
-  </li>
 
 
-<?php endif; ?>
-      </ul>
+        <!-- MOBILE MENU -->
 
-      <div class="d-flex gap-2">
-        <?php if (!$isLoggedIn): ?>
-          <a href="<?= $base ?>login.php?lang=<?= h($lang) ?>" class="btn btn-outline-primary btn-sm"><?= h(t('login')) ?></a>
-        <?php else: ?>
-          <a href="<?= $base ?>logout.php?lang=<?= h($lang) ?>" class="btn btn-outline-secondary btn-sm"><?= h(t('logout')) ?></a>
-        <?php endif; ?>
-      </div>
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+        >
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+
+
+        <!-- NAVIGATION -->
+
+        <div
+            class="collapse navbar-collapse"
+            id="mainNav"
+        >
+
+            <ul
+                class="navbar-nav <?= $isRtl ? 'me-auto' : 'ms-auto' ?> mb-2 mb-lg-0 align-items-lg-center"
+            >
+
+
+                <!-- HOME -->
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="<?= $base ?>index.php?lang=<?= h($lang) ?>"
+                    >
+
+                        <?= h(t('home')) ?>
+
+                    </a>
+
+                </li>
+
+
+                <!-- AGREEMENTS -->
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="<?= $base ?>agreements.php?lang=<?= h($lang) ?>"
+                    >
+
+                        <?= h(t('agreements')) ?>
+
+                    </a>
+
+                </li>
+
+
+                <!-- INITIATIVES -->
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="<?= $base ?>initiatives.php?lang=<?= h($lang) ?>"
+                    >
+
+                        <?= h(t('initiatives')) ?>
+
+                    </a>
+
+                </li>
+
+
+                <!-- SDG -->
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="<?= $base ?>sdg.php?lang=<?= h($lang) ?>"
+                    >
+
+                        <?= h(t('sdg')) ?>
+
+                    </a>
+
+                </li>
+
+
+                <!-- PARTNERSHIP MAP -->
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="<?= $base ?>partnership/partners.php?lang=<?= h($lang) ?>"
+                    >
+
+                        <?= $lang === 'ar'
+                            ? 'خريطة الاتفاقيات'
+                            : 'Partnership Map'
+                        ?>
+
+                    </a>
+
+                </li>
+
+
+                <?php if ($isLoggedIn): ?>
+
+
+                    <!-- =================================================
+                         UPDATES
+                    ================================================== -->
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link position-relative"
+                            href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>"
+                        >
+
+                            <?= $isRtl
+                                ? 'المستجدات'
+                                : 'Updates'
+                            ?>
+
+
+                            <?php if ($updatesCount > 0): ?>
+
+                                <span
+                                    class="updates-dot"
+                                ></span>
+
+                            <?php endif; ?>
+
+                        </a>
+
+                    </li>
+
+
+                    <!-- =================================================
+                         NOTIFICATION BELL
+                    ================================================== -->
+
+                    <li
+                        class="nav-item"
+                        style="
+                            display:flex;
+                            align-items:center;
+                        "
+                    >
+
+                        <a
+                            class="nav-link position-relative"
+                            href="<?= $base ?>notifications.php?lang=<?= h($lang) ?>"
+                            style="
+                                font-size:22px;
+                                padding:0 10px;
+                                display:flex;
+                                align-items:center;
+                                gap:2px;
+                            "
+                            aria-label="Notifications"
+                        >
+
+                            🔔
+
+
+                            <?php if ($unreadCount > 0): ?>
+
+                                <span
+                                    class="badge"
+                                    style="
+                                        position:absolute;
+                                        top:-5px;
+                                        right:-5px;
+                                        background:#e74c3c;
+                                        color:white;
+                                        font-size:11px;
+                                        font-weight:bold;
+                                        min-width:20px;
+                                        height:20px;
+                                        border-radius:50%;
+                                        display:flex;
+                                        align-items:center;
+                                        justify-content:center;
+                                        padding:0 5px;
+                                        border:2px solid white;
+                                    "
+                                >
+
+                                    <?= min(
+                                        $unreadCount,
+                                        99
+                                    ) ?>
+
+                                </span>
+
+                            <?php endif; ?>
+
+                        </a>
+
+                    </li>
+
+
+                <?php endif; ?>
+
+
+                <!-- =================================================
+                     ADMIN DASHBOARD
+                ================================================== -->
+
+                <?php if (
+                    (
+                        $_SESSION['user_email']
+                        ?? ''
+                    )
+                    ===
+                    'admin@uob.edu.bh'
+                ): ?>
+
+
+                    <li
+                        class="nav-item dropdown"
+                    >
+
+                        <a
+                            class="nav-link dropdown-toggle admin-dropdown-btn"
+                            href="<?= $base ?>admin/dashboard.php?lang=<?= h($lang) ?>"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+
+                            <?= $isRtl
+                                ? 'لوحة الأدمن'
+                                : 'Admin Dashboard'
+                            ?>
+
+                        </a>
+
+
+                        <ul
+                            class="dropdown-menu admin-dropdown-menu"
+                        >
+
+
+                            <!-- Dashboard -->
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="<?= $base ?>admin/dashboard.php?lang=<?= h($lang) ?>"
+                                >
+
+                                    <?= $isRtl
+                                        ? 'الرئيسية'
+                                        : 'Dashboard Home'
+                                    ?>
+
+                                </a>
+
+                            </li>
+
+
+                            <li>
+
+                                <hr
+                                    class="dropdown-divider"
+                                >
+
+                            </li>
+
+
+                            <!-- Add Agreement -->
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="<?= $base ?>admin/add-agreement.php?lang=<?= h($lang) ?>"
+                                >
+
+                                    <?= $isRtl
+                                        ? 'إضافة اتفاقية'
+                                        : 'Add Agreement'
+                                    ?>
+
+                                </a>
+
+                            </li>
+
+
+                            <!-- Initiative Approval -->
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="<?= $base ?>admin/review-initiative-requests.php?lang=<?= h($lang) ?>"
+                                >
+
+                                    <?= $isRtl
+                                        ? 'طلبات موافقة المبادرات'
+                                        : 'Initiative Approval Requests'
+                                    ?>
+
+                                </a>
+
+                            </li>
+
+
+                            <!-- Review Initiatives -->
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="<?= $base ?>admin/review-initiatives.php?lang=<?= h($lang) ?>"
+                                >
+
+                                    <?= $isRtl
+                                        ? 'مراجعة المبادرات'
+                                        : 'Review Initiatives'
+                                    ?>
+
+                                </a>
+
+                            </li>
+
+
+                            <!-- Review Agreements -->
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="<?= $base ?>admin/review-agreements.php?lang=<?= h($lang) ?>"
+                                >
+
+                                    <?= $isRtl
+                                        ? 'مراجعة الاتفاقيات'
+                                        : 'Review Agreements'
+                                    ?>
+
+                                </a>
+
+                            </li>
+
+
+                        </ul>
+
+                    </li>
+
+
+                <?php endif; ?>
+
+
+            </ul>
+
+
+            <!-- =====================================================
+                 LOGIN / LOGOUT
+            ====================================================== -->
+
+            <div class="d-flex gap-2">
+
+
+                <?php if (!$isLoggedIn): ?>
+
+                    <a
+                        href="<?= $base ?>login.php?lang=<?= h($lang) ?>"
+                        class="btn btn-outline-primary btn-sm"
+                    >
+
+                        <?= h(t('login')) ?>
+
+                    </a>
+
+
+                <?php else: ?>
+
+                    <a
+                        href="<?= $base ?>logout.php?lang=<?= h($lang) ?>"
+                        class="btn btn-outline-secondary btn-sm"
+                    >
+
+                        <?= h(t('logout')) ?>
+
+                    </a>
+
+                <?php endif; ?>
+
+
+            </div>
+
+
+        </div>
+
     </div>
-  </div>
+
 </nav>
 
-<?php if (!$hidePageHeader): ?>
-<header class="uob-page-header">
-  <div class="container py-4">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb mb-2">
-        <li class="breadcrumb-item"><a href="<?= $base ?>index.php?lang=<?= h($lang) ?>"><?= h(t('home')) ?></a></li>
-        <?php foreach ($breadcrumb as $item): ?>
-          <li class="breadcrumb-item <?= !empty($item['active']) ? 'active' : '' ?>">
-            <?php if (!empty($item['active'])): ?>
-              <?= h($item['label'] ?? '') ?>
-            <?php else: ?>
-              <a href="<?= h($base . ($item['href'] ?? '#')) ?>"><?= h($item['label'] ?? '') ?></a>
-            <?php endif; ?>
-          </li>
-        <?php endforeach; ?>
-      </ol>
-    </nav>
 
-    <h1 class="h3 fw-bold mb-1"><?= h($pageTitle) ?></h1>
-    <?php if ($pageSubtitle): ?>
-      <p class="text-muted mb-0"><?= h($pageSubtitle) ?></p>
-    <?php endif; ?>
-  </div>
-</header>
+<!-- =========================================================
+     PAGE HEADER
+========================================================= -->
+
+<?php if (!$hidePageHeader): ?>
+
+    <header
+        class="uob-page-header"
+    >
+
+        <div
+            class="container py-4"
+        >
+
+
+            <!-- BREADCRUMB -->
+
+            <nav
+                aria-label="breadcrumb"
+            >
+
+                <ol
+                    class="breadcrumb mb-2"
+                >
+
+
+                    <li
+                        class="breadcrumb-item"
+                    >
+
+                        <a
+                            href="<?= $base ?>index.php?lang=<?= h($lang) ?>"
+                        >
+
+                            <?= h(t('home')) ?>
+
+                        </a>
+
+                    </li>
+
+
+                    <?php foreach (
+                        $breadcrumb
+                        as $item
+                    ): ?>
+
+
+                        <li
+                            class="breadcrumb-item <?= !empty($item['active']) ? 'active' : '' ?>"
+                        >
+
+
+                            <?php if (
+                                !empty(
+                                    $item['active']
+                                )
+                            ): ?>
+
+
+                                <?= h(
+                                    $item['label']
+                                    ?? ''
+                                ) ?>
+
+
+                            <?php else: ?>
+
+
+                                <a
+                                    href="<?= h(
+                                        $base .
+                                        (
+                                            $item['href']
+                                            ?? '#'
+                                        )
+                                    ) ?>"
+                                >
+
+                                    <?= h(
+                                        $item['label']
+                                        ?? ''
+                                    ) ?>
+
+                                </a>
+
+
+                            <?php endif; ?>
+
+
+                        </li>
+
+
+                    <?php endforeach; ?>
+
+
+                </ol>
+
+            </nav>
+
+
+            <!-- PAGE TITLE -->
+
+            <h1
+                class="h3 fw-bold mb-1"
+            >
+
+                <?= h($pageTitle) ?>
+
+            </h1>
+
+
+            <?php if ($pageSubtitle): ?>
+
+                <p
+                    class="text-muted mb-0"
+                >
+
+                    <?= h($pageSubtitle) ?>
+
+                </p>
+
+            <?php endif; ?>
+
+
+        </div>
+
+    </header>
+
 <?php endif; ?>
 
+
+<!-- =========================================================
+     MAIN CONTENT
+========================================================= -->
+
 <?php if ($mainContainer): ?>
-  <main class="container py-4">
+
+    <main
+        class="container py-4"
+    >
+
 <?php else: ?>
-  <main class="py-0">
+
+    <main
+        class="py-0"
+    >
+
 <?php endif; ?>
