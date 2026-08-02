@@ -88,6 +88,25 @@ class AgreementDocumentRepository {
         return $stmt->fetchAll();
     }
 
+    public function hasDocumentType(
+        int $agreementId,
+        string $documentType
+    ): bool {
+        $stmt = $this->db->prepare('
+            SELECT 1
+            FROM agreement_documents
+            WHERE agreement_id = :agreement_id
+              AND document_type = :document_type
+            LIMIT 1
+        ');
+        $stmt->execute([
+            'agreement_id' => $agreementId,
+            'document_type' => $documentType,
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function findById(int $documentId): ?array {
         $stmt = $this->db->prepare('
             SELECT

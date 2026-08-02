@@ -151,7 +151,7 @@
                 link.download = control.dataset.fileName || 'document';
                 document.body.append(link); link.click(); link.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
-            } else if (window.confirm(`Delete ${control.dataset.fileName}? This cannot be undone.`)) {
+            } else if (await WorkspaceDialog.confirm(`Delete ${control.dataset.fileName}? This cannot be undone.`, { confirmLabel: 'Delete document', danger: true })) {
                 await AgreementApi.deleteLifecycleDocument(control.dataset.documentId);
                 await reload(); message(elements.feedback, 'Request document deleted.');
             }

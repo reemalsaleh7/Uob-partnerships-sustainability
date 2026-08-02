@@ -16,6 +16,24 @@ $uri = '/' . ltrim((string) $uri, '/');
 
 if ($method === 'GET' && $uri === '/partners') {
     $controller->index();
+} elseif ($method === 'GET' && $uri === '/partners/lookup') {
+    $controller->lookup();
+} elseif ($method === 'POST' && $uri === '/partners') {
+    $controller->create();
+} elseif (
+    $method === 'GET'
+    && preg_match(
+        '#^/partners/([0-9]+)/agreement-context$#',
+        $uri,
+        $matches
+    )
+) {
+    $controller->agreementContext((int) $matches[1]);
+} elseif (
+    $method === 'PATCH'
+    && preg_match('#^/partners/([0-9]+)$#', $uri, $matches)
+) {
+    $controller->update((int) $matches[1]);
 }
 
 header('HTTP/1.1 404 Not Found');

@@ -98,4 +98,43 @@ class AuthService {
             'positions' => $this->userRepo->getActivePositions($userId),
         ];
     }
+
+    public function createLegacyInitiativeHandoff(): array {
+        if (!$this->isAuthenticated()) {
+            throw new DomainException('Authentication is required.');
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        $roles = $this->permissionService->getRoleNames($userId);
+        $canCreateInitiative = in_array('Initiative Creator', $roles, true)
+            || in_array('System Administrator', $roles, true);
+
+        if (!$canCreateInitiative) {
+            throw new DomainException(
+                'Your role is not authorized to create Initiatives.'
+            );
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = new DateTimeImmutable('+2 minutes');
+
+        $this->userRepo->beginTransaction();
+
+        try {
+            $this->userRepo->createLegacyHandoff(
+                $userId,
+                hash('sha256', $token),
+                $expiresAt
+            );
+            $this->userRepo->commit();
+        } catch (Throwable $exception) {
+            $this->userRepo->rollBack();
+            throw $exception;
+        }
+
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->format(DATE_ATOM),
+        ];
+    }
 }

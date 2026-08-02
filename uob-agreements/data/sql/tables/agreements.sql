@@ -22,6 +22,8 @@ CREATE TABLE agreements (
     agreement_type VARCHAR(100)
         NOT NULL,
 
+    fixed_term_months INTEGER,
+
     status agreement_status
         NOT NULL
         DEFAULT 'DRAFT',
@@ -46,5 +48,8 @@ CREATE TABLE agreements (
         CHECK (length(trim(title)) > 0),
 
     CONSTRAINT chk_agreement_type_not_empty
-        CHECK (length(trim(agreement_type)) > 0)
+        CHECK (length(trim(agreement_type)) > 0),
+
+    CONSTRAINT chk_agreement_fixed_term_months
+        CHECK (fixed_term_months IS NULL OR fixed_term_months > 0)
 );

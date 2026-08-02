@@ -93,6 +93,7 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Re-authorize and stream one private document.                           |
 | `DELETE` | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete the actor's own still-manageable document.                       |
 | `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
+| `GET`    | `/partners/lookup?name=...`           | `CREATE_AGREEMENT` or `EDIT_AGREEMENT` | Suggest missing partner details from a public structured record. |
 | `GET`    | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | List shared comments plus only the caller's private notes.              |
 | `POST`   | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | Add a field- or selected-text comment to the latest immutable version.  |
 | `PATCH`  | `/agreements/{id}/annotations/{annotation}/resolve` | `VIEW_AGREEMENT` | Resolve an authorized comment.                         |
@@ -113,7 +114,7 @@ private-note metadata but never copy the comment text.
 
 `GET /partners`
 
-Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, `partner_type`, and `country`; inactive partner records are excluded from new Agreement forms.
+Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, normalized `partner_type`, `country`, `website`, and `profile`; inactive partner records are excluded from new Agreement forms. `GET /partners/lookup?name=...` may suggest missing values from a public structured record but does not persist them.
 
 ### Create Agreement
 
@@ -282,7 +283,7 @@ Each update creates an immutable row in `agreement_versions` containing a JSON s
 
 Only a `DRAFT` Agreement can start a new workflow. Eligible initiators are a Dean, VP Office member, or President Office member.
 
-Before starting the workflow, the service enforces formal-request completeness: partner(s), geographic scope, start/end dates, description, need and justification, objectives, expected value, collaboration areas, and implementation methods. Conditional commitment descriptions are validated when their flags are enabled.
+Before starting the workflow, the service enforces formal-request completeness: Arabic name; exactly one partner; geographic scope; project, signing, and effective dates; description; need and justification; objectives; expected value; four complete coordinator/signatory records; at least one complete executive programme; every planned-outcome field; and a governance/MOU DOCX document. Extracted Article 1/2 clause fields are optional. Conditional commitment descriptions are validated when their flags are enabled.
 
 Example response:
 

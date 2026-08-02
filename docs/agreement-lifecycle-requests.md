@@ -19,6 +19,12 @@ All request types store a justification and optional financial implications.
 Applicant identity, timestamps, status, workflow decisions, and final outcome
 are system-derived.
 
+The creation page follows the same guided pattern as the Agreement form:
+collapsible sections, a clickable step timeline, shared start/end range
+calendar, delayed validation feedback, and responsive layout. The Agreement
+remains the source of partner and operational context; a lifecycle request
+collects only the proposed lifecycle action.
+
 ## State model
 
 `DRAFT` → `UNDER_REVIEW` → `APPROVED` or `REJECTED`.
@@ -52,6 +58,13 @@ The lifecycle request stores `successor_agreement_id`, and
 `AMENDMENT`. Successor version 1 contains immutable lifecycle provenance, and
 the Agreement detail page shows lineage in both directions. A database uniqueness
 constraint prevents one request from producing multiple successors.
+
+The request detail groups the decision context, requested changes, financial
+implications, and version history into reviewable accordions. Reviewers can
+return to the exact Agreement review URL that opened a field-comment page.
+Finance steps with status `SKIPPED` are not shown in the public review
+timeline. Request records can be exported as JSON, one-row CSV, or a
+print/PDF view; secure evidence retains its separate authorization checks.
 
 ## Authorization and visibility
 

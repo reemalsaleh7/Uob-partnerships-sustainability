@@ -84,6 +84,108 @@ function readCsvRows(string $path, string $delimiter = ','): array {
  * - إذا مررنا false: ترجع الكل للأدمن
  */
 function readAgreements(bool $onlyApproved = true): array {
+    if ($onlyApproved) {
+        try {
+            $repositoryPath = dirname(__DIR__, 2)
+                . '/repositories/PublicAgreementRepository.php';
+            if (is_file($repositoryPath)) {
+                require_once $repositoryPath;
+                $published = (new PublicAgreementRepository())->findPublished();
+                $mapped = [];
+                foreach ($published as $agreement) {
+                    $reference = trim((string) (
+                        $agreement['public_reference'] ?? ''
+                    ));
+                    if ($reference === '') {
+                        continue;
+                    }
+                    $status = strtoupper(trim((string) (
+                        $agreement['status'] ?? ''
+                    )));
+                    $mapped[$reference] = [
+                        'agreement_id' => (string) (
+                            $agreement['agreement_id'] ?? ''
+                        ),
+                        'agreement_code' => $reference,
+                        'agreement_name' => (string) (
+                            $agreement['title'] ?? ''
+                        ),
+                        'agreement_name_ar' => (string) (
+                            $agreement['title_ar'] ?? ''
+                        ),
+                        'agreement_type' => (string) (
+                            $agreement['agreement_type'] ?? ''
+                        ),
+                        'partner_entity' => (string) (
+                            $agreement['partner_names'] ?? ''
+                        ),
+                        'entity_type' => (string) (
+                            $agreement['partner_types'] ?? ''
+                        ),
+                        'country' => (string) (
+                            $agreement['countries'] ?? ''
+                        ),
+                        'city' => (string) (
+                            $agreement['cities'] ?? ''
+                        ),
+                        'partner_website' => (string) (
+                            $agreement['partner_website'] ?? ''
+                        ),
+                        'owner_entity' => (string) (
+                            $agreement['owner_unit'] ?? ''
+                        ),
+                        'agreement_summary' => (string) (
+                            $agreement['description'] ?? ''
+                        ),
+                        'focus_area' => (string) (
+                            $agreement['focus_areas'] ?? ''
+                        ),
+                        'sdgs' => (string) ($agreement['sdgs'] ?? ''),
+                        'start_date' => (string) (
+                            $agreement['start_date'] ?? ''
+                        ),
+                        'end_date' => (string) (
+                            $agreement['end_date'] ?? ''
+                        ),
+                        'auto_renew' => !empty($agreement['auto_renew'])
+                            ? 'Yes'
+                            : 'No',
+                        'status_code' => $status,
+                        'status' => $status === 'ACTIVE'
+                            ? 'سارية'
+                            : 'معتمدة',
+                        'admin_status' => 'معتمد',
+                        'students_exchanged' => (string) (
+                            $agreement['students_exchanged'] ?? ''
+                        ),
+                        'trained_students' => (string) (
+                            $agreement['trained_students'] ?? ''
+                        ),
+                        'faculty_exchanged' => (string) (
+                            $agreement['faculty_exchanged'] ?? ''
+                        ),
+                        'joint_programs' => (string) (
+                            $agreement['joint_programs'] ?? ''
+                        ),
+                        'latitude' => (string) (
+                            $agreement['latitude'] ?? ''
+                        ),
+                        'longitude' => (string) (
+                            $agreement['longitude'] ?? ''
+                        ),
+                        '_source' => 'database',
+                    ];
+                }
+                return $mapped;
+            }
+        } catch (Throwable $exception) {
+            error_log(
+                '[UOB public portal] Database Agreement catalogue unavailable: '
+                . $exception->getMessage()
+            );
+        }
+    }
+
     if (!defined('AGREEMENTS_CSV') || !file_exists(AGREEMENTS_CSV)) return [];
     
     $rows = readCsvRows(AGREEMENTS_CSV);

@@ -19,6 +19,8 @@ $tests = [
     'AgreementOperationalStatusSmokeTest.php',
     'AgreementPerformanceMonitoringSmokeTest.php',
     'AgreementAnnotationSmokeTest.php',
+    'AgreementAdministrativeCorrectionSmokeTest.php',
+    'PortalAdvancedSearchSmokeTest.php',
 ];
 
 if (!$quick) {

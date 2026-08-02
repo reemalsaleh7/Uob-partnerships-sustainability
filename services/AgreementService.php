@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
+require_once __DIR__ . '/../repositories/AgreementAdministrativeCorrectionRepository.php';
 require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
 require_once __DIR__ . '/../repositories/AgreementDocumentRepository.php';
 require_once __DIR__ . '/../repositories/AuditRepository.php';
@@ -14,6 +15,7 @@ require_once __DIR__ . '/../services/DocumentStorageService.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
+    private AgreementAdministrativeCorrectionRepository $administrativeCorrectionRepo;
     private ApprovalService $approvalService;
     private AgreementVersionRepository $agreementVersionRepo;
     private AgreementDocumentRepository $agreementDocumentRepo;
@@ -25,6 +27,7 @@ class AgreementService {
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
+        $this->administrativeCorrectionRepo = new AgreementAdministrativeCorrectionRepository();
         $this->agreementVersionRepo = new AgreementVersionRepository();
         $this->agreementDocumentRepo = new AgreementDocumentRepository();
         $this->auditRepo = new AuditRepository();
@@ -132,6 +135,107 @@ class AgreementService {
             return ['success' => true];
         } catch (Throwable $exception) {
             if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function administrativelyCorrectLegacyAgreement(
+        int $agreementId,
+        array $data,
+        int $userId
+    ): array {
+        if (!$this->isSystemAdministrator($userId)) {
+            throw new DomainException(
+                'Only a System Administrator may make an administrative correction'
+            );
+        }
+
+        $reason = trim((string) ($data['correction_reason'] ?? ''));
+        $reasonLength = function_exists('mb_strlen')
+            ? mb_strlen($reason, 'UTF-8')
+            : strlen($reason);
+        $errors = AgreementValidator::validateUpdate($data);
+
+        if ($reasonLength < 10) {
+            $errors[] = 'Correction reason must contain at least 10 characters';
+        } elseif ($reasonLength > 1000) {
+            $errors[] = 'Correction reason must not exceed 1000 characters';
+        }
+
+        if ($errors !== []) {
+            throw new InvalidArgumentException(implode(', ', $errors));
+        }
+
+        $db = Database::connect();
+        $ownsTransaction = !$db->inTransaction();
+        if ($ownsTransaction) {
+            $db->beginTransaction();
+        }
+
+        try {
+            $existing = $this->agreementRepo->findByIdForUpdate($agreementId);
+            if ($existing === null) {
+                throw new OutOfBoundsException('Agreement not found');
+            }
+
+            if (
+                ($existing['record_origin'] ?? null) !== 'LEGACY_IMPORT'
+                || empty($existing['legacy_source_file'])
+            ) {
+                throw new DomainException(
+                    'Administrative correction is available only for a verified legacy import'
+                );
+            }
+
+            $this->agreementRepo->update(
+                $agreementId,
+                $this->normalizeAgreementContent($data)
+            );
+            $this->replaceAgreementCollections($agreementId, $data);
+
+            $snapshot = $this->agreementRepo->findById($agreementId);
+            if ($snapshot === null) {
+                throw new RuntimeException('Corrected Agreement could not be reloaded');
+            }
+
+            $versionNumber = $this->agreementVersionRepo
+                ->findLatestVersionNumber($agreementId) + 1;
+            $versionId = $this->agreementVersionRepo->create($agreementId, [
+                'version_number' => $versionNumber,
+                'change_summary' => 'Administrative correction: ' . $reason,
+                'agreement_snapshot' => $snapshot,
+                'created_by' => $userId,
+            ]);
+            $correctionId = $this->administrativeCorrectionRepo->create(
+                $agreementId,
+                $versionId,
+                $userId,
+                $reason
+            );
+            $this->auditService->write(
+                'agreements',
+                $agreementId,
+                AuditAction::UPDATE,
+                $userId,
+                $existing,
+                $snapshot,
+                'Administrative correction: ' . $reason
+            );
+
+            if ($ownsTransaction) {
+                $db->commit();
+            }
+
+            return [
+                'success' => true,
+                'correction_id' => $correctionId,
+                'version_number' => $versionNumber,
+                'message' => 'Legacy Agreement corrected with preserved history',
+            ];
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $db->inTransaction()) {
                 $db->rollBack();
             }
             throw $exception;

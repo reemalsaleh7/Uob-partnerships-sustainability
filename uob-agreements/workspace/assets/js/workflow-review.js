@@ -76,7 +76,9 @@
 
         const status = document.querySelector('[data-agreement-status]');
         status.replaceChildren(AgreementApi.createStatusBadge(agreement.status));
-        elements.openAgreement.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+        elements.openAgreement.href = AgreementApi.agreementReviewUrl(
+            agreement.agreement_id
+        );
     }
 
     function renderDocuments(documents) {
@@ -200,7 +202,7 @@
         const includeFinance = financeChoice === 'true';
         const destination = includeFinance ? 'Legal and Finance' : 'Legal';
 
-        if (!window.confirm(`Approve this review and send the Agreement to ${destination}?`)) {
+        if (!await WorkspaceDialog.confirm(`Approve this review and send the Agreement to ${destination}?`, { confirmLabel: 'Approve and route' })) {
             return;
         }
 
@@ -237,7 +239,7 @@
             ? 'Reject this Agreement and permanently end the workflow?'
             : 'Return this Agreement to its creator for redrafting?';
 
-        if (!window.confirm(prompt)) {
+        if (!await WorkspaceDialog.confirm(prompt, { confirmLabel: isReject ? 'Reject Agreement' : 'Return to creator', danger: isReject })) {
             return;
         }
 

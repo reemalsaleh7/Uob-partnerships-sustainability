@@ -30,7 +30,9 @@
 
     const typeLabels = {
         AGREEMENT_DRAFT: 'Agreement draft',
+        GOVERNANCE_CLAUSES: 'Governance / MOU clauses',
         SUPPORTING: 'Supporting document',
+        MEDIA: 'Supporting media',
         LEGAL_REVIEW: 'Legal review document',
         FINANCE_REVIEW: 'Finance review document',
         SIGNED_AGREEMENT: 'Final signed Agreement',
@@ -317,7 +319,7 @@
                 link.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             } else if (action === 'delete') {
-                if (!window.confirm(`Delete ${fileName}? This cannot be undone.`)) {
+                if (!await WorkspaceDialog.confirm(`Delete ${fileName}? This cannot be undone.`, { confirmLabel: 'Delete document', danger: true })) {
                     return;
                 }
 

@@ -52,6 +52,8 @@ if ($method === 'GET' && $uri === '/agreements') {
     $controller->create();
 } elseif ($method === 'PUT' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
     $controller->update((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/administrative-corrections$#', $uri, $matches)) {
+    $controller->administrativelyCorrect((int) $matches[1]);
 } elseif ($method === 'DELETE' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
     $controller->delete((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/submit$#', $uri, $matches)) {

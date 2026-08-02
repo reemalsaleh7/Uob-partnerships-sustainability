@@ -345,7 +345,7 @@
 
         const remove = event.target.closest('[data-delete-annotation]');
         if (remove) {
-            if (!window.confirm('Delete this comment permanently?')) return;
+            if (!await WorkspaceDialog.confirm('Delete this comment permanently?', { confirmLabel: 'Delete comment', danger: true })) return;
             try {
                 remove.disabled = true;
                 await AgreementApi.deleteAgreementAnnotation(state.agreementId, remove.dataset.deleteAnnotation);

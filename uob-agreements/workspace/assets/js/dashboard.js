@@ -9,6 +9,7 @@
         title: document.querySelector('[data-dashboard-title]'),
         description: document.querySelector('[data-dashboard-description]'),
         role: document.querySelector('[data-dashboard-role]'),
+        priorities: document.querySelector('[data-dashboard-priorities]'),
         actions: document.querySelector('[data-dashboard-actions]'),
         kpiHeading: document.querySelector('[data-kpi-heading]'),
         kpiTitle: document.querySelector('[data-kpi-title]'),
@@ -66,6 +67,20 @@
         const context = document.createElement('small');
         context.textContent = detail;
         card.append(number, name, context);
+        return card;
+    }
+
+    function priority(label, value, detail, href, tone = '') {
+        const card = document.createElement(href ? 'a' : 'article');
+        card.className = `dashboard-priority-card ${tone}`.trim();
+        if (href) card.href = href;
+        const eyebrow = document.createElement('span');
+        eyebrow.textContent = label;
+        const number = document.createElement('strong');
+        number.textContent = String(value);
+        const copy = document.createElement('small');
+        copy.textContent = detail;
+        card.append(eyebrow, number, copy);
         return card;
     }
 
@@ -210,6 +225,11 @@
         const overdue = reports.filter((item) => item.is_overdue === true).length;
         const underReview = own.filter((item) => item.status === 'UNDER_REVIEW');
         const attention = own.filter((item) => ['DRAFT', 'REVISION_REQUIRED'].includes(item.status));
+        elements.priorities.replaceChildren(
+            priority('Act now', attention.length, 'Drafts or returned Agreements requiring your update', 'agreements.php?scope=mine', attention.length ? 'is-danger' : 'is-clear'),
+            priority('Track', underReview.length, 'Your Agreements currently moving through review', 'agreements.php?scope=mine'),
+            priority('Report', overdue, 'Overdue annual reports in your portfolio', 'performance-reports.php', overdue ? 'is-warning' : 'is-clear')
+        );
 
         elements.kpiHeading.classList.remove('d-none');
         elements.kpis.classList.remove('d-none');
@@ -265,6 +285,11 @@
             AgreementApi.performanceDashboard(new Date().getFullYear()).catch(() => null)
         ]);
         const tasks = Array.isArray(assignments) ? assignments : [];
+        elements.priorities.replaceChildren(
+            priority('Decide now', tasks.length, 'Assigned Agreement reviews waiting for your office', 'workflow-inbox.php', tasks.length ? 'is-danger' : 'is-clear'),
+            priority('Verify', dashboard?.reports?.submitted || 0, 'Annual reports awaiting management review', 'performance-reports.php'),
+            priority('Monitor', dashboard?.reports?.overdue || 0, 'Overdue reports creating institutional risk', 'performance-dashboard.php', Number(dashboard?.reports?.overdue || 0) ? 'is-warning' : 'is-clear')
+        );
         const navCount = document.querySelector('[data-workflow-nav-count]');
         if (navCount && tasks.length) {
             navCount.textContent = String(tasks.length);
@@ -310,6 +335,11 @@
         const position = user.positions?.[0] || {};
         const agreements = uniqueAgreements(await AgreementApi.agreements());
         const active = agreements.filter((agreement) => agreement.status === 'ACTIVE');
+        elements.priorities.replaceChildren(
+            priority('Explore', active.length, 'Active Agreements available as Initiative context', 'agreements.php?scope=active'),
+            priority('Start', '1', 'Create a focused Initiative request from an active partnership', 'initiative-hub.php'),
+            priority('Route', '5', 'Department, College, VP, and President approval path', 'initiative-hub.php', 'is-clear')
+        );
         elements.kpiHeading.classList.remove('d-none');
         elements.kpis.classList.remove('d-none');
         elements.kpiTitle.textContent = 'Your initiative context';

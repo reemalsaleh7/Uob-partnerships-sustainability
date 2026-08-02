@@ -4,14 +4,19 @@
 ## Comprehensive field regression
 
 1. Apply `20260721_comprehensive_agreement_fields.sql` twice and confirm both runs succeed.
-2. Create a draft with two partners, Arabic/English titles, dates, objectives, impact, commitments, rankings, SDGs, four contact roles, one executive program, all three metrics, and a signing link.
-3. Reload the edit form and confirm every scalar, selected partner, checkbox, contact, program, and metric is restored.
+2. Create a draft with exactly one partner whose type, country, website, and profile are complete; Arabic/English titles; dates; objectives; impact; commitments; SDGs; four contact roles; one or more executive programmes; and every planned-outcome metric, including trained students.
+3. Reload the edit form and confirm every scalar, selected partner, checkbox, contact, programme, and metric is restored.
 4. Save the draft and confirm the latest `agreement_versions.agreement_snapshot` contains the same nested partner, SDG, ranking, contact, program, and metric arrays.
-5. Attempt submission without dates, need/justification, objectives, expected value, collaboration areas, or implementation methods; confirm the API returns `422` and no workflow is created.
+5. Attempt submission without the Arabic name; project, signing, or effective dates; need/justification; objectives; expected value; complete coordinator/signatory records; complete planned outcomes; an executive programme; or the governance/MOU DOCX file. Confirm the API returns `422` and no workflow is created. Leave Article 1/2 extracted fields blank and confirm they do not block submission.
 6. Complete the required fields and submit; confirm Initial VP activates normally.
 7. Complete the workflow and confirm only approved public fields appear in the PostgreSQL catalogue. Contacts, clauses, workflow comments, versions, and private documents must remain absent from public output.
 8. Update an existing Agreement with the former four-field API payload and confirm omitted comprehensive child collections are preserved rather than erased.
 9. Confirm `agreement_lifecycle_requests` exists, but no base Agreement form field can overwrite an approved Agreement as a renewal, amendment, or termination.
+10. Open a blank draft and confirm no field is red. Attempt to save it and
+    confirm only then that invalid required fields receive red feedback.
+11. Upload a DOCX containing distinct Article 1, Article 2, UOB/partner
+    coordinators, and UOB/partner signatories. Confirm articles remain separate
+    and each name/job title is assigned to the correct role.
 
 Run these scenarios against the development fixtures after applying all migrations and restarting Apache. Service smoke tests execute inside transactions and roll back temporary records. HTTP lifecycle tests persist only the explicitly created development record.
 
@@ -216,6 +221,8 @@ Development-only password: `UobDev2026!`.
 | REL-04 | Run acceptance runner with `--quick` | Critical cross-phase regression tests all pass. |
 | REL-05 | Run acceptance runner without flags | Every Agreement smoke test passes, including the read-only 41-row import verification. |
 | REL-06 | Inspect staged files | Local database configuration and private documents are absent. |
+| REL-07 | Run `PublicPortalDatabaseIntegrationSmokeTest.php` | The public home, catalogue compatibility reader, map endpoint, and login route use the database-backed publication path and real workspace login. |
+| REL-08 | Run `WorkspaceExperienceSmokeTest.php` | Sliding navigation, guided lifecycle pages, record exports, review return paths, skipped Finance stages, shared dialogs, and role/performance priorities remain present. |
 
 ## Final VP and mediation frontend checks
 

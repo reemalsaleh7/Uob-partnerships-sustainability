@@ -87,6 +87,32 @@ class AgreementController {
         Response::success(['message' => 'Agreement updated']);
     }
 
+    public function administrativelyCorrect(int $agreementId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('ADMIN_CORRECT_LEGACY_AGREEMENT');
+
+        $input = ApiRequest::json();
+        $data = $this->agreementInput($input);
+        $data['correction_reason'] = $input['correction_reason'] ?? null;
+
+        try {
+            $result = $this->agreementService
+                ->administrativelyCorrectLegacyAgreement(
+                    $agreementId,
+                    $data,
+                    $this->userId()
+                );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (OutOfBoundsException $exception) {
+            Response::error($exception->getMessage(), 404);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        }
+
+        Response::success($result);
+    }
+
     public function annotations(int $agreementId): void
     {
         AuthMiddleware::handle();

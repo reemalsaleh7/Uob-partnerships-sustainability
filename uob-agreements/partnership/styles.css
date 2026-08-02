@@ -29,6 +29,29 @@
     font-family: "Cairo", system-ui, Arial, sans-serif !important;
 }
 
+.partnership-page-wrapper .leaflet-popup-content-wrapper {
+    color: #14243a;
+    border: 1px solid rgba(184, 134, 11, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 16px 42px rgba(2, 8, 23, 0.2);
+}
+
+.partnership-page-wrapper .leaflet-popup-content {
+    margin: 14px 16px;
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
+    line-height: 1.55;
+}
+
+.partnership-page-wrapper .leaflet-popup-tip {
+    box-shadow: 3px 3px 8px rgba(2, 8, 23, 0.1);
+}
+
+.partnership-page-wrapper .leaflet-control-zoom a,
+.partnership-page-wrapper .leaflet-control-custom a {
+    color: #0b1f3a !important;
+    border-color: #dce3eb !important;
+}
+
 .partnership-page-wrapper h1,
 .partnership-page-wrapper h2,
 .partnership-page-wrapper h3,
@@ -2610,4 +2633,3 @@ html[dir="ltr"] .partnership-hero-content {
   height: 12px !important;
   flex-shrink: 0 !important;
 }
-

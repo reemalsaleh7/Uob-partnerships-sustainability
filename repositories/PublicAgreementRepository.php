@@ -68,6 +68,10 @@ final class PublicAgreementRepository
                 ) AS countries,
                 COALESCE(MIN(NULLIF(p.website, '')), '')
                     AS partner_website,
+                AVG(p.latitude) FILTER (WHERE p.latitude IS NOT NULL)
+                    AS latitude,
+                AVG(p.longitude) FILTER (WHERE p.longitude IS NOT NULL)
+                    AS longitude,
                 COALESCE(
                     STRING_AGG(DISTINCT NULLIF(p.city, ''), ' / ' ORDER BY NULLIF(p.city, '')),
                     ''
@@ -100,6 +104,12 @@ final class PublicAgreementRepository
                     WHERE am.agreement_id = a.agreement_id
                       AND am.metric_code = 'JOINT_PROGRAMS'
                 ), '') AS joint_programs,
+                COALESCE((
+                    SELECT MAX(notes)
+                    FROM agreement_metrics am
+                    WHERE am.agreement_id = a.agreement_id
+                      AND am.metric_code = 'TRAINED_STUDENTS'
+                ), '') AS trained_students,
                 COALESCE((
                     SELECT ou.name
                     FROM organizational_units ou

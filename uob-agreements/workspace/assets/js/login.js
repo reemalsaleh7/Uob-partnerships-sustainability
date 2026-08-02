@@ -20,7 +20,7 @@
 
     AgreementApi.me()
         .then(() => {
-            window.location.replace(AgreementApi.safeReturnPath());
+            window.location.replace('index.php');
         })
         .catch(() => {
             // Remaining on the login page is correct when no session exists.
@@ -44,11 +44,10 @@
                 form.elements.password.value
             );
 
-            window.location.replace(AgreementApi.safeReturnPath());
+            window.location.replace('index.php');
         } catch (error) {
             showError(error.message || 'Sign-in failed.');
             setBusy(false);
         }
     });
 })();
-

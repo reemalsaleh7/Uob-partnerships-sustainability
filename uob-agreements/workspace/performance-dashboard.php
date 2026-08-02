@@ -27,6 +27,7 @@ workspaceHeader('Performance dashboard', 'performance-dashboard');
     <div class="dashboard-section-title"><div><h2>Portfolio status</h2><p>Operational state and reporting compliance.</p></div></div>
     <section class="row g-3" aria-label="Agreement status summary" data-agreement-kpis></section>
     <section class="row g-3 mt-1" aria-label="Report compliance summary" data-report-kpis></section>
+    <section class="dashboard-priority-grid mt-4" aria-label="Performance insights" data-performance-insights></section>
 
     <div class="row g-4 mt-1">
         <div class="col-xl-8"><section class="workspace-card h-100" aria-labelledby="deadline-title">

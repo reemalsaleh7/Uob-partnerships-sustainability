@@ -70,21 +70,62 @@ workspaceHeader('Agreements', 'agreements');
 
     <div class="filter-bar">
         <div class="row g-3">
-            <div class="col-lg-8">
-                <label for="agreement-search" class="form-label">Search</label>
+            <div class="col-lg-6">
+                <label for="agreement-search" class="form-label">Advanced search</label>
                 <input
                     id="agreement-search"
                     type="search"
                     class="form-control"
-                    placeholder="Search by title, type, status, or ID"
+                    placeholder='Try partner:"Bahrain Polytechnic" status:active'
+                    aria-describedby="agreement-search-help"
                     disabled
                 >
+                <div id="agreement-search-help" class="form-text">
+                    Use several words, quoted phrases, <code>field:value</code>,
+                    <code>a|b</code>, <code>-term</code>, or <code>updated&gt;=2026-01-01</code>.
+                    Fields: title, code,
+                    type, status, origin, partner, creator, unit, start, end, updated.
+                </div>
             </div>
-            <div class="col-lg-4">
+            <div class="col-md-6 col-lg-3">
                 <label for="agreement-status" class="form-label">Status</label>
                 <select id="agreement-status" class="form-select" disabled>
                     <option value="">All statuses</option>
                 </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="agreement-type" class="form-label">Agreement type</label>
+                <select id="agreement-type" class="form-select" disabled>
+                    <option value="">All types</option>
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="agreement-origin" class="form-label">Record origin</label>
+                <select id="agreement-origin" class="form-select" disabled>
+                    <option value="">All origins</option>
+                    <option value="LEGACY_IMPORT">Legacy system — real records</option>
+                    <option value="DEVELOPMENT">Development / demo</option>
+                    <option value="NEW_SYSTEM">New system</option>
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <label for="agreement-partner" class="form-label">Partner</label>
+                <select id="agreement-partner" class="form-select" disabled>
+                    <option value="">All partners</option>
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="agreement-updated-from" class="form-label">Updated from</label>
+                <input id="agreement-updated-from" type="date" class="form-control" disabled>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="agreement-updated-to" class="form-label">Updated to</label>
+                <input id="agreement-updated-to" type="date" class="form-control" disabled>
+            </div>
+            <div class="col-md-6 col-lg-2 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" type="button" data-clear-agreement-filters disabled>
+                    Clear filters
+                </button>
             </div>
         </div>
     </div>
@@ -114,6 +155,7 @@ workspaceHeader('Agreements', 'agreements');
                     <th scope="col">Title</th>
                     <th scope="col">Type</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Origin</th>
                     <th scope="col">Relationship</th>
                     <th scope="col">Partner</th>
                     <th scope="col">Updated</th>
@@ -125,4 +167,7 @@ workspaceHeader('Agreements', 'agreements');
     </div>
 </section>
 
-<?php workspaceFooter(['assets/js/agreements.js?v=20260722-showcase-data']); ?>
+<?php workspaceFooter([
+    'assets/js/advanced-search.js?v=20260802-advanced-search',
+    'assets/js/agreements.js?v=20260802-advanced-search',
+]); ?>

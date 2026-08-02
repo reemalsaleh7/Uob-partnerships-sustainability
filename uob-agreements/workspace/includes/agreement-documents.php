@@ -60,11 +60,11 @@ function agreementDocumentsPanel(
                     id="agreement-document-file"
                     class="form-control"
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.mp4"
                     required
                     data-document-file
                 >
-                <div class="form-text">PDF, DOC, or DOCX; maximum 10 MB.</div>
+                <div class="form-text">Documents, images, or MP4 video; maximum 10 MB.</div>
                 <div class="invalid-feedback">Choose a supported document.</div>
             </div>
             <div class="col-lg-3">
@@ -78,7 +78,9 @@ function agreementDocumentsPanel(
                     data-document-type
                 >
                     <option value="AGREEMENT_DRAFT">Agreement draft</option>
+                    <option value="GOVERNANCE_CLAUSES">Governance / MOU clauses</option>
                     <option value="SUPPORTING">Supporting document</option>
+                    <option value="MEDIA">Supporting media</option>
                     <option value="LEGAL_REVIEW">Legal review document</option>
                     <option value="FINANCE_REVIEW">Finance review document</option>
                     <option value="SIGNED_AGREEMENT">Final signed Agreement</option>

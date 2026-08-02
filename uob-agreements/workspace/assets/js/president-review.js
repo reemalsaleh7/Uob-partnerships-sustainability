@@ -130,7 +130,9 @@
             assignment.final_vp_review_comments || 'No Final VP comments recorded.'
         );
 
-        elements.openAgreement.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+        elements.openAgreement.href = AgreementApi.agreementReviewUrl(
+            agreement.agreement_id
+        );
 
         const canApprove = AgreementApi.hasPermission(user, 'APPROVE_AGREEMENT');
         const canReject = AgreementApi.hasPermission(user, 'REJECT_AGREEMENT');
@@ -249,7 +251,7 @@
             return;
         }
 
-        if (!window.confirm('Approve this Agreement and complete the approval workflow?')) {
+        if (!await WorkspaceDialog.confirm('Approve this Agreement and complete the approval workflow?', { confirmLabel: 'Approve Agreement' })) {
             return;
         }
 
@@ -280,7 +282,7 @@
             return;
         }
 
-        if (!window.confirm('Send this President change request to the VP for mediation?')) {
+        if (!await WorkspaceDialog.confirm('Send this President change request to the VP for mediation?', { confirmLabel: 'Send to VP' })) {
             return;
         }
 
@@ -312,7 +314,7 @@
             return;
         }
 
-        if (!window.confirm('Reject this Agreement and permanently end the workflow?')) {
+        if (!await WorkspaceDialog.confirm('Reject this Agreement and permanently end the workflow?', { confirmLabel: 'Reject Agreement', danger: true })) {
             return;
         }
 

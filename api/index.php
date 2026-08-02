@@ -110,6 +110,7 @@ try {
     if (
         str_starts_with($requestPath, '/agreements')
         || str_starts_with($requestPath, '/documents')
+        || $requestPath === '/agreement-document-extraction'
     ) {
         if (str_contains($requestPath, '/lifecycle-requests')) {
             require dirname(__DIR__) . '/routes/agreement-lifecycle.php';
@@ -128,7 +129,7 @@ try {
         exit;
     }
 
-    if ($requestPath === '/partners') {
+    if (preg_match('#^/partners(?:/|$)#', $requestPath)) {
         require dirname(__DIR__) . '/routes/partners.php';
         exit;
     }

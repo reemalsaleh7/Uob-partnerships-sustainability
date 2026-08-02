@@ -65,6 +65,12 @@ managerAssert(
     'The development-data check must verify users, roles, positions, and partners'
 );
 managerAssert(
+    str_contains($manager, '20260802_120000_agreement_administrative_corrections.sql')
+        && str_contains($manager, 'ADMIN_CORRECT_LEGACY_AGREEMENT')
+        && str_contains($manager, 'agreement_administrative_corrections'),
+    'The database manager does not install or verify administrative corrections'
+);
+managerAssert(
     str_contains($manager, 'ON CONFLICT (migration_name) DO UPDATE'),
     'Repeatable setup checksums are not refreshed after verification'
 );

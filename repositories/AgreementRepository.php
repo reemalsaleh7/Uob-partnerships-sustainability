@@ -66,6 +66,12 @@ class AgreementRepository {
             'status' => $data['status'] ?? 'DRAFT',
         ];
 
+        if (array_key_exists('record_origin', $data)) {
+            $columns[] = 'record_origin';
+            $values[] = ':record_origin';
+            $params['record_origin'] = $data['record_origin'];
+        }
+
         foreach (self::CONTENT_FIELDS as $field) {
             if (!array_key_exists($field, $data)) {
                 continue;
@@ -119,8 +125,19 @@ class AgreementRepository {
                 COALESCE(
                     ou.name,
                     NULLIF(ali.source_payload->>\'owner_entity\', \'\')
-                ) AS responsible_unit_name
+                ) AS responsible_unit_name,
+                ali.source_file AS legacy_source_file,
+                ali.source_row_number AS legacy_source_row_number,
+                ali.source_record_id AS legacy_source_record_id,
+                ali.import_warnings AS legacy_import_warnings,
+                ali.imported_at AS legacy_imported_at,
+                NULLIF(TRIM(CONCAT(creator.first_name, \' \', creator.last_name)), \'\')
+                    AS created_by_name,
+                creator.email AS created_by_email,
+                creator.university_id AS created_by_university_id
             FROM agreements a
+            LEFT JOIN users creator
+                ON creator.user_id = a.created_by
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
             LEFT JOIN agreement_legacy_imports ali
@@ -133,15 +150,39 @@ class AgreementRepository {
         return $agreement ? $this->hydrateAgreement($agreement) : null;
     }
 
+    public function findByIdForUpdate(int $agreementId): ?array {
+        $lock = $this->db->prepare(
+            'SELECT agreement_id FROM agreements WHERE agreement_id = :agreement_id FOR UPDATE'
+        );
+        $lock->execute(['agreement_id' => $agreementId]);
+
+        if (!$lock->fetchColumn()) {
+            return null;
+        }
+
+        return $this->findById($agreementId);
+    }
+
     public function findAll(): array {
         $stmt = $this->db->query('
             SELECT
                 a.*,
                 ap.partner_id,
-                p.organization_name AS partner_name
+                p.organization_name AS partner_name,
+                NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
+                    AS creator_name,
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
             LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            LEFT JOIN users cu ON cu.user_id = a.created_by
+            LEFT JOIN organizational_units ou
+                ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             ORDER BY a.created_at DESC, ap.partner_id
         ');
         return $stmt->fetchAll();
@@ -156,10 +197,21 @@ class AgreementRepository {
             SELECT
                 a.*,
                 ap.partner_id,
-                p.organization_name AS partner_name
+                p.organization_name AS partner_name,
+                NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
+                    AS creator_name,
+                COALESCE(
+                    ou.name,
+                    NULLIF(ali.source_payload->>\'owner_entity\', \'\')
+                ) AS responsible_unit_name
             FROM agreements a
             LEFT JOIN agreement_partners ap ON ap.agreement_id = a.agreement_id
             LEFT JOIN partners p ON p.partner_id = ap.partner_id
+            LEFT JOIN users cu ON cu.user_id = a.created_by
+            LEFT JOIN organizational_units ou
+                ON ou.unit_id = a.responsible_unit_id
+            LEFT JOIN agreement_legacy_imports ali
+                ON ali.agreement_id = a.agreement_id
             WHERE
                 a.created_by = :creator_user_id
                 OR a.status IN (\'APPROVED\', \'ACTIVE\')
@@ -205,8 +257,19 @@ class AgreementRepository {
                 COALESCE(
                     ou.name,
                     NULLIF(ali.source_payload->>\'owner_entity\', \'\')
-                ) AS responsible_unit_name
+                ) AS responsible_unit_name,
+                ali.source_file AS legacy_source_file,
+                ali.source_row_number AS legacy_source_row_number,
+                ali.source_record_id AS legacy_source_record_id,
+                ali.import_warnings AS legacy_import_warnings,
+                ali.imported_at AS legacy_imported_at,
+                NULLIF(TRIM(CONCAT(creator.first_name, \' \', creator.last_name)), \'\')
+                    AS created_by_name,
+                creator.email AS created_by_email,
+                creator.university_id AS created_by_university_id
             FROM agreements a
+            LEFT JOIN users creator
+                ON creator.user_id = a.created_by
             LEFT JOIN organizational_units ou
                 ON ou.unit_id = a.responsible_unit_id
             LEFT JOIN agreement_legacy_imports ali
@@ -480,6 +543,32 @@ class AgreementRepository {
              ORDER BY ar.created_at, ar.relationship_id',
             $agreementId
         );
+        $agreement['administrative_corrections'] = $this->fetchChildren(
+            'SELECT
+                aac.correction_id,
+                av.version_number,
+                aac.reason,
+                aac.corrected_by,
+                NULLIF(TRIM(CONCAT(u.first_name, \' \', u.last_name)), \'\')
+                    AS corrected_by_name,
+                u.email AS corrected_by_email,
+                aac.corrected_at
+             FROM agreement_administrative_corrections aac
+             JOIN agreement_versions av ON av.version_id = aac.version_id
+             LEFT JOIN users u ON u.user_id = aac.corrected_by
+             WHERE aac.agreement_id = :agreement_id
+             ORDER BY aac.corrected_at DESC, aac.correction_id DESC',
+            $agreementId
+        );
+
+        if (is_string($agreement['legacy_import_warnings'] ?? null)) {
+            $agreement['legacy_import_warnings'] = json_decode(
+                $agreement['legacy_import_warnings'],
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        }
 
         return $agreement;
     }

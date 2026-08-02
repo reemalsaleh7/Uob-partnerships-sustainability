@@ -3098,6 +3098,57 @@ border-radius:28px;
   font-size:12px;
 }
 
+/* Public portal modal and map pop-up refinement */
+.initModal .backdrop {
+    background: rgba(5, 20, 38, 0.68);
+    backdrop-filter: blur(5px);
+}
+
+.initModal .panel {
+    width: min(94vw, 1180px);
+    max-height: min(88vh, 860px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(2, 8, 23, 0.34);
+}
+
+.initModal .head {
+    background:
+        radial-gradient(24rem 12rem at 0 0, rgba(201, 162, 39, 0.16), transparent 65%),
+        #fff;
+}
+
+.initModal .tools,
+.initModal .filterDrawer {
+    background: #f6f8fb;
+}
+
+.initModal .body {
+    overflow: auto;
+}
+
+.initModal tbody tr {
+    transition: background-color 150ms ease;
+}
+
+@media (max-width: 767px) {
+    .initModal .panel {
+        inset: auto 0 0;
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 24px 24px 0 0;
+    }
+
+    .initModal .tools {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .initModal .body table {
+        min-width: 820px;
+    }
+}
+
 
 .admin-dropdown-btn{
   background:#0b1f3a;
@@ -3549,5 +3600,4 @@ padding: 120px 0 80px !important;
     color: #ffffff !important;
   }
 }
-
 

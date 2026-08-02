@@ -789,10 +789,11 @@ SELECT
         'VIEW_AGREEMENT', 'DELETE_AGREEMENT', 'APPROVE_AGREEMENT',
         'REJECT_AGREEMENT', 'MANAGE_AGREEMENT_OPERATIONS',
         'MANAGE_AGREEMENT_REPORTS', 'REVIEW_AGREEMENT_REPORTS',
-        'VIEW_AGREEMENT_DASHBOARD', 'CREATE_INITIATIVE',
+        'VIEW_AGREEMENT_DASHBOARD', 'ADMIN_CORRECT_LEGACY_AGREEMENT',
+        'CREATE_INITIATIVE',
         'EDIT_INITIATIVE', 'APPROVE_INITIATIVE', 'REJECT_INITIATIVE',
         'VIEW_REPORTS', 'MANAGE_USERS'
-      )) = 17
+      )) = 18
     AND
     (SELECT count(*) FROM organizational_units
       WHERE code IN ('UOB', 'PRES', 'VP', 'LEGAL', 'FIN', 'CIT', 'CS', 'IS')
@@ -924,6 +925,12 @@ SELECT
             Description = 'Field comments, private notes, and change views'
             RelativePath = 'migrations\20260722_agreement_field_annotations.sql'
             CheckSql = "SELECT to_regclass('public.agreement_annotations') IS NOT NULL AND to_regclass('public.agreement_user_views') IS NOT NULL;"
+        },
+        [pscustomobject]@{
+            Name = '20260802_120000_agreement_administrative_corrections.sql'
+            Description = 'Agreement origins and audited administrative corrections'
+            RelativePath = 'migrations\20260802_120000_agreement_administrative_corrections.sql'
+            CheckSql = "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='agreements' AND column_name='record_origin') AND to_regclass('public.agreement_administrative_corrections') IS NOT NULL AND EXISTS (SELECT 1 FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.permission_id JOIN roles r ON r.role_id=rp.role_id WHERE p.permission_code='ADMIN_CORRECT_LEGACY_AGREEMENT' AND r.role_name='System Administrator');"
         },
         [pscustomobject]@{
             Name = 'workflow-template-seed'

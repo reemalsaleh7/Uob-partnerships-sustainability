@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 function workspaceHeader(
     string $title,
-    string $activePage = ''
+    string $activePage = '',
+    array $styles = []
 ): void {
     $GLOBALS['workspace_is_login_page'] = $activePage === '';
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
@@ -14,6 +15,11 @@ function workspaceHeader(
     $bodyClass = $isLoginPage
         ? 'workspace-body workspace-login-body'
         : 'workspace-body';
+    $extraStyles = '';
+    foreach ($styles as $style) {
+        $safeStyle = htmlspecialchars((string) $style, ENT_QUOTES, 'UTF-8');
+        $extraStyles .= "    <link href=\"{$safeStyle}\" rel=\"stylesheet\">\n";
+    }
 
     echo <<<HTML
 <!doctype html>
@@ -32,7 +38,8 @@ function workspaceHeader(
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-    <link href="assets/css/workspace.css?v=20260722-showcase-data" rel="stylesheet">
+{$extraStyles}
+    <link href="assets/css/workspace.css?v=20260802-agreement-detail-v2" rel="stylesheet">
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -174,13 +181,34 @@ HTML;
     }
 
     echo <<<HTML
+    <div class="modal fade workspace-confirm-modal" id="workspace-confirm-modal" tabindex="-1" aria-labelledby="workspace-confirm-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <p class="eyebrow mb-1">UOB Partnerships</p>
+                        <h2 class="modal-title h5 mb-0" id="workspace-confirm-title" data-dialog-title>Confirm action</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" data-dialog-message></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-dialog-confirm>Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260722-showcase-data"></script>
+    <script src="assets/js/api-client.js?v=20260802-agreement-detail-v2"></script>
+    <script src="assets/js/export-utils.js?v=20260802-agreement-detail-v2"></script>
+    <script src="assets/js/ui-dialog.js?v=20260802-agreement-detail-v2"></script>
 HTML;
 
     foreach ($scripts as $script) {
         $safeScript = htmlspecialchars((string) $script, ENT_QUOTES, 'UTF-8');
-        echo "    <script src=\"{$safeScript}\"></script>\n";
+        $separator = str_contains($safeScript, '?') ? '&amp;' : '?';
+        echo "    <script src=\"{$safeScript}{$separator}v=20260802-agreement-detail-v2\"></script>\n";
     }
 
     echo "</body>\n</html>\n";

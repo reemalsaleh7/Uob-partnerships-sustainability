@@ -19,9 +19,9 @@ them.
 
 The query returns only the generated or preserved public reference; bilingual
 Agreement title, type, description, dates, renewal flag, objectives, expected
-value, focus areas, public signing link, ranking and SDG alignment, approved
-outcome summaries, and public status; partner name, type, country, city, and
-website; creator organizational unit; approval date; and ordering timestamps.
+value, focus areas, SDG alignment, approved outcome summaries, and public
+status; partner name, type, country, city, website, and optional coordinates;
+creator organizational unit; approval date; and ordering timestamps.
 
 It does not return creator identity, email, reviewer identity, workflow
 comments, version snapshots, audit records, document metadata, or file storage
@@ -40,23 +40,36 @@ use numeric `agreement_id` values with their existing authorization checks.
 
 ## Compatibility boundary
 
-`readPublishedAgreements()` is the canonical public catalogue reader. The older
-`readAgreements()` CSV reader remains temporarily because the separate
-Initiative module still stores legacy Agreement codes.
+`readAgreements(true)` is the compatibility boundary used by the public home,
+catalogue, details, and map endpoint. It reads the PostgreSQL
+`PublicAgreementRepository` first and maps its public allow-list into the
+legacy presentation keys still used by those pages.
 
-The catalogue lists PostgreSQL Agreements only. The detail page may resolve an
-approved legacy CSV code reached from an existing Initiative link, but legacy
-rows are not merged into the catalogue. No CSV page can create, approve, or
-publish an Agreement.
+The CSV reader is a temporary availability fallback for an installation where
+the application database cannot be opened. No CSV page can create, approve, or
+publish an Agreement, and PostgreSQL remains the authoritative source whenever
+it is available.
 
 After Initiative relationships move to `initiative_agreements`, this detail
 compatibility lookup and the legacy Agreement CSV can be retired.
 
 ## Failure behavior
 
-If PostgreSQL is unavailable, the catalogue returns an empty result and logs
-the server-side error. It does not silently restore the CSV catalogue, which
-could expose stale or differently approved data.
+If PostgreSQL is unavailable, the portal logs the server-side error and uses
+only rows marked approved in the existing compatibility CSV. This keeps the
+public site usable during a database outage while preserving the CSV approval
+filter. The fallback should be removed after every Initiative relationship has
+moved to PostgreSQL.
+
+## Public map
+
+The map endpoint uses the same `readAgreements(true)` result, so a newly
+`APPROVED` or `ACTIVE` Agreement appears in the catalogue and on the map
+together. Exact partner latitude/longitude values are used when available.
+Older partner rows without coordinates use a deterministic country centre,
+with known locations from the historical catalogue preferred over the built-in
+country centre. Records are never omitted merely because precise coordinates
+have not yet been curated.
 
 ## Acceptance checks
 
@@ -68,6 +81,8 @@ could expose stale or differently approved data.
    appear in page source or public output.
 6. Open an existing Initiative with a legacy approved Agreement link and
    confirm the compatibility detail remains readable.
+7. Confirm an active Agreement whose partner has a country but no coordinates
+   appears on the partnership map at the country centre.
 
 No database migration is required for this phase.
 

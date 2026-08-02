@@ -411,18 +411,18 @@ SET
     email = v.email,
     is_active = TRUE
 FROM (VALUES
-    ('Bahrain Institute of Technology', 'University', 'Bahrain', 'contact@bit.test'),
-    ('Gulf Research Centre', 'Research Center', 'Bahrain', 'contact@grc.test'),
-    ('Future Skills Foundation', 'Nonprofit', 'Bahrain', 'contact@fsf.test')
+    ('Bahrain Institute of Technology', 'ACADEMIC', 'Bahrain', 'contact@bit.test'),
+    ('Gulf Research Centre', 'ACADEMIC', 'Bahrain', 'contact@grc.test'),
+    ('Future Skills Foundation', 'NON_PROFIT', 'Bahrain', 'contact@fsf.test')
 ) AS v(organization_name, partner_type, country, email)
 WHERE p.organization_name = v.organization_name;
 
 INSERT INTO partners (organization_name, partner_type, country, email, is_active)
 SELECT v.organization_name, v.partner_type, v.country, v.email, TRUE
 FROM (VALUES
-    ('Bahrain Institute of Technology', 'University', 'Bahrain', 'contact@bit.test'),
-    ('Gulf Research Centre', 'Research Center', 'Bahrain', 'contact@grc.test'),
-    ('Future Skills Foundation', 'Nonprofit', 'Bahrain', 'contact@fsf.test')
+    ('Bahrain Institute of Technology', 'ACADEMIC', 'Bahrain', 'contact@bit.test'),
+    ('Gulf Research Centre', 'ACADEMIC', 'Bahrain', 'contact@grc.test'),
+    ('Future Skills Foundation', 'NON_PROFIT', 'Bahrain', 'contact@fsf.test')
 ) AS v(organization_name, partner_type, country, email)
 WHERE NOT EXISTS (SELECT 1 FROM partners p WHERE p.organization_name = v.organization_name);
 
