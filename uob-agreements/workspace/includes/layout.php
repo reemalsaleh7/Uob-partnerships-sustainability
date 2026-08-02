@@ -64,14 +64,11 @@ function workspaceHeader(
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-<<<<<<< HEAD
 {$extraStyles}
     <link href="assets/css/workspace.css?v=20260802-agreement-detail-v2" rel="stylesheet">
-=======
     <link href="assets/css/workspace.css?v=20260722-showcase-data" rel="stylesheet">
     <link href="assets/css/workspace-sidebar-polish.css?v=20260802-phase14g" rel="stylesheet">
     <link href="assets/css/workspace-rtl.css?v=20260802-phase17b" rel="stylesheet">
->>>>>>> origin/FDB
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
