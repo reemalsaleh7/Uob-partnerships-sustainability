@@ -9,7 +9,7 @@ workspaceHeader('Agreement details', 'agreements');
 ?>
 
 <div class="mb-4">
-    <a href="agreements.php" class="back-link" data-context-back>← Back to Agreements</a>
+    <a href="agreements.php" class="back-link">← Back to Agreements</a>
 </div>
 
 <div
@@ -39,17 +39,20 @@ workspaceHeader('Agreement details', 'agreements');
             <p class="eyebrow mb-2">Agreement <span data-agreement-id></span></p>
             <h1 class="display-6 mb-3" data-agreement-title data-annotation-field="title"></h1>
             <span data-agreement-status></span>
+            <div class="record-provenance-note">
+                <span data-record-origin></span>
+                <span data-record-origin-detail></span>
+            </div>
         </div>
 
         <div class="detail-actions align-self-lg-end">
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Download</button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><button class="dropdown-item" type="button" data-export-agreement="pdf">PDF / print</button></li>
-                    <li><button class="dropdown-item" type="button" data-export-agreement="csv">CSV</button></li>
-                    <li><button class="dropdown-item" type="button" data-export-agreement="json">JSON</button></li>
-                </ul>
-            </div>
+            <a
+                href="#"
+                class="btn btn-outline-primary d-none"
+                data-administrative-correction
+            >
+                Administrative correction
+            </a>
             <a
                 href="#"
                 class="btn btn-outline-primary d-none"
@@ -77,6 +80,16 @@ workspaceHeader('Agreement details', 'agreements');
                 ></span>
             </button>
         </div>
+    </section>
+
+    <section class="workspace-card mt-4 d-none" aria-labelledby="administrative-corrections-title" data-administrative-corrections>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="administrative-corrections-title" class="h5 mb-1">Administrative correction history</h2>
+                <p class="small text-secondary mb-0">Corrections repair imported data without changing the legacy source or removing earlier versions.</p>
+            </div>
+        </div>
+        <div class="form-section" data-administrative-correction-list></div>
     </section>
 
     <section class="workspace-card mt-4 d-none" aria-labelledby="agreement-changes-title" data-change-review>
@@ -165,14 +178,12 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </div>
 
-    <div class="dashboard-section-title mt-4"><div>
-        <h2 id="complete-record-title">Complete Agreement record</h2>
-        <p>Open only the information group needed for your task or review.</p>
-    </div></div>
-    <section class="record-section-grid" aria-labelledby="complete-record-title">
-        <details class="workspace-card record-accordion" open>
-            <summary><span><strong>Term and identity</strong><small>Formal name, scope, dates, and renewal terms</small></span></summary>
-            <dl class="detail-grid comprehensive-detail-grid">
+    <section class="workspace-card mt-4" aria-labelledby="complete-record-title">
+        <div class="workspace-card-header"><div>
+            <h2 id="complete-record-title" class="h5 mb-1">Complete Agreement record</h2>
+            <p class="small text-secondary mb-0">Official request, MOU, ranking, commitment, and legacy reporting fields.</p>
+        </div></div>
+        <dl class="detail-grid comprehensive-detail-grid">
             <div><dt>Arabic title</dt><dd data-field="title_ar"></dd></div>
             <div><dt>Geographic scope</dt><dd data-field="geographic_scope"></dd></div>
             <div><dt>Start date</dt><dd data-field="start_date"></dd></div>
@@ -182,12 +193,8 @@ workspaceHeader('Agreement details', 'agreements');
             <div><dt>Automatic renewal</dt><dd data-field="auto_renew"></dd></div>
             <div><dt>Renewal term</dt><dd data-field="renewal_term_months"></dd></div>
             <div><dt>Non-renewal notice</dt><dd data-field="non_renewal_notice_months"></dd></div>
-            </dl>
-        </details>
-
-        <details class="workspace-card record-accordion">
-            <summary><span><strong>Purpose and delivery</strong><small>Why the Agreement is needed and how cooperation will work</small></span></summary>
-            <dl class="detail-grid comprehensive-detail-grid">
+            <div><dt>Termination notice</dt><dd data-field="termination_notice_months"></dd></div>
+            <div><dt>Legal effect</dt><dd data-field="legal_binding_status"></dd></div>
             <div><dt>Responsible unit</dt><dd data-field="responsible_unit_name"></dd></div>
             <div class="detail-grid-wide"><dt>Need and justification</dt><dd data-field="need_justification"></dd></div>
             <div class="detail-grid-wide"><dt>Objectives</dt><dd data-field="objectives"></dd></div>
@@ -195,12 +202,6 @@ workspaceHeader('Agreement details', 'agreements');
             <div class="detail-grid-wide"><dt>Focus areas</dt><dd data-field="focus_areas"></dd></div>
             <div class="detail-grid-wide"><dt>Fields of cooperation</dt><dd data-field="collaboration_areas"></dd></div>
             <div class="detail-grid-wide"><dt>Implementation methods</dt><dd data-field="implementation_methods"></dd></div>
-            </dl>
-        </details>
-
-        <details class="workspace-card record-accordion">
-            <summary><span><strong>Commitments and monitoring</strong><small>Resources, outcomes, SDGs, and reporting</small></span></summary>
-            <dl class="detail-grid comprehensive-detail-grid">
             <div><dt>Financial commitments</dt><dd data-field="financial_summary"></dd></div>
             <div><dt>Human-resources commitments</dt><dd data-field="human_resources_summary"></dd></div>
             <div><dt>Training programs</dt><dd data-field="training_programs_summary"></dd></div>
@@ -208,12 +209,6 @@ workspaceHeader('Agreement details', 'agreements');
             <div><dt>SDGs</dt><dd data-field="sdgs_summary"></dd></div>
             <div><dt>Annual report</dt><dd data-field="annual_report_required"></dd></div>
             <div class="detail-grid-wide"><dt>Monitoring plan</dt><dd data-field="monitoring_plan"></dd></div>
-            </dl>
-        </details>
-
-        <details class="workspace-card record-accordion">
-            <summary><span><strong>Governance clauses</strong><small>Legal review terms extracted from the MOU</small></span></summary>
-            <dl class="detail-grid comprehensive-detail-grid">
             <div class="detail-grid-wide"><dt>Confidentiality terms</dt><dd data-field="confidentiality_terms"></dd></div>
             <div class="detail-grid-wide"><dt>Intellectual-property terms</dt><dd data-field="intellectual_property_terms"></dd></div>
             <div class="detail-grid-wide"><dt>Legal and regulatory compliance</dt><dd data-field="compliance_terms"></dd></div>
@@ -221,8 +216,8 @@ workspaceHeader('Agreement details', 'agreements');
             <div class="detail-grid-wide"><dt>Amendment terms</dt><dd data-field="amendment_terms"></dd></div>
             <div class="detail-grid-wide"><dt>Dispute-resolution terms</dt><dd data-field="dispute_resolution_terms"></dd></div>
             <div class="detail-grid-wide"><dt>Other terms</dt><dd data-field="other_terms"></dd></div>
-            </dl>
-        </details>
+            <div class="detail-grid-wide"><dt>Public signing link</dt><dd data-field="signing_link"></dd></div>
+        </dl>
     </section>
 
     <section class="workspace-card mt-4" aria-labelledby="agreement-comments-title" data-annotation-section>

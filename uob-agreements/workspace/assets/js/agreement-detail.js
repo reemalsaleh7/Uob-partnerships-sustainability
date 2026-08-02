@@ -13,6 +13,9 @@
         relationshipSection: document.querySelector('[data-relationship-section]'),
         relationshipRows: document.querySelector('[data-relationship-rows]'),
         lifecycle: document.querySelector('[data-lifecycle-request]'),
+        administrativeCorrection: document.querySelector('[data-administrative-correction]'),
+        correctionSection: document.querySelector('[data-administrative-corrections]'),
+        correctionList: document.querySelector('[data-administrative-correction-list]'),
         edit: document.querySelector('[data-edit-agreement]'),
         submit: document.querySelector('[data-submit-agreement]'),
         submitLabel: document.querySelector('[data-submit-label]'),
@@ -134,17 +137,12 @@
     }
 
     function renderAgreement(agreement) {
-        const partnerNames = Array.isArray(agreement.partner_names)
-            ? agreement.partner_names
-            : String(agreement.partner_names || '')
-                .split(/\s*[,/]\s*/)
-                .filter(Boolean);
         setText('[data-agreement-id]', `#${agreement.agreement_id}`);
         setText('[data-agreement-title]', agreement.title);
         setText('[data-agreement-type]', agreement.agreement_type);
         setText(
             '[data-partner-name]',
-            partnerNames.join(', ') || agreement.partner_name || (
+            (agreement.partner_names || []).join(', ') || agreement.partner_name || (
                 agreement.partner_id
                     ? `Partner #${agreement.partner_id}`
                     : '—'
@@ -154,6 +152,17 @@
         setText('[data-created-by]', agreement.created_by);
         setText('[data-created-at]', AgreementApi.formatDate(agreement.created_at));
         setText('[data-updated-at]', AgreementApi.formatDate(agreement.updated_at));
+
+        const originTarget = document.querySelector('[data-record-origin]');
+        originTarget.replaceChildren(
+            AgreementApi.createRecordOriginBadge(agreement.record_origin)
+        );
+        const originDetail = {
+            LEGACY_IMPORT: `Imported from ${agreement.legacy_source_file || 'the verified legacy source'}${agreement.legacy_source_row_number ? `, row ${agreement.legacy_source_row_number}` : ''}.`,
+            DEVELOPMENT: 'Test data created with a development identity or DEMO code; it is not a real legacy Agreement.',
+            NEW_SYSTEM: 'Official record created through the new Agreement system.'
+        }[agreement.record_origin] || 'Record origin has not been classified.';
+        setText('[data-record-origin-detail]', originDetail);
 
         [
             'title_ar', 'geographic_scope', 'start_date', 'end_date',
@@ -178,15 +187,23 @@
         );
         setField('human_resources_summary', yesNo(agreement.human_resources_commitments) === 'Yes' ? (agreement.human_resources_description || 'Yes') : 'None');
         setField('training_programs_summary', yesNo(agreement.training_programs) === 'Yes' ? (agreement.training_programs_description || 'Yes') : 'None');
-        const rankings = Array.isArray(agreement.rankings)
-            ? agreement.rankings
-            : String(agreement.rankings || '').split(/[,;/]+/).filter(Boolean);
-        const sdgs = Array.isArray(agreement.sdgs)
-            ? agreement.sdgs
-            : String(agreement.sdgs || '').split(/[,;/\s]+/).filter(Boolean);
-        setField('rankings_summary', rankings.map((value) => String(value).replaceAll('_', ' ')).join(', ') || 'Not applicable');
-        setField('sdgs_summary', sdgs.map((value) => `SDG ${value}`).join(', ') || 'None selected');
+        setField('rankings_summary', (agreement.rankings || []).map((value) => value.replaceAll('_', ' ')).join(', ') || 'Not applicable');
+        setField('sdgs_summary', (agreement.sdgs || []).map((value) => `SDG ${value}`).join(', ') || 'None selected');
         renderRelatedRecords(agreement);
+
+        const corrections = Array.isArray(agreement.administrative_corrections)
+            ? agreement.administrative_corrections
+            : [];
+        elements.correctionSection.classList.toggle('d-none', corrections.length === 0);
+        elements.correctionList.replaceChildren();
+        corrections.forEach((correction) => {
+            elements.correctionList.append(
+                summaryItem(
+                    `Version ${correction.version_number} · ${AgreementApi.formatDate(correction.corrected_at)}`,
+                    `${correction.reason} · Corrected by ${correction.corrected_by_name || correction.corrected_by_email || `user #${correction.corrected_by}`}`
+                )
+            );
+        });
 
         const status = document.querySelector('[data-agreement-status]');
         status.replaceChildren(AgreementApi.createStatusBadge(agreement.status));
@@ -252,8 +269,7 @@
 
     function renderWorkflow(timeline) {
         elements.workflowLoading.classList.add('d-none');
-        const steps = (Array.isArray(timeline?.steps) ? timeline.steps : [])
-            .filter((step) => step.status !== 'SKIPPED');
+        const steps = Array.isArray(timeline?.steps) ? timeline.steps : [];
         const workflow = timeline?.workflow || null;
 
         if (!workflow || !steps.length) {
@@ -363,6 +379,8 @@
             message = 'Revised Agreement version saved. Review it, then resubmit it.';
         } else if (query.get('resubmitted') === '1') {
             message = 'Revised Agreement resubmitted to Initial VP review successfully.';
+        } else if (query.get('corrected') === '1') {
+            message = 'Administrative correction saved as a new immutable Agreement version.';
         }
 
         if (message) {
@@ -378,6 +396,16 @@
         const canEdit = AgreementApi.hasPermission(user, 'EDIT_AGREEMENT');
         const canSubmit = AgreementApi.hasPermission(user, 'SUBMIT_AGREEMENT');
         const canCreate = AgreementApi.hasPermission(user, 'CREATE_AGREEMENT');
+        const canCorrectLegacy = AgreementApi.hasPermission(
+            user,
+            'ADMIN_CORRECT_LEGACY_AGREEMENT'
+        ) && agreement.record_origin === 'LEGACY_IMPORT';
+
+        elements.administrativeCorrection.classList.toggle(
+            'd-none',
+            !canCorrectLegacy
+        );
+        elements.administrativeCorrection.href = `agreement-form.php?id=${encodeURIComponent(agreement.agreement_id)}&mode=administrative-correction`;
 
         elements.lifecycle.classList.toggle(
             'd-none',
@@ -416,16 +444,6 @@
         try {
             const id = agreementId();
             state.agreementId = id;
-            const returnTo = new URLSearchParams(window.location.search)
-                .get('return_to');
-            const back = document.querySelector('[data-context-back]');
-            if (returnTo && back) {
-                back.href = AgreementApi.workspacePath(
-                    returnTo,
-                    'agreements.php'
-                );
-                back.textContent = '← Back to Agreement review';
-            }
             const user = await AgreementApi.requireSession('VIEW_AGREEMENT');
 
             const [agreement, versions, timeline] = await Promise.all([
@@ -461,11 +479,10 @@
 
         const isRevision = state.agreement.status === 'REVISION_REQUIRED';
 
-        const confirmed = await WorkspaceDialog.confirm(
+        const confirmed = window.confirm(
             isRevision
                 ? 'Resubmit this revised Agreement? It will return to Initial VP review.'
-                : 'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.',
-            { confirmLabel: isRevision ? 'Resubmit Agreement' : 'Submit for review' }
+                : 'Submit this Agreement for formal review? You will not be able to edit it as a draft after submission.'
         );
 
         if (!confirmed) {
@@ -492,22 +509,6 @@
             elements.alert.classList.remove('d-none');
             elements.alert.focus();
             setSubmitBusy(false);
-        }
-    });
-
-    document.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-export-agreement]');
-        if (!button || !state.agreement) return;
-        try {
-            WorkspaceExport.download(
-                `agreement-${state.agreementId}`,
-                state.agreement,
-                button.dataset.exportAgreement,
-                `Agreement ${state.agreement.agreement_code || `#${state.agreementId}`}`
-            );
-        } catch (error) {
-            elements.alert.textContent = error.message || 'The Agreement export could not be prepared.';
-            elements.alert.classList.remove('d-none');
         }
     });
 

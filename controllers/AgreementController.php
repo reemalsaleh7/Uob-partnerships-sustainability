@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/AgreementService.php';
 require_once __DIR__ . '/../services/AgreementAnnotationService.php';
-require_once __DIR__ . '/../services/AgreementClauseExtractionService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
@@ -10,12 +9,10 @@ require_once __DIR__ . '/../helpers/Response.php';
 class AgreementController {
     private AgreementService $agreementService;
     private AgreementAnnotationService $annotationService;
-    private AgreementClauseExtractionService $clauseExtractionService;
 
     public function __construct() {
         $this->agreementService = new AgreementService();
         $this->annotationService = new AgreementAnnotationService();
-        $this->clauseExtractionService = new AgreementClauseExtractionService();
     }
 
     public function index(): void {
@@ -88,6 +85,32 @@ class AgreementController {
         }
 
         Response::success(['message' => 'Agreement updated']);
+    }
+
+    public function administrativelyCorrect(int $agreementId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('ADMIN_CORRECT_LEGACY_AGREEMENT');
+
+        $input = ApiRequest::json();
+        $data = $this->agreementInput($input);
+        $data['correction_reason'] = $input['correction_reason'] ?? null;
+
+        try {
+            $result = $this->agreementService
+                ->administrativelyCorrectLegacyAgreement(
+                    $agreementId,
+                    $data,
+                    $this->userId()
+                );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (OutOfBoundsException $exception) {
+            Response::error($exception->getMessage(), 404);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        }
+
+        Response::success($result);
     }
 
     public function annotations(int $agreementId): void
@@ -311,29 +334,6 @@ class AgreementController {
         Response::success($result);
     }
 
-    public function extractClauseDocument(): void
-    {
-        AuthMiddleware::handle();
-        PermissionMiddleware::requireAny([
-            'CREATE_AGREEMENT',
-            'EDIT_AGREEMENT',
-        ]);
-
-        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
-            Response::error('Choose an Agreement document to extract', 422);
-        }
-
-        try {
-            Response::success(
-                $this->clauseExtractionService->extract($_FILES['file'])
-            );
-        } catch (InvalidArgumentException $exception) {
-            Response::error($exception->getMessage(), 422);
-        } catch (RuntimeException $exception) {
-            Response::error($exception->getMessage(), 500);
-        }
-    }
-
     public function documents(int $agreementId): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
@@ -416,8 +416,7 @@ class AgreementController {
         $scalarFields = [
             'title', 'title_ar', 'agreement_type', 'description',
             'geographic_scope', 'start_date', 'end_date', 'effective_date',
-            'signing_date', 'fixed_term_months', 'renewal_term_months',
-            'non_renewal_notice_months',
+            'signing_date', 'renewal_term_months', 'non_renewal_notice_months',
             'termination_notice_months', 'responsible_unit_id',
             'need_justification', 'expected_value', 'objectives', 'focus_areas',
             'collaboration_areas', 'implementation_methods', 'financial_amount',

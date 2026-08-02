@@ -84,7 +84,7 @@ workspaceHeader('Agreements', 'agreements');
                     Use several words, quoted phrases, <code>field:value</code>,
                     <code>a|b</code>, <code>-term</code>, or <code>updated&gt;=2026-01-01</code>.
                     Fields: title, code,
-                    type, status, partner, creator, unit, start, end, updated.
+                    type, status, origin, partner, creator, unit, start, end, updated.
                 </div>
             </div>
             <div class="col-md-6 col-lg-3">
@@ -97,6 +97,15 @@ workspaceHeader('Agreements', 'agreements');
                 <label for="agreement-type" class="form-label">Agreement type</label>
                 <select id="agreement-type" class="form-select" disabled>
                     <option value="">All types</option>
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label for="agreement-origin" class="form-label">Record origin</label>
+                <select id="agreement-origin" class="form-select" disabled>
+                    <option value="">All origins</option>
+                    <option value="LEGACY_IMPORT">Legacy system — real records</option>
+                    <option value="DEVELOPMENT">Development / demo</option>
+                    <option value="NEW_SYSTEM">New system</option>
                 </select>
             </div>
             <div class="col-md-6 col-lg-4">
@@ -146,6 +155,7 @@ workspaceHeader('Agreements', 'agreements');
                     <th scope="col">Title</th>
                     <th scope="col">Type</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Origin</th>
                     <th scope="col">Relationship</th>
                     <th scope="col">Partner</th>
                     <th scope="col">Updated</th>

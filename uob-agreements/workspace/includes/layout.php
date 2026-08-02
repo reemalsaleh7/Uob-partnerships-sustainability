@@ -2,10 +2,20 @@
 
 declare(strict_types=1);
 
+function workspaceAssetUrl(string $assetPath): string
+{
+    $path = explode('?', $assetPath, 2)[0];
+    $absolutePath = dirname(__DIR__) . '/' . ltrim($path, '/');
+    $version = is_file($absolutePath)
+        ? (string) filemtime($absolutePath)
+        : 'missing';
+
+    return $path . '?v=' . rawurlencode($version);
+}
+
 function workspaceHeader(
     string $title,
-    string $activePage = '',
-    array $styles = []
+    string $activePage = ''
 ): void {
     $GLOBALS['workspace_is_login_page'] = $activePage === '';
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
@@ -15,11 +25,11 @@ function workspaceHeader(
     $bodyClass = $isLoginPage
         ? 'workspace-body workspace-login-body'
         : 'workspace-body';
-    $extraStyles = '';
-    foreach ($styles as $style) {
-        $safeStyle = htmlspecialchars((string) $style, ENT_QUOTES, 'UTF-8');
-        $extraStyles .= "    <link href=\"{$safeStyle}\" rel=\"stylesheet\">\n";
-    }
+    $workspaceCss = htmlspecialchars(
+        workspaceAssetUrl('assets/css/workspace.css'),
+        ENT_QUOTES,
+        'UTF-8'
+    );
 
     echo <<<HTML
 <!doctype html>
@@ -38,8 +48,7 @@ function workspaceHeader(
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
-{$extraStyles}
-    <link href="assets/css/workspace.css?v=20260729-portal-workflow-v5" rel="stylesheet">
+    <link href="{$workspaceCss}" rel="stylesheet">
 </head>
 <body class="{$bodyClass}">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -180,33 +189,23 @@ HTML;
 HTML;
     }
 
+    $apiClientScript = htmlspecialchars(
+        workspaceAssetUrl('assets/js/api-client.js'),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+
     echo <<<HTML
-    <div class="modal fade workspace-confirm-modal" id="workspace-confirm-modal" tabindex="-1" aria-labelledby="workspace-confirm-title" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div>
-                        <p class="eyebrow mb-1">UOB Partnerships</p>
-                        <h2 class="modal-title h5 mb-0" id="workspace-confirm-title" data-dialog-title>Confirm action</h2>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" data-dialog-message></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-dialog-confirm>Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260729-portal-workflow-v5"></script>
-    <script src="assets/js/export-utils.js?v=20260729-portal-workflow-v5"></script>
-    <script src="assets/js/ui-dialog.js?v=20260729-portal-workflow-v5"></script>
+    <script src="{$apiClientScript}"></script>
 HTML;
 
     foreach ($scripts as $script) {
-        $safeScript = htmlspecialchars((string) $script, ENT_QUOTES, 'UTF-8');
+        $safeScript = htmlspecialchars(
+            workspaceAssetUrl((string) $script),
+            ENT_QUOTES,
+            'UTF-8'
+        );
         echo "    <script src=\"{$safeScript}\"></script>\n";
     }
 

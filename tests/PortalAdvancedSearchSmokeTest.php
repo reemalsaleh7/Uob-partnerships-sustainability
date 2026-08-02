@@ -27,6 +27,15 @@ $agreementPage = portalSearchSource(
 $agreementScript = portalSearchSource(
     'uob-agreements/workspace/assets/js/agreements.js'
 );
+$agreementDetailScript = portalSearchSource(
+    'uob-agreements/workspace/assets/js/agreement-detail.js'
+);
+$apiClient = portalSearchSource(
+    'uob-agreements/workspace/assets/js/api-client.js'
+);
+$workspaceLayout = portalSearchSource(
+    'uob-agreements/workspace/includes/layout.php'
+);
 $lifecyclePage = portalSearchSource(
     'uob-agreements/workspace/lifecycle-requests.php'
 );
@@ -77,8 +86,27 @@ foreach ([$agreementScript, $lifecycleScript, $reportScript] as $script) {
 portalSearchAssert(
     str_contains($agreementScript, "partner: (agreement)")
         && str_contains($agreementScript, "creator: (agreement)")
+        && str_contains($agreementScript, "origin: (agreement)")
         && str_contains($agreementScript, "updated: 'updated_at'"),
-    'Agreement search is missing partner, creator, or updated-date fields'
+    'Agreement search is missing partner, creator, origin, or updated-date fields'
+);
+portalSearchAssert(
+    str_contains($apiClient, 'function createRecordOriginBadge')
+        && str_contains($apiClient, 'createRecordOriginBadge,')
+        && str_contains(
+            $agreementDetailScript,
+            'AgreementApi.createRecordOriginBadge'
+        ),
+    'The shared Agreement API does not expose the record-origin badge helper'
+);
+portalSearchAssert(
+    str_contains($workspaceLayout, 'function workspaceAssetUrl')
+        && str_contains($workspaceLayout, 'filemtime($absolutePath)')
+        && str_contains(
+            $workspaceLayout,
+            "workspaceAssetUrl('assets/js/api-client.js')"
+        ),
+    'Workspace assets are missing automatic cache-version URLs'
 );
 portalSearchAssert(
     str_contains($lifecycleScript, "termination: (request)")

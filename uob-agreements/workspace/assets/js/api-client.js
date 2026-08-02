@@ -215,17 +215,6 @@
             : defaultPath;
     }
 
-    function workspacePath(value, defaultPath = 'agreements.php') {
-        const candidate = String(value || '').replace(/^\/+/, '');
-        const allowedPath = /^(index|profile|initiative-hub|agreements|agreement|agreement-form|workflow-inbox|workflow-review|legal-review|finance-review|vp-review|president-review|lifecycle-requests|lifecycle-form|lifecycle-request|lifecycle-review|performance-reports|performance-report|performance-dashboard)\.php(?:\?[A-Za-z0-9_=&%.-]*)?$/;
-        return allowedPath.test(candidate) ? candidate : defaultPath;
-    }
-
-    function agreementReviewUrl(id) {
-        const current = `${global.location.pathname.split('/').pop()}${global.location.search}`;
-        return `agreement.php?id=${encodeURIComponent(id)}&return_to=${encodeURIComponent(workspacePath(current, 'workflow-inbox.php'))}`;
-    }
-
     function loginPath() {
         const current = `${global.location.pathname.split('/').pop()}${global.location.search}`;
         return `login.php?to=${encodeURIComponent(current)}`;
@@ -345,15 +334,11 @@
 
         const sidebar = document.getElementById('workspaceSidebar');
         const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
-        const workspaceApp = document.querySelector('.workspace-app');
 
         if (sidebar && sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
             sidebarToggle.dataset.bound = 'true';
             sidebarToggle.addEventListener('click', () => {
-                const isMobile = window.innerWidth < 992;
-                const isOpen = isMobile
-                    ? sidebar.classList.toggle('is-open')
-                    : !workspaceApp.classList.toggle('sidebar-collapsed');
+                const isOpen = sidebar.classList.toggle('is-open');
                 sidebarToggle.setAttribute('aria-expanded', String(isOpen));
             });
 
@@ -365,14 +350,6 @@
                     && !sidebarToggle.contains(event.target)
                 ) {
                     sidebar.classList.remove('is-open');
-                    sidebarToggle.setAttribute('aria-expanded', 'false');
-                }
-            });
-
-            document.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape') return;
-                sidebar.classList.remove('is-open');
-                if (window.innerWidth < 992) {
                     sidebarToggle.setAttribute('aria-expanded', 'false');
                 }
             });
@@ -476,14 +453,33 @@
         return badge;
     }
 
+    function recordOriginLabel(origin) {
+        return {
+            LEGACY_IMPORT: 'Legacy system — real record',
+            DEVELOPMENT: 'Development / demo',
+            NEW_SYSTEM: 'New system'
+        }[String(origin || '').toUpperCase()] || 'Origin unavailable';
+    }
+
+    function createRecordOriginBadge(origin) {
+        const normalized = String(origin || '').toUpperCase();
+        const badge = document.createElement('span');
+        const cssSuffix = {
+            LEGACY_IMPORT: 'legacy',
+            DEVELOPMENT: 'development',
+            NEW_SYSTEM: 'system'
+        }[normalized] || 'unknown';
+        badge.className = `record-origin-badge record-origin-${cssSuffix}`;
+        badge.textContent = recordOriginLabel(normalized);
+        return badge;
+    }
+
     global.AgreementApi = Object.freeze({
         ApiError,
         apiBase,
         request,
         jsonBody,
         safeReturnPath,
-        workspacePath,
-        agreementReviewUrl,
         hasPermission,
         displayName,
         initials,
@@ -491,6 +487,8 @@
         requireSession,
         formatDate,
         createStatusBadge,
+        recordOriginLabel,
+        createRecordOriginBadge,
         login(email, password) {
             return request('/login', {
                 method: 'POST',
@@ -505,40 +503,6 @@
         },
         partners() {
             return request('/partners');
-        },
-        lookupPartner(name) {
-            return request(
-                `/partners/lookup?name=${encodeURIComponent(name)}`
-            );
-        },
-        partnerAgreementContext(id, excludeAgreementId = null) {
-            const query = excludeAgreementId
-                ? `?exclude_agreement_id=${encodeURIComponent(excludeAgreementId)}`
-                : '';
-            return request(
-                `/partners/${encodeURIComponent(id)}/agreement-context${query}`
-            );
-        },
-        createPartner(data) {
-            return request('/partners', {
-                method: 'POST',
-                body: jsonBody(data)
-            });
-        },
-        updatePartner(id, data) {
-            return request(`/partners/${encodeURIComponent(id)}`, {
-                method: 'PATCH',
-                body: jsonBody(data)
-            });
-        },
-        extractAgreementClauses(file) {
-            const body = new FormData();
-            body.append('file', file);
-
-            return request('/agreement-document-extraction', {
-                method: 'POST',
-                body
-            });
         },
         agreement(id) {
             return request(`/agreements/${encodeURIComponent(id)}`);
@@ -555,6 +519,12 @@
         updateAgreement(id, data) {
             return request(`/agreements/${encodeURIComponent(id)}`, {
                 method: 'PUT',
+                body: jsonBody(data)
+            });
+        },
+        administrativelyCorrectLegacyAgreement(id, data) {
+            return request(`/agreements/${encodeURIComponent(id)}/administrative-corrections`, {
+                method: 'POST',
                 body: jsonBody(data)
             });
         },

@@ -6,6 +6,7 @@
         query: '',
         status: '',
         type: '',
+        origin: '',
         partner: '',
         updatedFrom: '',
         updatedTo: '',
@@ -23,6 +24,7 @@
         search: document.getElementById('agreement-search'),
         status: document.getElementById('agreement-status'),
         type: document.getElementById('agreement-type'),
+        origin: document.getElementById('agreement-origin'),
         partner: document.getElementById('agreement-partner'),
         updatedFrom: document.getElementById('agreement-updated-from'),
         updatedTo: document.getElementById('agreement-updated-to'),
@@ -42,6 +44,8 @@
             agreement.title_ar,
             agreement.agreement_type,
             agreement.status,
+            agreement.record_origin,
+            AgreementApi.recordOriginLabel(agreement.record_origin),
             agreement.creator_name,
             agreement.responsible_unit_name,
             agreement.description,
@@ -60,6 +64,10 @@
         title: (agreement) => [agreement.title, agreement.title_ar],
         type: 'agreement_type',
         status: 'status',
+        origin: (agreement) => [
+            agreement.record_origin,
+            AgreementApi.recordOriginLabel(agreement.record_origin)
+        ],
         partner: (agreement) => [
             ...agreement.partner_ids,
             ...agreement.partner_names
@@ -115,6 +123,8 @@
                 || agreement.status === state.status;
             const typeMatches = !state.type
                 || agreement.agreement_type === state.type;
+            const originMatches = !state.origin
+                || agreement.record_origin === state.origin;
             const partnerMatches = !state.partner
                 || agreement.partner_names.includes(state.partner);
             const updatedMatches = UobAdvancedSearch.inDateRange(
@@ -126,6 +136,7 @@
             return scopeMatches
                 && statusMatches
                 && typeMatches
+                && originMatches
                 && partnerMatches
                 && updatedMatches
                 && UobAdvancedSearch.matches(
@@ -200,6 +211,12 @@
             statusCell.appendChild(AgreementApi.createStatusBadge(agreement.status));
             tr.appendChild(statusCell);
 
+            const originCell = document.createElement('td');
+            originCell.appendChild(
+                AgreementApi.createRecordOriginBadge(agreement.record_origin)
+            );
+            tr.appendChild(originCell);
+
             const ownerCell = document.createElement('td');
             const isMine = Number(agreement.created_by) === Number(state.user?.user_id);
             const ownerBadge = document.createElement('span');
@@ -271,6 +288,7 @@
             elements.search,
             elements.status,
             elements.type,
+            elements.origin,
             elements.partner,
             elements.updatedFrom,
             elements.updatedTo,
@@ -284,12 +302,14 @@
         state.query = '';
         state.status = '';
         state.type = '';
+        state.origin = '';
         state.partner = '';
         state.updatedFrom = '';
         state.updatedTo = '';
         elements.search.value = '';
         elements.status.value = '';
         elements.type.value = '';
+        elements.origin.value = '';
         elements.partner.value = '';
         elements.updatedFrom.value = '';
         elements.updatedTo.value = '';
@@ -350,6 +370,11 @@
 
     elements.type.addEventListener('change', () => {
         state.type = elements.type.value;
+        render();
+    });
+
+    elements.origin.addEventListener('change', () => {
+        state.origin = elements.origin.value;
         render();
     });
 

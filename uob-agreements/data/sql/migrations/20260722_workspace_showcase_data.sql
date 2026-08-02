@@ -163,7 +163,7 @@ INSERT INTO agreements (
     human_resources_description, training_programs,
     training_programs_description, annual_report_required, monitoring_plan,
     confidentiality_terms, intellectual_property_terms, compliance_terms,
-    legal_binding_status, status, activated_at, created_at, updated_at
+    legal_binding_status, status, activated_at, record_origin, created_at, updated_at
 )
 SELECT
     s.agreement_code, s.title, s.title_ar, s.agreement_type, s.description,
@@ -184,7 +184,7 @@ SELECT
     'Background intellectual property remains with its owner; joint outputs follow the approved project plan.',
     'Activities must comply with University policy, applicable law, ethics, privacy, and safety requirements.',
     s.legal_binding_status, s.status::agreement_status,
-    s.activated_at::timestamp, s.created_at::timestamp, NOW()
+    s.activated_at::timestamp, 'DEVELOPMENT', s.created_at::timestamp, NOW()
 FROM showcase s
 JOIN users u ON u.email = s.owner_email
 JOIN organizational_units ou ON ou.code = s.responsible_unit_code
@@ -214,6 +214,7 @@ SET title = EXCLUDED.title,
     legal_binding_status = EXCLUDED.legal_binding_status,
     status = EXCLUDED.status,
     activated_at = EXCLUDED.activated_at,
+    record_origin = 'DEVELOPMENT',
     updated_at = NOW();
 
 WITH links(agreement_code, partner_name) AS (
