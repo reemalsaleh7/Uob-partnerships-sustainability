@@ -135,14 +135,17 @@ agreementDetailAssert(
         && str_contains($page, 'agreement-mou-card')
         && !str_contains($page, '>MOU clauses<')
         && strpos($page, 'data-mou-preview') < strpos($page, 'agreementDocumentsPanel')
-        && str_contains($page, 'data-mou-text-preview')
+        && str_contains($page, 'data-mou-docx-preview')
+        && str_contains($page, 'assets/vendor/jszip/jszip.min.js')
+        && str_contains($page, 'assets/vendor/docx-preview/docx-preview.min.js')
         && str_contains($documentJavascript, 'latestMouDocument')
         && str_contains($documentJavascript, 'documents.forEach((document)')
         && str_contains($documentJavascript, 'renderMouPreview(')
-        && str_contains($documentJavascript, 'AgreementApi.previewDocument')
-        && str_contains($apiClient, 'previewDocument(id)')
-        && str_contains($controller, 'previewStoredDocx')
-        && str_contains($routes, '/preview$#'),
+        && str_contains($documentJavascript, 'window.docx.renderAsync(')
+        && str_contains($documentJavascript, 'AgreementApi.downloadDocument')
+        && str_contains($documentJavascript, 'renderHeaders: true')
+        && str_contains($documentJavascript, 'renderFooters: true')
+        && !str_contains($documentJavascript, 'mouText.textContent'),
     'The protected MOU preview flow is incomplete'
 );
 

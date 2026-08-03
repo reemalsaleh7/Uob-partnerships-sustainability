@@ -27,7 +27,9 @@
         mouContent: document.querySelector('[data-mou-preview-content]'),
         mouFileName: document.querySelector('[data-mou-file-name]'),
         mouFileMeta: document.querySelector('[data-mou-file-meta]'),
-        mouText: document.querySelector('[data-mou-text-preview]'),
+        mouDocx: document.querySelector('[data-mou-docx-preview]'),
+        mouDocxStyles: document.querySelector('[data-mou-docx-styles]'),
+        mouDocxPages: document.querySelector('[data-mou-docx-pages]'),
         mouFile: document.querySelector('[data-mou-file-preview]'),
         mouImage: document.querySelector('[data-mou-image-preview]'),
         mouVideo: document.querySelector('[data-mou-video-preview]'),
@@ -163,13 +165,14 @@
 
     function clearMouPreview() {
         clearMouObjectUrl();
-        [elements.mouText, elements.mouFile, elements.mouImage, elements.mouVideo]
+        [elements.mouDocx, elements.mouFile, elements.mouImage, elements.mouVideo]
             .filter(Boolean)
             .forEach((element) => {
                 element.classList.add('d-none');
                 if ('src' in element) element.removeAttribute('src');
             });
-        if (elements.mouText) elements.mouText.textContent = '';
+        elements.mouDocxStyles?.replaceChildren();
+        elements.mouDocxPages?.replaceChildren();
         elements.mouError?.classList.add('d-none');
         elements.mouContent?.classList.add('d-none');
     }
@@ -216,11 +219,37 @@
 
         try {
             if (extension === 'docx') {
-                const preview = await AgreementApi.previewDocument(documentRecord.document_id);
-                elements.mouText.textContent = preview.text || '';
-                elements.mouText.dir = preview.direction === 'rtl' ? 'rtl' : 'ltr';
-                elements.mouText.lang = preview.language || '';
-                elements.mouText.classList.remove('d-none');
+                if (typeof window.docx?.renderAsync !== 'function') {
+                    throw new AgreementApi.ApiError(
+                        'The Word document viewer could not be loaded. Download the original to view it.',
+                        500,
+                        null
+                    );
+                }
+
+                const blob = await AgreementApi.downloadDocument(
+                    documentRecord.document_id
+                );
+                await window.docx.renderAsync(
+                    blob,
+                    elements.mouDocxPages,
+                    elements.mouDocxStyles,
+                    {
+                        className: 'docx',
+                        inWrapper: true,
+                        ignoreWidth: false,
+                        ignoreHeight: false,
+                        ignoreFonts: false,
+                        breakPages: true,
+                        renderHeaders: true,
+                        renderFooters: true,
+                        renderFootnotes: true,
+                        renderEndnotes: true,
+                        renderComments: false,
+                        useBase64URL: true
+                    }
+                );
+                elements.mouDocx.classList.remove('d-none');
             } else {
                 const blob = await AgreementApi.downloadDocument(documentRecord.document_id);
                 state.mouObjectUrl = URL.createObjectURL(blob);

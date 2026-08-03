@@ -205,7 +205,10 @@ workspaceHeader('Agreement details', 'agreements');
                     <strong data-mou-file-name></strong>
                     <span data-mou-file-meta></span>
                 </div>
-                <pre class="mou-text-preview d-none" tabindex="0" data-mou-text-preview></pre>
+                <div class="mou-docx-preview d-none" tabindex="0" data-mou-docx-preview>
+                    <div data-mou-docx-styles></div>
+                    <div class="mou-docx-pages" data-mou-docx-pages></div>
+                </div>
                 <iframe class="mou-file-preview d-none" title="MOU / MOE document preview" data-mou-file-preview></iframe>
                 <img class="mou-image-preview d-none" alt="MOU / MOE document preview" data-mou-image-preview>
                 <video class="mou-video-preview d-none" controls preload="metadata" data-mou-video-preview></video>
@@ -514,6 +517,8 @@ workspaceHeader('Agreement details', 'agreements');
 <?php workspaceFooter([
     'assets/js/agreement-detail.js',
     'assets/js/agreement-annotations.js',
+    'assets/vendor/jszip/jszip.min.js',
+    'assets/vendor/docx-preview/docx-preview.min.js',
     'assets/js/agreement-documents.js',
     'assets/js/agreement-operations.js',
     'assets/js/agreement-performance-summary.js',

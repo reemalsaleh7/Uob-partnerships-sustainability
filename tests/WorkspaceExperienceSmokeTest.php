@@ -25,6 +25,9 @@ $dashboardInitiatives = workspaceSource(
 );
 $agreementPage = workspaceSource('uob-agreements/workspace/agreement.php');
 $agreementJs = workspaceSource('uob-agreements/workspace/assets/js/agreement-detail.js');
+$documentJavascript = workspaceSource(
+    'uob-agreements/workspace/assets/js/agreement-documents.js'
+);
 $agreementOperationsJs = workspaceSource(
     'uob-agreements/workspace/assets/js/agreement-operations.js'
 );
@@ -152,12 +155,15 @@ workspaceAssert(
     substr_count($agreementPage, ' data-mou-preview>') === 1
         && str_contains($agreementPage, 'agreement-mou-card')
         && !str_contains($agreementPage, '>MOU clauses<')
-        && str_contains($agreementPage, 'data-mou-text-preview')
+        && str_contains($agreementPage, 'data-mou-docx-preview')
+        && str_contains($agreementPage, 'assets/vendor/jszip/jszip.min.js')
+        && str_contains($agreementPage, 'assets/vendor/docx-preview/docx-preview.min.js')
         && str_contains($agreementPage, 'data-lifecycle-history-section')
         && str_contains($agreementPage, 'data-lifecycle-history-empty')
         && str_contains($agreementPage, 'data-lifecycle-history-table')
         && str_contains($agreementJs, 'lifecycleRequestsForAgreement')
-        && str_contains($apiClient, 'previewDocument(id)')
+        && str_contains($documentJavascript, 'window.docx.renderAsync(')
+        && str_contains($documentJavascript, 'AgreementApi.downloadDocument')
         && str_contains($apiClient, 'lifecycleRequestsForAgreement(agreementId)'),
     'Agreement details are missing the protected MOU preview or lifecycle history integration'
 );

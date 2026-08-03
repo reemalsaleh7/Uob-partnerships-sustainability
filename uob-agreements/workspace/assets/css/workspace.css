@@ -221,7 +221,7 @@
     text-align: end;
 }
 
-.mou-text-preview,
+.mou-docx-preview,
 .mou-file-preview,
 .mou-image-preview,
 .mou-video-preview {
@@ -231,16 +231,32 @@
     border-radius: 0.9rem;
 }
 
-.mou-text-preview {
+.mou-docx-preview {
     max-height: 42rem;
     min-height: 24rem;
     margin: 0;
     overflow: auto;
     padding: 1.5rem;
-    color: var(--uob-text);
-    font: inherit;
-    line-height: 1.9;
-    white-space: pre-wrap;
+    background: #e8ebef;
+}
+
+.mou-docx-pages {
+    min-width: max-content;
+}
+
+.mou-docx-pages .docx-wrapper {
+    align-items: center;
+    background: transparent;
+    padding: 0;
+}
+
+.mou-docx-pages section.docx {
+    margin: 0 auto 1.25rem;
+    box-shadow: 0 0.35rem 1.25rem rgba(15, 37, 66, 0.16);
+}
+
+.mou-docx-pages section.docx:last-child {
+    margin-bottom: 0;
 }
 
 .mou-file-preview {
@@ -285,9 +301,13 @@
         text-align: start;
     }
 
-    .mou-text-preview,
+    .mou-docx-preview,
     .mou-file-preview {
         min-height: 28rem;
+    }
+
+    .mou-docx-preview {
+        padding: 0.75rem;
     }
 }
 
