@@ -1026,8 +1026,7 @@ html body .landing-actions .hero-main-btn{
   </div>
 </section>
 
-<section class="uob-initGallery">
-  <div class="container">
+<section class="uob-initGallery" style="background:#b89a68 !important;">  <div class="container">
     <div class="sdg-centerX light">
       <h2><?= h(tt('gallery_title')) ?></h2>
       <div class="sdg-lineX center white"></div>

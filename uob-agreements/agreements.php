@@ -1259,8 +1259,8 @@ html[dir="ltr"] body .ag-news-next{
   </div>
 </section>
 
-<section class="uob-partnerSliderX">
-  <div class="container">
+<section class="uob-partnerSliderX" style="background:#0b1f3a !important;">
+    <div class="container">
     <div class="sdg-centerX light">
       <h2><?= h(tt('partnerships_title')) ?></h2>
       <div class="sdg-lineX center white"></div>
