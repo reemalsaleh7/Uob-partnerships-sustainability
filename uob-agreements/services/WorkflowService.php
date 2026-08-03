@@ -463,7 +463,6 @@ class WorkflowService {
                 'priority' => 'HIGH',
                 'action_required' => true,
                 'action_url' => $actionUrl,
-                'send_email' => true
             ]);
         }
     }
@@ -494,7 +493,6 @@ class WorkflowService {
             'priority' => 'MEDIUM',
             'action_required' => false,
             'action_url' => "/notifications.php",
-            'send_email' => true
         ]);
     }
     
@@ -528,7 +526,6 @@ class WorkflowService {
                 'priority' => 'HIGH',
                 'action_required' => false,
                 'action_url' => "/notifications.php",
-                'send_email' => true
             ]);
         }
     }
@@ -566,7 +563,6 @@ class WorkflowService {
                 'priority' => 'HIGH',
                 'action_required' => true,
                 'action_url' => "/notifications.php",
-                'send_email' => true
             ]);
         }
         
@@ -588,7 +584,6 @@ class WorkflowService {
                     'priority' => 'MEDIUM',
                     'action_required' => false,
                     'action_url' => "/notifications.php",
-                    'send_email' => true
                 ]);
             }
         }

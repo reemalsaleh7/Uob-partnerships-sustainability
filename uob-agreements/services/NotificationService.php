@@ -717,390 +717,314 @@ class NotificationService
      * attempt to send an email.
      */
     public function createNotification(array $data): ?int
-    {
+{
+    if (!$this->db) {
+        return null;
+    }
 
-        if (!$this->db) {
+    try {
+        $userId = isset($data['user_id'])
+            ? (int) $data['user_id']
+            : 0;
+
+        if ($userId <= 0) {
+            error_log(
+                'Notification creation failed: invalid user_id'
+            );
+
             return null;
         }
 
-        try {
+        /*
+         * Get recipient email.
+         */
+        $stmt = $this->db->prepare("
+            SELECT email
+            FROM users
+            WHERE user_id = :user_id
+            AND is_active = TRUE
+            LIMIT 1
+        ");
 
-            // ----------------------------------------
-            // Resolve user ID
-            // ----------------------------------------
+        $stmt->execute([
+            ':user_id' => $userId
+        ]);
 
-            $userId = $data['user_id'] ?? null;
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (
-                !$userId &&
-                !empty($data['email'])
-            ) {
+        $userEmail = $user['email'] ?? null;
 
-                $userId = $this->getUserIdByEmail(
-                    (string) $data['email']
-                );
-            }
+        /*
+         * Content.
+         */
+        $titleAr = trim((string) (
+            $data['title_ar']
+            ?? $data['title']
+            ?? ''
+        ));
 
-            if (!$userId) {
+        $titleEn = trim((string) (
+            $data['title_en']
+            ?? $data['title']
+            ?? ''
+        ));
 
-                error_log(
-                    "Notification creation failed: "
-                    . "User ID could not be resolved."
-                );
+        $messageAr = trim((string) (
+            $data['message_ar']
+            ?? $data['message']
+            ?? ''
+        ));
 
-                return null;
-            }
+        $messageEn = trim((string) (
+            $data['message_en']
+            ?? $data['message']
+            ?? ''
+        ));
 
-            $userId = (int) $userId;
+        /*
+         * Priority.
+         */
+        $priority = strtoupper(
+            (string) (
+                $data['priority']
+                ?? 'NORMAL'
+            )
+        );
 
-            // ----------------------------------------
-            // Get user email
-            // ----------------------------------------
+        $allowedPriorities = [
+            'HIGH',
+            'MEDIUM',
+            'NORMAL',
+            'LOW'
+        ];
 
-            $userEmail = null;
+        if (!in_array(
+            $priority,
+            $allowedPriorities,
+            true
+        )) {
+            $priority = 'NORMAL';
+        }
 
-            $stmt = $this->db->prepare("
-                SELECT email
-                FROM users
-                WHERE user_id = :user_id
-                LIMIT 1
-            ");
-
-            $stmt->execute([
-                ':user_id' => $userId
-            ]);
-
-            $user = $stmt->fetch(
-                PDO::FETCH_ASSOC
+        /*
+         * IMPORTANT:
+         *
+         * Always convert this to a real PHP boolean.
+         *
+         * Do NOT pass:
+         *
+         * ''
+         *
+         * to PostgreSQL boolean columns.
+         */
+        $actionRequired =
+            filter_var(
+                $data['action_required'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
             );
 
-            $userEmail =
-                $user['email'] ?? null;
+        $entityType =
+            $data['entity_type']
+            ?? null;
 
-            // ----------------------------------------
-            // Determine priority
-            // ----------------------------------------
+        $entityId =
+            isset($data['entity_id'])
+            ? (int) $data['entity_id']
+            : null;
 
-            $entityType =
-                $data['entity_type'] ?? '';
+        $entityCode =
+            $data['entity_code']
+            ?? null;
 
-            $priority =
-                $data['priority'] ?? null;
+        $actionUrl =
+            $data['action_url']
+            ?? null;
 
-            if (empty($priority)) {
+        /*
+         * Insert notification.
+         */
+        $sql = "
+            INSERT INTO notifications (
+                user_id,
+                title_ar,
+                title_en,
+                message_ar,
+                message_en,
+                entity_type,
+                entity_id,
+                entity_code,
+                priority,
+                reminder_count,
+                reminder_sent,
+                action_required,
+                action_url,
+                is_read,
+                is_archived,
+                is_deleted
+            )
+            VALUES (
+                :user_id,
+                :title_ar,
+                :title_en,
+                :message_ar,
+                :message_en,
+                :entity_type,
+                :entity_id,
+                :entity_code,
+                :priority,
+                0,
+                FALSE,
+                :action_required,
+                :action_url,
+                FALSE,
+                FALSE,
+                FALSE
+            )
+            RETURNING notification_id
+        ";
 
-                if (
-                    $entityType === 'agreement' ||
-                    $entityType === 'partnership'
-                ) {
+        $stmt = $this->db->prepare($sql);
 
-                    $priority = 'HIGH';
+        $stmt->bindValue(
+            ':user_id',
+            $userId,
+            PDO::PARAM_INT
+        );
 
-                } elseif (
-                    $entityType === 'initiative'
-                ) {
+        $stmt->bindValue(
+            ':title_ar',
+            $titleAr
+        );
 
-                    $priority = 'LOW';
+        $stmt->bindValue(
+            ':title_en',
+            $titleEn
+        );
 
-                } else {
+        $stmt->bindValue(
+            ':message_ar',
+            $messageAr
+        );
 
-                    $priority = 'NORMAL';
-                }
-            }
+        $stmt->bindValue(
+            ':message_en',
+            $messageEn
+        );
 
-            $allowedPriorities = [
-                'HIGH',
-                'MEDIUM',
-                'NORMAL',
-                'LOW'
-            ];
+        $stmt->bindValue(
+            ':entity_type',
+            $entityType
+        );
 
-            if (
-                !in_array(
-                    $priority,
-                    $allowedPriorities,
-                    true
-                )
-            ) {
-
-                $priority = 'NORMAL';
-            }
-
-            // ----------------------------------------
-            // Action required
-            // ----------------------------------------
-
-            $actionRequired = true;
-
-            if (array_key_exists('action_required', $data)) {
-                $value = $data['action_required'];
-
-                if (
-                    $value === false ||
-                    $value === 0 ||
-                    $value === '0' ||
-                    $value === 'false' ||
-                    $value === ''
-                ) {
-                    $actionRequired = false;
-                } else {
-                    $actionRequired = true;
-                }
-            }
-
-            // ----------------------------------------
-            // Prepare notification content
-            // ----------------------------------------
-
-            $titleAr =
-                $data['title_ar']
-                ?? $data['title']
-                ?? '';
-
-            $titleEn =
-                $data['title_en']
-                ?? $data['title']
-                ?? '';
-
-            $messageAr =
-                $data['message_ar']
-                ?? $data['message']
-                ?? '';
-
-            $messageEn =
-                $data['message_en']
-                ?? $data['message']
-                ?? '';
-
-            $actionUrl =
-                $data['action_url']
-                ?? null;
-
-            // ----------------------------------------
-            // Insert notification
-            // ----------------------------------------
-
-            $sql = "
-                INSERT INTO notifications (
-                    user_id,
-                    title_ar,
-                    title_en,
-                    message_ar,
-                    message_en,
-                    entity_type,
-                    entity_id,
-                    entity_code,
-                    priority,
-                    reminder_count,
-                    reminder_sent,
-                    action_required,
-                    action_url,
-                    is_read,
-                    is_archived,
-                    is_deleted
-                )
-                VALUES (
-                    :user_id,
-                    :title_ar,
-                    :title_en,
-                    :message_ar,
-                    :message_en,
-                    :entity_type,
-                    :entity_id,
-                    :entity_code,
-                    :priority,
-                    0,
-                    FALSE,
-                    :action_required,
-                    :action_url,
-                    FALSE,
-                    FALSE,
-                    FALSE
-                )
-                RETURNING notification_id
-            ";
-
-            $stmt = $this->db->prepare($sql);
-
-            $stmt->bindValue(
-                ':user_id',
-                $userId,
-                PDO::PARAM_INT
-            );
-
-            $stmt->bindValue(
-                ':title_ar',
-                $titleAr,
-                PDO::PARAM_STR
-            );
-
-            $stmt->bindValue(
-                ':title_en',
-                $titleEn,
-                PDO::PARAM_STR
-            );
-
-            $stmt->bindValue(
-                ':message_ar',
-                $messageAr,
-                PDO::PARAM_STR
-            );
-
-            $stmt->bindValue(
-                ':message_en',
-                $messageEn,
-                PDO::PARAM_STR
-            );
-
-            $stmt->bindValue(
-                ':entity_type',
-                $entityType,
-                PDO::PARAM_STR
-            );
-
+        if ($entityId !== null) {
             $stmt->bindValue(
                 ':entity_id',
-                $data['entity_id'] ?? null,
-                $data['entity_id'] === null
-                    ? PDO::PARAM_NULL
-                    : PDO::PARAM_INT
+                $entityId,
+                PDO::PARAM_INT
             );
-
+        } else {
             $stmt->bindValue(
-                ':entity_code',
-                $data['entity_code'] ?? null,
-                $data['entity_code'] === null
-                    ? PDO::PARAM_NULL
-                    : PDO::PARAM_STR
+                ':entity_id',
+                null,
+                PDO::PARAM_NULL
             );
+        }
 
-            $stmt->bindValue(
-                ':priority',
-                $priority,
-                PDO::PARAM_STR
-            );
+        $stmt->bindValue(
+            ':entity_code',
+            $entityCode
+        );
+
+        $stmt->bindValue(
+            ':priority',
+            $priority
+        );
+
+        $stmt->bindValue(
+            ':action_required',
+            $actionRequired,
+            PDO::PARAM_BOOL
+        );
+
+        $stmt->bindValue(
+            ':action_url',
+            $actionUrl
+        );
+
+        $stmt->execute();
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $notificationId = $result
+            ? (int) $result['notification_id']
+            : null;
+
+        /*
+         * Send email ONLY after notification
+         * was successfully inserted.
+         */
+        if ($notificationId && $userEmail) {
+
+            $lang =
+                $_SESSION['lang']
+                ?? $this->lang
+                ?? 'ar';
+
+            $isArabic =
+                $lang === 'ar';
+
+            $emailTitle = $isArabic
+                ? $titleAr
+                : $titleEn;
+
+            $emailMessage = $isArabic
+                ? $messageAr
+                : $messageEn;
 
             /*
-            * PostgreSQL boolean.
-            *
-            * Send TRUE/FALSE as strings rather than an empty string.
-            */
-            $stmt->bindValue(
-                ':action_required',
-                $actionRequired ? 'TRUE' : 'FALSE',
-                PDO::PARAM_STR
-            );
-
-            $stmt->bindValue(
-                ':action_url',
-                $actionUrl,
-                $actionUrl === null
-                    ? PDO::PARAM_NULL
-                    : PDO::PARAM_STR
-            );
-
-            $stmt->execute();
-
-            $result = $stmt->fetch(
-                PDO::FETCH_ASSOC
-            );
-
-            $notificationId =
-                $result
-                ? (int) $result['notification_id']
-                : null;
-
-            // ----------------------------------------
-            // Automatically send email
-            // ----------------------------------------
-
-            if (
-                $notificationId &&
-                $userEmail
-            ) {
-
-                $lang =
-                    $_SESSION['lang']
-                    ?? $this->lang
-                    ?? 'ar';
-
-                $isArabic =
-                    ($lang === 'ar');
-
-                $emailTitle =
-                    $isArabic
-                    ? $titleAr
-                    : $titleEn;
-
-                $emailMessage =
-                    $isArabic
-                    ? $messageAr
-                    : $messageEn;
-
-                // If the selected language content is empty,
-                // use the other language as fallback.
-                if (
-                    trim((string) $emailTitle) === ''
-                ) {
-
-                    $emailTitle =
-                        $isArabic
-                        ? $titleEn
-                        : $titleAr;
-                }
-
-                if (
-                    trim((string) $emailMessage) === ''
-                ) {
-
-                    $emailMessage =
-                        $isArabic
-                        ? $messageEn
-                        : $messageAr;
-                }
-
-                $this->sendNotificationEmail(
-                    (string) $userEmail,
-                    (string) $emailTitle,
-                    (string) $emailMessage,
-                    $actionUrl
-                );
-            } else {
-
-                if (!$userEmail) {
-
-                    error_log(
-                        "Notification created but email was not sent: "
-                        . "No email found for user_id="
-                        . $userId
-                    );
-                }
+             * Fallback if selected language is empty.
+             */
+            if (trim($emailTitle) === '') {
+                $emailTitle = $isArabic
+                    ? $titleEn
+                    : $titleAr;
             }
 
-            // ----------------------------------------
-            // Return notification ID
-            // ----------------------------------------
+            if (trim($emailMessage) === '') {
+                $emailMessage = $isArabic
+                    ? $messageEn
+                    : $messageAr;
+            }
 
-            return $notificationId;
-
-        } catch (PDOException $e) {
-
-            error_log(
-                "Notification creation error: "
-                . $e->getMessage()
+            $this->sendNotificationEmail(
+                $userEmail,
+                $emailTitle,
+                $emailMessage,
+                $actionUrl,
+                $lang
             );
-
-            return null;
-
-        } catch (Throwable $e) {
-
-            error_log(
-                "Unexpected notification error: "
-                . $e->getMessage()
-            );
-
-            return null;
         }
+
+        return $notificationId;
+
+    } catch (PDOException $e) {
+
+        error_log(
+            'Notification creation error: '
+            . $e->getMessage()
+        );
+
+        return null;
+
+    } catch (Throwable $e) {
+
+        error_log(
+            'Unexpected notification error: '
+            . $e->getMessage()
+        );
+
+        return null;
     }
+}
 }
 ?>
