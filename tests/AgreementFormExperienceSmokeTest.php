@@ -175,8 +175,11 @@ agreementFormAssert(
 agreementFormAssert(
     str_contains($clauseExtraction, 'numberedArticleSection')
         && str_contains($clauseExtraction, 'articleNumber')
+        && str_contains($clauseExtraction, 'extractDocxContent')
+        && str_contains($clauseExtraction, 'extractContactsFromTables')
+        && str_contains($clauseExtraction, 'isPlausiblePersonName')
         && str_contains($javascript, 'extractionSuggested'),
-    'Article-aware extraction does not protect Article 2 from Article 1 grouping'
+    'Article-aware or table-aware extraction safeguards are incomplete'
 );
 agreementFormAssert(
     str_contains($form, 'data-form-section')
@@ -480,6 +483,62 @@ agreementFormAssert(
         && ($contactsByRole['PARTNER:SIGNATORY']['job_title'] ?? '')
             === 'Chief Executive Officer',
     'Coordinator and signatory names or job titles are assigned incorrectly'
+);
+
+$arabicContacts = $contactExtractor->invoke(
+    $extractor,
+    [
+        'المادة (4) نقاط الاتصال',
+        'يعين كل طرف منسق يمثله لأغراض متابعة تنفيذ مواد هذه المذكرة، وذلك وفق الآتي',
+        'ويجوز لكل من الطرفين -بعد إخطار الطرف الآخر- تغيير المنسق الواردة بياناته أعلاه متى ارتأى ذلك.',
+        'المادة (13) النفاذ',
+        'تدخل هذه المذكرة حيز التنفيذ من تاريخ إتمام التوقيع عليها مِن قبل الطرفين، وتظل سارية المفعول لمدة ثلاث سنوات وتُجدد تلقائياً.',
+    ],
+    [
+        [
+            [
+                'جامعة البحرين (الطرف الأول)',
+                'اسم الجهة (الطرف الثاني)',
+            ],
+            [
+                "الاسم: الدكتورة مريم علي\nالمسمى الوظيفي: مديرة الشراكات\nعنوان البريد الإلكتروني: mariam@uob.example\nرقم الهاتف: +973 1743 8000",
+                "المسمى الوظيفي: أستاذ جاسم\nعنوان البريد الإلكتروني: jasem@partner.example\nرقم الهاتف: +973 1700 1234",
+            ],
+        ],
+    ]
+);
+$arabicContactsByParty = [];
+foreach ($arabicContacts as $contact) {
+    $arabicContactsByParty[$contact['party_type'] ?? ''] = $contact;
+}
+agreementFormAssert(
+    count($arabicContacts) === 2
+        && ($arabicContactsByParty['UOB']['full_name'] ?? '')
+            === 'الدكتورة مريم علي'
+        && ($arabicContactsByParty['UOB']['job_title'] ?? '')
+            === 'مديرة الشراكات'
+        && ($arabicContactsByParty['UOB']['email'] ?? '')
+            === 'mariam@uob.example'
+        && ($arabicContactsByParty['UOB']['phone'] ?? '')
+            === '+973 1743 8000'
+        && ($arabicContactsByParty['PARTNER']['full_name'] ?? '')
+            === 'أستاذ جاسم'
+        && ($arabicContactsByParty['PARTNER']['job_title'] ?? '') === ''
+        && ($arabicContactsByParty['PARTNER']['email'] ?? '')
+            === 'jasem@partner.example'
+        && ($arabicContactsByParty['PARTNER']['phone'] ?? '')
+            === '+973 1700 1234',
+    'Arabic two-party coordinator table extraction is incorrect'
+);
+
+$clauseOnlyContacts = $contactExtractor->invoke($extractor, [
+    'يعين كل طرف منسق يمثله لأغراض متابعة تنفيذ مواد هذه المذكرة، وذلك وفق الآتي',
+    'ويجوز لكل من الطرفين -بعد إخطار الطرف الآخر- تغيير المنسق الواردة بياناته أعلاه متى ارتأى ذلك.',
+    'تدخل هذه المذكرة حيز التنفيذ من تاريخ إتمام التوقيع عليها مِن قبل الطرفين، وتظل سارية المفعول لمدة ثلاث سنوات.',
+]);
+agreementFormAssert(
+    $clauseOnlyContacts === [],
+    'Arabic legal clauses must never be returned as contact names or titles'
 );
 agreementFormAssert(
     str_contains(

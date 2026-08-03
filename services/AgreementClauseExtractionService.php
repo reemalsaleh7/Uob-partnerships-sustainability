@@ -50,7 +50,8 @@ final class AgreementClauseExtractionService
 
         $this->validateDocxMediaTypeAndSignature($temporaryPath);
 
-        $text = $this->extractDocxText($temporaryPath);
+        $content = $this->extractDocxContent($temporaryPath);
+        $text = $content['text'];
         if ($text === '') {
             throw new InvalidArgumentException(
                 'No readable text was found in the DOCX document'
@@ -66,7 +67,10 @@ final class AgreementClauseExtractionService
             'language' => $language,
             'language_label' => $language === 'ar' ? 'Arabic' : 'English',
             'fields' => $this->classifyClauses($text, $paragraphs),
-            'contacts' => $this->extractContacts($paragraphs),
+            'contacts' => $this->extractContacts(
+                $paragraphs,
+                $content['tables']
+            ),
             'message' => sprintf(
                 'Text was extracted in %s and kept in its original language. Review every suggested clause before saving.',
                 $language === 'ar' ? 'Arabic' : 'English'
@@ -116,6 +120,20 @@ final class AgreementClauseExtractionService
 
     private function extractDocxText(string $path): string
     {
+        return $this->extractDocxContent($path)['text'];
+    }
+
+    /**
+     * Preserve table columns as structured data as well as producing the
+     * ordinary paragraph text used by clause classification. Coordinator and
+     * signature tables commonly place the two parties side by side; flattening
+     * those cells into one paragraph stream mixes their names and email
+     * addresses.
+     *
+     * @return array{text: string, tables: array<int, array<int, array<int, string>>>}
+     */
+    private function extractDocxContent(string $path): array
+    {
         if (!class_exists('ZipArchive')) {
             throw new RuntimeException(
                 'The PHP Zip extension is required for DOCX clause extraction'
@@ -144,10 +162,11 @@ final class AgreementClauseExtractionService
         }
 
         if (!is_string($xml) || $xml === '') {
-            return '';
+            return ['text' => '', 'tables' => []];
         }
 
         $paragraphs = [];
+        $tables = [];
         if (class_exists('DOMDocument')) {
             $document = new DOMDocument();
             $previous = libxml_use_internal_errors(true);
@@ -159,13 +178,44 @@ final class AgreementClauseExtractionService
                         'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
                     );
                     foreach ($xpath->query('//w:p') ?: [] as $paragraph) {
-                        $parts = [];
-                        foreach ($xpath->query('.//w:t', $paragraph) ?: [] as $textNode) {
-                            $parts[] = $textNode->textContent;
-                        }
-                        $value = trim(implode('', $parts));
+                        $value = $this->wordNodeText($xpath, $paragraph);
                         if ($value !== '') {
                             $paragraphs[] = $value;
+                        }
+                    }
+
+                    foreach ($xpath->query('//w:tbl') ?: [] as $tableNode) {
+                        $rows = [];
+                        foreach (
+                            $xpath->query('./w:tr', $tableNode) ?: []
+                            as $rowNode
+                        ) {
+                            $cells = [];
+                            foreach (
+                                $xpath->query('./w:tc', $rowNode) ?: []
+                                as $cellNode
+                            ) {
+                                $cellParagraphs = [];
+                                foreach (
+                                    $xpath->query('./w:p', $cellNode) ?: []
+                                    as $cellParagraph
+                                ) {
+                                    $value = $this->wordNodeText(
+                                        $xpath,
+                                        $cellParagraph
+                                    );
+                                    if ($value !== '') {
+                                        $cellParagraphs[] = $value;
+                                    }
+                                }
+                                $cells[] = trim(implode("\n", $cellParagraphs));
+                            }
+                            if ($cells !== []) {
+                                $rows[] = $cells;
+                            }
+                        }
+                        if ($rows !== []) {
+                            $tables[] = $rows;
                         }
                     }
                 }
@@ -198,9 +248,30 @@ final class AgreementClauseExtractionService
             static fn (string $value): bool => $value !== ''
         ))));
 
-        return function_exists('mb_substr')
+        $text = function_exists('mb_substr')
             ? mb_substr($text, 0, self::MAX_EXTRACTED_CHARACTERS, 'UTF-8')
             : substr($text, 0, self::MAX_EXTRACTED_CHARACTERS);
+
+        return [
+            'text' => $text,
+            'tables' => $tables,
+        ];
+    }
+
+    private function wordNodeText(DOMXPath $xpath, DOMNode $node): string
+    {
+        $parts = [];
+        foreach (
+            $xpath->query('.//w:t | .//w:tab | .//w:br | .//w:cr', $node)
+                ?: []
+            as $textNode
+        ) {
+            $parts[] = $textNode->localName === 't'
+                ? $textNode->textContent
+                : "\n";
+        }
+
+        return trim(preg_replace('/\n{2,}/u', "\n", implode('', $parts)) ?? '');
     }
 
     private function detectLanguage(string $text): string
@@ -380,24 +451,43 @@ final class AgreementClauseExtractionService
         return $numbers[$value] ?? null;
     }
 
-    private function extractContacts(array $paragraphs): array
+    private function extractContacts(array $paragraphs, array $tables = []): array
     {
         $contacts = [];
+        $tableRoles = [];
+        foreach ($tables as $rows) {
+            $role = $this->structuredContactTableRole(
+                $this->structuredTableText($rows)
+            );
+            if ($role !== null) {
+                $tableRoles[$role] = true;
+            }
+        }
+        foreach ($this->extractContactsFromTables($tables) as $contact) {
+            $this->storeContact($contacts, $contact);
+        }
+
         $rolePatterns = [
             'COORDINATOR' =>
                 '/\bco-?ordinator\b|\bfocal\s+point\b|منسق|نقطة\s+اتصال/iu',
             'SIGNATORY' =>
-                '/\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b|for\s+and\s+on\s+behalf\s+of|المفوض\s+بالتوقيع|المخول\s+بالتوقيع|التوقيع|الموقعون?|نيابة\s+عن/iu',
+                '/\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b'
+                    . '|for\s+and\s+on\s+behalf\s+of'
+                    . '|المفوض\s+بالتوقيع|المخول\s+بالتوقيع'
+                    . '|الموقعون?|نيابة\s+عن/iu',
         ];
 
         $anyRolePattern = '/\bco-?ordinator\b|\bfocal\s+point\b'
             . '|\bsignator(?:y|ies)\b|\bauthori[sz]ed\s+signer\b'
             . '|for\s+and\s+on\s+behalf\s+of'
             . '|منسق|نقطة\s+اتصال|المفوض\s+بالتوقيع'
-            . '|المخول\s+بالتوقيع|التوقيع|الموقعون?|نيابة\s+عن/iu';
+            . '|المخول\s+بالتوقيع|الموقعون?|نيابة\s+عن/iu';
 
         foreach ($paragraphs as $index => $paragraph) {
             foreach ($rolePatterns as $role => $rolePattern) {
+                if (isset($tableRoles[$role])) {
+                    continue;
+                }
                 if (preg_match($rolePattern, $paragraph) !== 1) {
                     continue;
                 }
@@ -442,22 +532,353 @@ final class AgreementClauseExtractionService
                         $rolePattern
                     );
                 }
-
-                $key = $partyType . ':' . $role;
-                if (
-                    !isset($contacts[$key])
-                    && array_filter(
-                        array_slice($contact, 2),
-                        static fn (string $value): bool =>
-                            trim($value) !== ''
-                    ) !== []
-                ) {
-                    $contacts[$key] = $contact;
-                }
+                $this->storeContact($contacts, $contact);
             }
         }
 
         return array_values($contacts);
+    }
+
+    private function extractContactsFromTables(array $tables): array
+    {
+        $contacts = [];
+
+        foreach ($tables as $rows) {
+            $tableText = $this->structuredTableText($rows);
+            $role = $this->structuredContactTableRole($tableText);
+            if ($role === null) {
+                continue;
+            }
+
+            $columnCount = 0;
+            foreach ($rows as $row) {
+                $columnCount = max($columnCount, count($row));
+            }
+            if ($columnCount < 1 || $columnCount > 4) {
+                continue;
+            }
+
+            for ($column = 0; $column < $columnCount; $column++) {
+                $columnParts = [];
+                foreach ($rows as $row) {
+                    $value = trim((string) ($row[$column] ?? ''));
+                    if ($value !== '') {
+                        $columnParts[] = $value;
+                    }
+                }
+                $columnText = implode("\n", $columnParts);
+                $context = $this->contactLines($columnText);
+                if ($context === []) {
+                    continue;
+                }
+
+                $partyType = $this->structuredPartyType(
+                    $columnText,
+                    $column,
+                    $columnCount
+                );
+                $contact = [
+                    'party_type' => $partyType,
+                    'contact_role' => $role,
+                    'full_name' => $this->labeledValue(
+                        $context,
+                        '(?:full\s+name|name|الاسم\s+الكامل|الاسم)'
+                    ),
+                    'job_title' => $this->labeledValue(
+                        $context,
+                        '(?:job\s+title|title|position|designation|capacity|المسمى\s+الوظيفي|المنصب|الصفة)'
+                    ),
+                    'email' => $this->emailValue($context),
+                    'phone' => $this->phoneValue($context),
+                ];
+
+                if ($contact['full_name'] === '') {
+                    $contact['full_name'] = $this->unlabeledNameValue($context);
+                }
+                if ($contact['job_title'] === '' && $role === 'SIGNATORY') {
+                    $contact['job_title'] = $this->unlabeledTitleValue(
+                        $context,
+                        $contact['full_name']
+                    );
+                }
+
+                $this->storeContact($contacts, $contact);
+            }
+        }
+
+        return array_values($contacts);
+    }
+
+    private function structuredTableText(array $rows): string
+    {
+        $cells = [];
+        foreach ($rows as $row) {
+            foreach ($row as $cell) {
+                $cells[] = (string) $cell;
+            }
+        }
+
+        return implode("\n", $cells);
+    }
+
+    private function structuredContactTableRole(string $tableText): ?string
+    {
+        if (
+            preg_match(
+                '/e-?mail|phone|telephone|mobile|co-?ordinator|focal\s+point'
+                    . '|البريد|الهاتف|الجوال|منسق|نقاط?\s+الاتصال/iu',
+                $tableText
+            ) === 1
+        ) {
+            return 'COORDINATOR';
+        }
+
+        if (
+            preg_match(
+                '/(?:position|designation|capacity|المنصب|الصفة)/iu',
+                $tableText
+            ) === 1
+            && preg_match(
+                '/University\s+of\s+Bahrain|جامعة\s+البحرين/iu',
+                $tableText
+            ) === 1
+            && preg_match(
+                '/partner|second\s+party|الطرف\s+الثاني|اسم\s+الجهة/iu',
+                $tableText
+            ) === 1
+        ) {
+            return 'SIGNATORY';
+        }
+
+        return null;
+    }
+
+    private function structuredPartyType(
+        string $columnText,
+        int $column,
+        int $columnCount
+    ): string {
+        if (
+            preg_match(
+                '/University\s+of\s+Bahrain|\bUOB\b|جامعة\s+البحرين|الطرف\s+الأول/iu',
+                $columnText
+            ) === 1
+        ) {
+            return 'UOB';
+        }
+        if (
+            preg_match(
+                '/partner|second\s+party|الطرف\s+الثاني|الجهة\s+الشريكة|اسم\s+الجهة/iu',
+                $columnText
+            ) === 1
+        ) {
+            return 'PARTNER';
+        }
+
+        return $column === 0 || $columnCount === 1 ? 'UOB' : 'PARTNER';
+    }
+
+    private function contactLines(string $text): array
+    {
+        return array_values(array_filter(
+            array_map(
+                static fn (string $line): string => trim($line),
+                preg_split('/\R+/u', $text) ?: []
+            ),
+            static fn (string $line): bool => $line !== ''
+        ));
+    }
+
+    private function storeContact(array &$contacts, array $contact): void
+    {
+        $contact = $this->normalizeContact($contact);
+        if (
+            array_filter(
+                array_slice($contact, 2),
+                static fn (string $value): bool => trim($value) !== ''
+            ) === []
+        ) {
+            return;
+        }
+
+        $key = $contact['party_type'] . ':' . $contact['contact_role'];
+        if (!isset($contacts[$key])) {
+            $contacts[$key] = $contact;
+            return;
+        }
+
+        foreach (['full_name', 'job_title', 'email', 'phone'] as $field) {
+            if ($contacts[$key][$field] === '' && $contact[$field] !== '') {
+                $contacts[$key][$field] = $contact[$field];
+            }
+        }
+    }
+
+    private function normalizeContact(array $contact): array
+    {
+        foreach (['full_name', 'job_title', 'email', 'phone'] as $field) {
+            $contact[$field] = trim((string) ($contact[$field] ?? ''));
+        }
+
+        if (!$this->isPlausiblePersonName($contact['full_name'])) {
+            $contact['full_name'] = '';
+        }
+        if (
+            $contact['full_name'] === ''
+            && $this->honorificPersonName($contact['job_title'])
+        ) {
+            $contact['full_name'] = $contact['job_title'];
+            $contact['job_title'] = '';
+        }
+        if (!$this->isPlausibleJobTitle($contact['job_title'])) {
+            $contact['job_title'] = '';
+        }
+        if (
+            $contact['email'] !== ''
+            && filter_var($contact['email'], FILTER_VALIDATE_EMAIL) === false
+        ) {
+            $contact['email'] = '';
+        }
+
+        return $contact;
+    }
+
+    private function isPlausiblePersonName(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === '' || $this->length($value) > 100) {
+            return false;
+        }
+        $words = preg_split('/\s+/u', $value) ?: [];
+        if (count($words) > 10 || preg_match('/[@\d]|[!?؛;]/u', $value) === 1) {
+            return false;
+        }
+        if (
+            preg_match(
+                '/^(?:name|full\s+name|job\s+title|title|position'
+                    . '|designation|capacity|الاسم|الاسم\s+الكامل'
+                    . '|المسمى\s+الوظيفي|المنصب|الصفة|[-_.…]+)$/iu',
+                $value
+            ) === 1
+        ) {
+            return false;
+        }
+
+        return preg_match(
+            '/\b(?:appoint|represents?|implementation|agreement|memorandum|party|renewal)\b'
+                . '|يعين|يمثله|لأغراض|متابعة|تنفيذ|مواد|مذكرة|الطرف(?:ان|ين)?'
+                . '|ويجوز|إخطار|تغيير|الواردة|بياناته|تدخل|حيز|سارية'
+                . '|تجدد|انتهائها|المادة/iu',
+            $value
+        ) !== 1;
+    }
+
+    private function isPlausibleJobTitle(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return false;
+        }
+        if ($this->length($value) > 120 || preg_match('/[@]|[!?؛;]/u', $value) === 1) {
+            return false;
+        }
+        if (
+            preg_match(
+                '/^(?:job\s+title|title|position|designation|capacity'
+                    . '|المسمى\s+الوظيفي|المنصب|الصفة|[-_.…]+)$/iu',
+                $value
+            ) === 1
+        ) {
+            return false;
+        }
+
+        return preg_match(
+            '/\b(?:appoint|represents?|implementation|agreement|memorandum|party|renewal)\b'
+                . '|يعين|يمثله|لأغراض|متابعة|تنفيذ|مواد|مذكرة|الطرف(?:ان|ين)?'
+                . '|ويجوز|إخطار|تغيير|الواردة|بياناته|تدخل|حيز|سارية'
+                . '|تجدد|انتهائها|المادة/iu',
+            $value
+        ) !== 1;
+    }
+
+    private function honorificPersonName(string $value): bool
+    {
+        if (
+            preg_match(
+                '/^(?:Prof(?:essor)?\.?|Dr\.?|Mr\.?|Mrs\.?|Ms\.?|Miss'
+                    . '|الأستاذة?|أستاذة?'
+                    . '|الدكتورة?|د\.|السيدة?|الشيخ)\s+(.+)$/iu',
+                trim($value),
+                $match
+            ) !== 1
+        ) {
+            return false;
+        }
+
+        return preg_match(
+            '/^(?:مساعد|مشارك|زائر|فخري|محاضر|مدير|رئيس|عميد|نائب'
+                . '|منسق|مسؤول|أخصائي|مستشار)\b/iu',
+            trim($match[1])
+        ) !== 1;
+    }
+
+    private function unlabeledNameValue(array $paragraphs): string
+    {
+        foreach ($paragraphs as $paragraph) {
+            $candidate = trim($paragraph);
+            if (
+                preg_match(
+                    '/(?:University\s+of\s+Bahrain|جامعة\s+البحرين|partner'
+                        . '|الطرف\s+(?:الأول|الثاني)|اسم\s+الجهة|e-?mail'
+                        . '|phone|mobile|البريد|الهاتف|الجوال|المسمى'
+                        . '|المنصب|الصفة)/iu',
+                    $candidate
+                ) === 1
+                || preg_match('/[:@]/u', $candidate) === 1
+                || !$this->isPlausiblePersonName($candidate)
+            ) {
+                continue;
+            }
+
+            if (
+                $this->honorificPersonName($candidate)
+                || preg_match(
+                    '/^(?!رئيس\b|مدير\b|عميد\b|نائب\b|منسق\b|مسؤول\b)'
+                        . '[\p{L}][\p{L}\'’.-]*(?:\s+[\p{L}][\p{L}\'’.-]*){1,6}$/u',
+                    $candidate
+                ) === 1
+            ) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    private function unlabeledTitleValue(
+        array $paragraphs,
+        string $fullName
+    ): string {
+        foreach ($paragraphs as $paragraph) {
+            $candidate = trim($paragraph);
+            if ($candidate === '' || $candidate === $fullName) {
+                continue;
+            }
+            if (
+                preg_match(
+                    '/^(?:President|Vice\s+President|Director|Dean|Head'
+                        . '|Manager|Chief|Professor|Chair|Coordinator'
+                        . '|رئيس|نائب|مدير|عميد|رئيسة|مديرة|عميدة|منسق'
+                        . '|مسؤول|أخصائي|مستشار)\b/iu',
+                    $candidate
+                ) === 1
+                && $this->isPlausibleJobTitle($candidate)
+            ) {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -475,7 +896,15 @@ final class AgreementClauseExtractionService
 
         for ($index = $roleIndex + 1; $index < $limit; $index++) {
             $paragraph = (string) $paragraphs[$index];
-            if (preg_match($anyRolePattern, $paragraph) === 1) {
+            if (
+                preg_match($anyRolePattern, $paragraph) === 1
+                || $this->articleNumber($paragraph) !== null
+                || preg_match(
+                    '/^(?:ويجوز|تدخل\s+هذه\s+المذكرة|يجوز\s+لكل'
+                        . '|this\s+(?:agreement|memorandum)\s+(?:enters|shall))\b/iu',
+                    trim($paragraph)
+                ) === 1
+            ) {
                 break;
             }
             $context[] = $paragraph;
@@ -640,7 +1069,7 @@ final class AgreementClauseExtractionService
             return '';
         }
 
-        return $this->length($value) <= 255 ? $value : '';
+        return $this->isPlausiblePersonName($value) ? $value : '';
     }
 
     private function length(string $value): int
