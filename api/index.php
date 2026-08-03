@@ -110,6 +110,7 @@ try {
     if (
         str_starts_with($requestPath, '/agreements')
         || str_starts_with($requestPath, '/documents')
+        || $requestPath === '/agreement-document-extraction'
     ) {
         if (str_contains($requestPath, '/lifecycle-requests')) {
             require dirname(__DIR__) . '/routes/agreement-lifecycle.php';
@@ -128,7 +129,18 @@ try {
         exit;
     }
 
-    if ($requestPath === '/partners') {
+    if (
+        str_starts_with($requestPath, '/initiative-requests')
+        || $requestPath === '/initiative-eligible-collaborators'
+        || $requestPath === '/initiative-access'
+    ) {
+        require dirname(__DIR__)
+            . '/routes/initiative-workflow.php';
+
+        exit;
+    }
+
+    if (str_starts_with($requestPath, '/partners')) {
         require dirname(__DIR__) . '/routes/partners.php';
         exit;
     }

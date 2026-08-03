@@ -1,3 +1,5 @@
+/config/database.local.php
+/config/database.local.php.backup
 /storage/private/agreement-documents/**
 /storage/private/lifecycle-request-documents/**
 !/storage/private/web.config

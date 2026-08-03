@@ -32,8 +32,6 @@ $isArabic = ($lang === 'ar');
 $T = [
   'ar' => [
     'page_title' => 'مبادرات جامعة البحرين',
-    'about_title' => 'عن مبادرات جامعة البحرين',
-    'about_desc' => 'منصة رقمية لعرض مبادرات جامعة البحرين وربطها بأهداف التنمية المستدامة والاتفاقيات والتصنيفات العالمية، بما يسهّل الاستعراض والتحليل والوصول إلى المعلومات التفصيلية.',
     'total_initiatives' => 'إجمالي المبادرات',
     'filtered_results' => 'نتائج الفلترة',
     'sdgs_count' => 'أهداف التنمية',
@@ -79,8 +77,6 @@ $T = [
   ],
   'en' => [
     'page_title' => 'University of Bahrain Initiatives',
-    'about_title' => 'About UOB Initiatives',
-    'about_desc' => 'A digital platform for presenting University of Bahrain initiatives and linking them with the Sustainable Development Goals, agreements, and global rankings for easier browsing and analysis.',
     'total_initiatives' => 'Total Initiatives',
     'filtered_results' => 'Filtered Results',
     'sdgs_count' => 'SDGs',
@@ -285,7 +281,7 @@ function listMedia2(string $dirAbs, array $exts): array {
   return $out;
 }
 /* ======= hero image ======= */
-$heroImageUrl = 'assets/image/THEM/initinesheader.png';
+$heroImageUrl = 'assets/image/THEM/initiatives (2).png';
 
 /* ======= sorted items ======= */
 $sliderItems = array_values($all);
@@ -544,8 +540,272 @@ $gallerySlides = array_map(function($file){
   .initGalleryMedia{min-height:260px;}
   .initGalleryContent{padding:22px;}
 }
+.latest-clean-slider{position:relative;min-height:330px;margin-top:34px;}
+.latest-clean-slide{display:none;grid-template-columns:280px 1fr;background:#fff;border:1px solid #e5edf6;border-radius:24px;overflow:hidden;text-decoration:none;box-shadow:0 16px 38px rgba(2,8,23,.08);}
+.latest-clean-slide.active{display:grid;}
+.latest-clean-image{background:#e5e7eb;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:20px;min-height:330px;}
+.latest-clean-content{padding:42px;text-align:right;}
+.latest-clean-content span{color:#b89a68;font-weight:950;font-size:14px;}
+.latest-clean-content h3{color:#0b1f3a;font-size:34px;font-weight:950;line-height:1.5;margin:10px 0 18px;}
+.latest-clean-content p{color:#334155;font-weight:850;line-height:1.9;font-size:17px;margin:0;}
+.latest-clean-content b{color:#0b1f3a;}
+
+@media(max-width:800px){
+  .latest-clean-slide{grid-template-columns:1fr;}
+  .latest-clean-image{min-height:180px;}
+  .latest-clean-content{padding:28px;}
+}
 
 
+
+html body .sdg-heroX-overlay{
+  background: transparent !important;
+}
+
+
+html body .sdg-heroX-overlay{
+  background:transparent !important;
+}
+.latest-section-bg{
+  
+  background: #f6f6f6; !important;
+  padding-top:90px !important;
+  padding-bottom:85px !important;
+  overflow:hidden !important;
+  
+}
+
+
+.latest-clean-slider{
+  margin-bottom:0 !important;
+}
+.latest-section-bg .sdg-centerX h2{
+  color:#0b1f3a !important;
+}
+
+.latest-section-bg .sdg-lineX.center{
+  background:#ffffff !important;
+}
+.uob-reveal,
+.uob-reveal.in{
+  opacity:1 !important;
+  transform:none !important;
+  transition:none !important;
+}
+/* ===== Initiatives Hero Like Agreements ===== */
+
+html body .sdg-heroX{
+  min-height:650px !important;
+  padding:0 !important;
+  margin:0 !important;
+  text-align:center !important;
+}
+
+html body .sdg-heroX-container{
+  width:100% !important;
+  max-width:100% !important;
+  min-height:650px !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+html body .sdg-heroX-card{
+  width:100% !important;
+  max-width:950px !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  text-align:center !important;
+}
+
+html body .sdg-heroX-card h1{
+  color:#ffffff !important;
+  font-size:56px !important;
+  font-weight:950 !important;
+  line-height:1.2 !important;
+  margin:0 !important;
+  white-space:nowrap !important;
+}
+
+html body .sdg-heroX-line{
+  width:110px !important;
+  height:5px !important;
+  border-radius:999px !important;
+background:#0b1f3a !important;
+  margin:18px auto 36px !important;
+}
+
+html body .sdg-heroX-mini{
+  width:fit-content !important;
+  max-width:100% !important;
+  display:grid !important;
+  grid-template-columns:repeat(4, 150px) !important;
+  gap:36px !important;
+  justify-content:center !important;
+  align-items:start !important;
+  margin:0 auto 34px !important;
+  direction:rtl !important;
+}
+
+html body .sdg-heroX-mini .mini{
+  width:150px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  gap:10px !important;
+}
+
+html body .sdg-heroX-mini .mini .lbl{
+  order:1 !important;
+  color:rgba(255,255,255,.88) !important;
+  font-size:20px !important;
+  font-weight:900 !important;
+  line-height:1.4 !important;
+}
+
+html body .sdg-heroX-mini .mini .val{
+  order:2 !important;
+  color:#ffffff !important;
+  font-size:54px !important;
+  font-weight:950 !important;
+  line-height:1 !important;
+}
+
+html body .landing-actions{
+  width:100% !important;
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:12px !important;
+  flex-wrap:wrap !important;
+  margin-top:0 !important;
+}
+
+html body .landing-actions .btn{
+  min-width:190px !important;
+  min-height:50px !important;
+  border-radius:16px !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  transition:transform .45s ease !important;
+}
+
+html body .landing-actions .btn:hover{
+  transform:scale(1.03) !important;
+}
+
+@media(max-width:992px){
+  html body .sdg-heroX-card h1{
+    white-space:normal !important;
+    font-size:42px !important;
+  }
+
+  html body .sdg-heroX-mini{
+    grid-template-columns:repeat(2, 150px) !important;
+  }
+}
+.landing-actions .btn-outline-primary:active,
+.landing-actions .btn-outline-primary:focus{
+  background:transparent !important;
+  color:#0b1f3a !important;
+  border-color:rgba(11,31,58,.35) !important;
+  box-shadow:none !important;
+}
+html body .sdg-heroX-mini{
+  display:grid !important;
+  grid-template-columns:repeat(4, 170px) !important;
+  gap:10px; !important;
+  justify-content:center !important;
+  align-items:start !important;
+  margin:0 auto 36px !important;
+}
+
+html body .sdg-heroX-mini .mini{
+  width:170px !important;
+  text-align:center !important;
+}
+.initiatives-hero-actions{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  gap:14px !important;
+  margin-top:26px !important;
+}
+
+.main-action-row{
+  display:flex !important;
+  justify-content:center !important;
+}
+
+.secondary-action-row{
+  display:flex !important;
+  justify-content:center !important;
+  gap:14px !important;
+  flex-wrap:wrap !important;
+}
+
+.hero-main-btn{
+  min-width:360px !important;
+  min-height:56px !important;
+  border-radius:16px !important;
+  background:#0b1f3a !important;
+  border-color:#0b1f3a !important;
+  color:#fff !important;
+  font-size:20px !important;
+  font-weight:950 !important;
+}
+
+.hero-secondary-btn{
+  min-width:220px !important;
+  min-height:50px !important;
+  border-radius:16px !important;
+  color:#f6f9fc !important;
+  border-color:rgba(254, 254, 254, 2) !important;
+  font-size:18px !important;
+  font-weight:950 !important;
+}
+html body .landing-actions .hero-secondary-btn{
+  background:rgba(255,255,255,.18) !important; /* أبيض شفاف من داخل */
+  border:1.5px solid #ffffff !important;       /* إطار أبيض */
+  color:#ffffff !important;                    /* الكلام أبيض */
+  box-shadow:none !important;
+}
+
+html body .landing-actions .hero-secondary-btn:hover,
+html body .landing-actions .hero-secondary-btn:focus,
+html body .landing-actions .hero-secondary-btn:active{
+  background:#ffffff !important;               /* عند المرور يصير أبيض */
+  border-color:#ffffff !important;
+  color:#b89a68 !important;                    /* الكلام ذهبي */
+}
+html body .landing-actions .hero-main-btn{
+  width:500px !important;        /* العرض يمين ويسار */
+
+  height:53px !important;        /* الطول فوق وتحت */
+
+  font-size:23px !important;     /* حجم الخط */
+
+
+  background:#ffffff !important;
+  border:0 !important;
+  color:#b89a68 !important;
+}
 </style>
 
 <section class="sdg-heroX">
@@ -561,94 +821,110 @@ $gallerySlides = array_map(function($file){
 
   <div class="sdg-heroX-overlay"></div>
 
-  <div class="container sdg-heroX-container" style="justify-content:flex-start;">
-    <div class="sdg-heroX-card uob-reveal in">
+      <div class="container sdg-heroX-container">
+      <div class="sdg-heroX-card uob-reveal in">
       <h1><?= h(tt('page_title')) ?></h1>
-      <div class="sdg-heroX-line"></div>
+      <div class="sdg-heroX-line" style="background:#f6f9fc !important;"></div>
 
-      <div class="sdg-heroX-mini">
-        <div class="mini">
-          <div class="lbl"><?= h(tt('total_initiatives')) ?></div>
-          <div class="val"><?= (int)$totalInitiatives ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('filtered_results')) ?></div>
-          <div class="val"><?= (int)$totalFiltered ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('sdgs_count')) ?></div>
-          <div class="val"><?= (int)$uniqueSdgs ?></div>
-        </div>
-        <div class="mini">
-          <div class="lbl"><?= h(tt('units_count')) ?></div>
-          <div class="val"><?= (int)$uniqueUnits ?></div>
-        </div>
-      </div>
+    <div class="sdg-heroX-mini">
 
-      <div class="landing-actions" style="margin-top:14px;">
-  <button type="button" class="btn btn-primary" id="openInitModalChip">
-    <?= h(tt('view_initiatives')) ?>
-  </button>
+  <div class="mini">
+    <span class="lbl"><?= h(tt('total_initiatives')) ?></span>
+    <span class="val counter" data-target="<?= (int)$totalInitiatives ?>">0</span>
+  </div>
 
-  <a class="btn btn-outline-primary" href="request-initiative.php?lang=<?= h($lang) ?>">
-    <?= $isArabic ? 'طلب موافقة مبادرة' : 'Request Initiative Approval' ?>
-  </a>
+  <div class="mini">
+    <span class="lbl"><?= h($isArabic ? 'نتائج الفلترة' : 'Filtered Results') ?></span>
+    <span class="val counter" data-target="<?= (int)$totalFiltered ?>">0</span>
+  </div>
 
-  <a class="btn btn-outline-primary" href="admin/add-initiative-approved.php?lang=<?= h($lang) ?>">
-    <?= $isArabic ? 'إضافة مبادرة معتمدة' : 'Add Approved Initiative' ?>
-  </a>
+  <div class="mini">
+    <span class="lbl"><?= h($isArabic ? 'أهداف التنمية' : 'SDGs') ?></span>
+    <span class="val counter" data-target="<?= (int)$uniqueSdgs ?>">0</span>
+  </div>
 
-  <a class="btn btn-outline-primary" href="<?= h($addUrl) ?>">
-    <?= $isArabic ? 'إضافة مبادرة قديمة' : 'Add Old Initiative' ?>
-  </a>
+  <div class="mini">
+    <span class="lbl"><?= h($isArabic ? 'الجهات المنفذة' : 'Implementing Units') ?></span>
+    <span class="val counter" data-target="<?= (int)$uniqueUnits ?>">0</span>
+  </div>
+
+</div>
+<div class="landing-actions initiatives-hero-actions">
+
+  <div class="main-action-row">
+<button type="button" class="btn hero-main-btn" id="openInitModalChip" style="background:#f6f9fc !important; border-color:#f6f9fc !important; color:#b89a68 !important;">
+        <?= h(tt('view_initiatives')) ?>
+    </button>
+  </div>
+
+  <div class="secondary-action-row">
+    <a class="btn btn-outline-primary hero-secondary-btn" href="request-initiative.php?lang=<?= h($lang) ?>">
+      <?= $isArabic ? 'طلب موافقة مبادرة' : 'Request Initiative Approval' ?>
+    </a>
+
+    <a class="btn btn-outline-primary hero-secondary-btn" href="admin/add-initiative-approved.php?lang=<?= h($lang) ?>">
+      <?= $isArabic ? 'إضافة مبادرة معتمدة' : 'Add Approved Initiative' ?>
+    </a>
+
+    <a class="btn btn-outline-primary hero-secondary-btn" href="<?= h($addUrl) ?>">
+      <?= $isArabic ? 'إضافة مبادرة قديمة' : 'Add Old Initiative' ?>
+    </a>
+  </div>
+
 </div>
     </div>
   </div>
 </section>
 <section class="sdg-sectionX sdg-sectionX-alt">
   <div class="container">
-    <div class="sdg-aboutX about-initiatives-only">
 
-      <div class="sdg-aboutX-content uob-reveal right">
-        <h2><?= h(tt('about_title')) ?></h2>
-        <div class="sdg-lineX center"></div>
-        <p><?= h(tt('about_desc')) ?></p>
-      </div>
+    <div style="
+      width:100% !important;
+      max-width:900px !important;
+      margin:0 auto !important;
+      text-align:center !important;
+      display:block !important;
+      direction:rtl !important;
+    ">
 
-    </div>
+     
+
   </div>
 </section>
-
-<section class="sdg-sectionX">
-  <div class="container">
+<section class="sdg-sectionX latest-section-bg">
+    <div class="container">
     <div class="sdg-centerX">
       <h2><?= h(tt('latest_initiatives')) ?></h2>
-      <div class="sdg-lineX center"></div>
+      <div class="sdg-lineX center" style="background:#b89a68 !important;"></div>
     </div>
 
-    <div class="sdg-servicesX">
+    <div class="latest-clean-slider">
       <?php foreach ($latest as $index => $it): ?>
         <?php
           $title = trim((string)($it['title'] ?? ''));
           $unitVal = trim((string)($it['entity'] ?? ''));
           $typeVal = trim((string)($it['type'] ?? ''));
-          $sdgVal = trim((string)(
-         ($it['sdg_primary'] ?? '') . ' | ' . ($it['sdg_secondary'] ?? '')));
           $dateVal = trim((string)($it['start_date'] ?? ''));
           $id = trim((string)($it['id'] ?? ''));
-          $img = $latestImages[$index] ?? $latestImages[0];
         ?>
-        <a class="sdg-serviceX uob-reveal" href="initiative-details.php?id=<?= urlencode($id) ?>&lang=<?= urlencode($lang) ?>">
-          <img src="<?= h($img) ?>" alt="<?= h(tt('initiative_image_alt')) ?>">
-          <div class="body">
+
+        <a class="latest-clean-slide <?= $index === 0 ? 'active' : '' ?>"
+           href="initiative-details.php?id=<?= urlencode($id) ?>&lang=<?= urlencode($lang) ?>">
+
+          <div class="latest-clean-image">
+            <?= $isArabic ? 'الصورة غير متوفرة' : 'Image not available' ?>
+          </div>
+
+          <div class="latest-clean-content">
+            <span><?= $isArabic ? 'مبادرة' : 'Initiative' ?></span>
             <h3><?= h($title ?: '—') ?></h3>
-            <p style="margin-top:10px;">
+            <p>
               <b><?= h(tt('unit_label')) ?>:</b> <?= h($unitVal ?: '—') ?><br>
               <b><?= h(tt('type_label')) ?>:</b> <?= h($typeVal ?: '—') ?><br>
-              <b><?= h(tt('sdg_label')) ?>:</b> <?= h($sdgVal ?: '—') ?><br>
               <b><?= h(tt('date_label')) ?>:</b> <?= h($dateVal ?: '—') ?>
             </p>
           </div>
+
         </a>
       <?php endforeach; ?>
     </div>
@@ -1208,6 +1484,39 @@ $gallerySlides = array_map(function($file){
 
   applyFilters();
 })();
+</script>
+<script>
+(function(){
+  const slides = document.querySelectorAll('.latest-clean-slide');
+  if (slides.length < 2) return;
+
+  let i = 0;
+  setInterval(() => {
+    slides[i].classList.remove('active');
+    i = (i + 1) % slides.length;
+    slides[i].classList.add('active');
+  }, 5000);
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.counter').forEach(function(counter){
+    const target = parseInt(counter.dataset.target || '0', 10);
+    let current = 0;
+    const step = Math.max(1, Math.ceil(target / 45));
+
+    const timer = setInterval(function(){
+      current += step;
+
+      if(current >= target){
+        counter.textContent = target;
+        clearInterval(timer);
+      }else{
+        counter.textContent = current;
+      }
+    }, 25);
+  });
+});
 </script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

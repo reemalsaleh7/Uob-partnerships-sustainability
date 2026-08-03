@@ -6,6 +6,52 @@
     const empty = document.getElementById('lifecycle-empty');
     const rows = document.querySelector('[data-request-rows]');
     const count = document.querySelector('[data-request-count]');
+    const filters = {
+        search: document.getElementById('lifecycle-search'),
+        status: document.getElementById('lifecycle-status'),
+        type: document.getElementById('lifecycle-type'),
+        updatedFrom: document.getElementById('lifecycle-updated-from'),
+        updatedTo: document.getElementById('lifecycle-updated-to'),
+        clear: document.querySelector('[data-clear-lifecycle-filters]')
+    };
+    let requests = [];
+
+    const searchSchema = {
+        any: (request) => [
+            request.lifecycle_request_id,
+            request.request_type,
+            request.status,
+            request.agreement_id,
+            request.agreement_code,
+            request.agreement_title,
+            request.requester_name,
+            request.justification,
+            request.activities_summary,
+            request.achieved_value,
+            request.amendment_type,
+            request.amendment_reason,
+            request.terms_to_amend,
+            request.termination_reason,
+            request.proposed_start_date,
+            request.proposed_end_date,
+            request.proposed_termination_date,
+            request.updated_at
+        ],
+        id: 'lifecycle_request_id',
+        request: 'lifecycle_request_id',
+        agreement: (request) => [request.agreement_id, request.agreement_title],
+        code: 'agreement_code',
+        type: 'request_type',
+        status: 'status',
+        requester: (request) => [request.requested_by, request.requester_name],
+        start: 'proposed_start_date',
+        end: 'proposed_end_date',
+        termination: (request) => [
+            request.termination_reason,
+            request.proposed_termination_date
+        ],
+        updated: 'updated_at'
+    };
 
     function cell(value) {
         const td = document.createElement('td');
@@ -13,16 +59,45 @@
         return td;
     }
 
-    async function initialize() {
-        try {
-            await AgreementApi.requireSession('VIEW_AGREEMENT');
-            const requests = await AgreementApi.lifecycleRequests();
-            loading.classList.add('d-none');
-            empty.classList.toggle('d-none', requests.length !== 0);
-            list.classList.toggle('d-none', requests.length === 0);
-            count.textContent = requests.length === 1 ? '1 request' : `${requests.length} requests`;
-            rows.replaceChildren();
-            requests.forEach((request) => {
+    function option(select, value) {
+        const item = document.createElement('option');
+        item.value = value;
+        item.textContent = String(value).replaceAll('_', ' ');
+        select.append(item);
+    }
+
+    function loadFilterOptions() {
+        [...new Set(requests.map((request) => request.status).filter(Boolean))]
+            .sort().forEach((value) => option(filters.status, value));
+        [...new Set(requests.map((request) => request.request_type).filter(Boolean))]
+            .sort().forEach((value) => option(filters.type, value));
+    }
+
+    function filteredRequests() {
+        return requests.filter((request) =>
+            (!filters.status.value || request.status === filters.status.value)
+            && (!filters.type.value || request.request_type === filters.type.value)
+            && UobAdvancedSearch.inDateRange(
+                request.updated_at,
+                filters.updatedFrom.value,
+                filters.updatedTo.value
+            )
+            && UobAdvancedSearch.matches(
+                request,
+                filters.search.value.trim(),
+                searchSchema
+            )
+        );
+    }
+
+    function render() {
+        const visible = filteredRequests();
+        loading.classList.add('d-none');
+        empty.classList.toggle('d-none', visible.length !== 0);
+        list.classList.toggle('d-none', requests.length === 0);
+        count.textContent = `${visible.length} of ${requests.length} ${requests.length === 1 ? 'request' : 'requests'}`;
+        rows.replaceChildren();
+        visible.forEach((request) => {
                 const tr = document.createElement('tr');
                 tr.append(
                     cell(`${String(request.request_type).replaceAll('_', ' ')} #${request.lifecycle_request_id}`),
@@ -40,7 +115,31 @@
                 action.append(link);
                 tr.append(action);
                 rows.append(tr);
-            });
+        });
+    }
+
+    function setFiltersEnabled(enabled) {
+        Object.values(filters).forEach((element) => {
+            element.disabled = !enabled;
+        });
+    }
+
+    function clearFilters() {
+        filters.search.value = '';
+        filters.status.value = '';
+        filters.type.value = '';
+        filters.updatedFrom.value = '';
+        filters.updatedTo.value = '';
+        render();
+    }
+
+    async function initialize() {
+        try {
+            await AgreementApi.requireSession('VIEW_AGREEMENT');
+            requests = await AgreementApi.lifecycleRequests();
+            loadFilterOptions();
+            setFiltersEnabled(true);
+            render();
         } catch (error) {
             loading.classList.add('d-none');
             alert.textContent = error.message || 'Lifecycle requests could not be loaded.';
@@ -48,5 +147,13 @@
             alert.focus();
         }
     }
+
+    filters.search.addEventListener('input', render);
+    filters.status.addEventListener('change', render);
+    filters.type.addEventListener('change', render);
+    filters.updatedFrom.addEventListener('change', render);
+    filters.updatedTo.addEventListener('change', render);
+    filters.clear.addEventListener('click', clearFilters);
+
     initialize();
 })();

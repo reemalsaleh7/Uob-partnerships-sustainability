@@ -24,6 +24,7 @@ VALUES
     ('MANAGE_AGREEMENT_REPORTS', 'Manage Agreement performance reports', 'Prepare and submit owned Agreement reports'),
     ('REVIEW_AGREEMENT_REPORTS', 'Review Agreement performance reports', 'Accept or return submitted Agreement reports'),
     ('VIEW_AGREEMENT_DASHBOARD', 'View Agreement performance dashboard', 'View aggregate Agreement performance data'),
+    ('ADMIN_CORRECT_LEGACY_AGREEMENT', 'Administratively correct a legacy Agreement', 'Correct inaccurate imported data while preserving Agreement versions, provenance, and audit history'),
     ('CREATE_INITIATIVE', 'Create Initiative', 'Create Initiative drafts'),
     ('EDIT_INITIATIVE', 'Edit Initiative', 'Edit eligible Initiative drafts'),
     ('APPROVE_INITIATIVE', 'Approve Initiative', 'Approve assigned Initiative workflow steps'),

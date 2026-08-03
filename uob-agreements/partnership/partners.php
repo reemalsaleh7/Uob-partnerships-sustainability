@@ -1,37 +1,71 @@
 <?php
+$embeddedMap = isset($_GET['embed']) && $_GET['embed'] === '1';
+
 $pageTitle = "خريطة الاتفاقيات";
 $hidePageHeader = true;
 $mainContainer = false;
 
-$extraCss = ['partnership/styles.css'];
-$extraHead = '
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-';
+if (!$embeddedMap) {
+  $extraCss = ['partnership/styles.css'];
+  $extraHead = '
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  ';
 
-require_once __DIR__ . '/../header.php';
+  require_once __DIR__ . '/../header.php';
+}
 
 $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');
 $isRtl = ($lang === 'ar');
 
-function ph($value){
-  return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+if (!function_exists('ph')) {
+  function ph($value){
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+  }
 }
 
 $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
 ?>
-<div class="partnership-page-wrapper">
-  <section class="partnership-hero">
-  <div class="partnership-hero-inner">
-    <div class="partnership-hero-content">
-      <h1><?= ph($mapLabel) ?></h1>
-      <p>
-        <?= $isRtl
-          ? 'استعرض شبكة اتفاقيات جامعة البحرين حسب الدول والجهات الشريكة.'
-          : 'Explore University of Bahrain partnership agreements by country and partner institution.'
-        ?>
-      </p>
+<?php if ($embeddedMap): ?>
+<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  body {
+    margin: 0 !important;
+    background: #ffffff !important;
+    font-family: "Cairo", system-ui, Arial, sans-serif !important;
+  }
+
+  .partnership-hero {
+    display: none !important;
+  }
+
+  .partnership-page-wrapper {
+    background: #ffffff !important;
+    padding-top: 0 !important;
+  }
+</style>
+<?php endif; ?>
+<div class="partnership-page-wrapper" style="background:#ffffff !important;">
+
+  <section class="partnership-hero"
+    style="background:#ffffff !important; background-image:none !important; min-height:330px !important; padding:70px 0 45px !important;">
+
+    <div class="partnership-hero-inner"
+      style="background:#ffffff !important; background-image:none !important;">
+
+      <div class="partnership-hero-content"
+        style="text-align:center !important; margin:0 auto !important;">
+
+        <h1 style="color:#1a1a1a !important;">
+          <?= ph($mapLabel) ?>
+        </h1>
+
+        <p style="color:#b8860b !important;">
     </div>
   </div>
 </section>
@@ -173,18 +207,6 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                 label: 'Implementing Unit',
                 field: 'Implementing Unit',
             },
-            {
-                id: 'qsRanking',
-                label: 'Supports QS Ranking',
-                field: 'Supports QS Ranking',
-                type: 'boolean',
-            },
-            {
-                id: 'greenMetric',
-                label: 'Supports UI GreenMetric',
-                field: 'Supports UI GreenMetric',
-                type: 'boolean',
-            }
         ];
 
         // Initialize advanced filters
@@ -707,8 +729,7 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
         }
 
         // Fetch data from local file inside this folder (no Node.js server needed)
-        const apiUrl = 'agreements-api.php';
-
+const apiUrl = 'agreements-api.php';
         fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
@@ -737,13 +758,12 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                     sdgs: parseSDGs(agreement),
                     metrics: {
                         studentsExchanged: String(agreement["Students Exchanged"] || '0'),
+                        trainedStudents: String(agreement["Trained Students"] || '0'),
                         facultyExchanged: String(agreement["Faculty Exchanged"] || '0'),
                         jointPrograms: String(agreement["Joint Programs"] || '0')
                     },
-                    supportsQS: agreement["Supports QS Ranking"] || 'No',
-                    supportsGreenMetric: agreement["Supports UI GreenMetric"] || 'No',
                     website: agreement["Partner Website"] || '',
-                    agreementSigningLink: agreement["Agreement Signing Link"] || '',
+                    status: String(agreement["Status"] || '').toUpperCase(),
                     lat: parseFloat(agreement["Latitude"]) || 0,
                     lng: parseFloat(agreement["Longitude"]) || 0,
                     // Store raw fields for advanced filtering
@@ -751,18 +771,7 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                     "SDGs": agreement["SDGs"],
                     "Partner Type": agreement["Partner Type"],
                     "Implementing Unit": agreement["Implementing Unit"],
-                    "Supports QS Ranking": agreement["Supports QS Ranking"],
-                    "Supports UI GreenMetric": agreement["Supports UI GreenMetric"],
-                    "Status": (() => {
-                        const endDate = convertExcelDate(agreement["End Date"]);
-                        if (!endDate || endDate === 'Not specified') return '';
-                        const parts = endDate.split('/');
-                        if (parts.length !== 3) return '';
-                        const parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                        if (isNaN(parsed)) return '';
-                        const today = new Date(); today.setHours(0, 0, 0, 0);
-                        return parsed >= today ? 'Active' : 'Expired';
-                    })()
+                    "Status": agreement["Status"] || ''
                 }));
 
                 // Pre-build color map from all unique types
@@ -794,14 +803,15 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                 }
             });
 
-        function getAgreementStatus(endDate) {
+        function getAgreementStatus(endDate, publishedStatus = '') {
+            if (publishedStatus === 'ACTIVE') return 'active';
+            if (publishedStatus === 'EXPIRED') return 'expired';
             if (!endDate || endDate === 'Not specified') return null;
 
-            // Parse dd/mm/yyyy
             const parts = endDate.split('/');
-            if (parts.length !== 3) return null;
-
-            const parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            const parsed = parts.length === 3
+                ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+                : new Date(endDate);
             if (isNaN(parsed)) return null;
 
             const today = new Date();
@@ -1120,7 +1130,7 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
                                         <div class="partnership-name" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                                             <span>${p.name}</span>
                                             ${(() => {
-                                                const status = getAgreementStatus(p.endDate);
+                                                const status = getAgreementStatus(p.endDate, p.status);
                                                 if (status === 'active') return '<span style="font-size:0.72rem; font-weight:700; background:#d1fae5; color:#065f46; border-radius:20px; padding:2px 8px; white-space:nowrap;">Active</span>';
                                                 if (status === 'expired') return '<span style="font-size:0.72rem; font-weight:700; background:#fee2e2; color:#991b1b; border-radius:20px; padding:2px 8px; white-space:nowrap;">Expired</span>';
                                                 return '';
@@ -1659,4 +1669,4 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
     <script src="script.js"></script>
   </main>
   </div>
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php if (!$embeddedMap) require_once __DIR__ . '/../footer.php'; ?>

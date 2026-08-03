@@ -7,22 +7,88 @@
         empty: document.querySelector('[data-report-list-empty]'),
         table: document.querySelector('[data-report-list-table]'),
         body: document.querySelector('[data-report-list-body]'),
-        filter: document.querySelector('[data-report-status-filter]'),
+        search: document.querySelector('[data-report-search]'),
+        status: document.querySelector('[data-report-status-filter]'),
+        year: document.querySelector('[data-report-year-filter]'),
+        dueFrom: document.querySelector('[data-report-due-from]'),
+        dueTo: document.querySelector('[data-report-due-to]'),
+        clear: document.querySelector('[data-clear-report-filters]'),
+        count: document.querySelector('[data-report-result-count]'),
         dashboard: document.querySelector('[data-dashboard-link]')
     };
     let reports = [];
+
+    const searchSchema = {
+        any: (report) => [
+            report.performance_report_id,
+            report.agreement_id,
+            report.agreement_title,
+            report.agreement_code,
+            report.status,
+            report.period_start,
+            report.period_end,
+            report.reporting_year,
+            report.due_date,
+            report.creator_name,
+            report.reviewer_name,
+            report.executive_summary,
+            report.challenges,
+            report.next_period_plan,
+            report.updated_at,
+            isOverdue(report) ? 'overdue' : ''
+        ],
+        id: 'performance_report_id',
+        report: 'performance_report_id',
+        agreement: (report) => [report.agreement_id, report.agreement_title],
+        code: 'agreement_code',
+        status: 'status',
+        creator: (report) => [report.created_by, report.creator_name],
+        reviewer: (report) => [report.reviewed_by, report.reviewer_name],
+        year: (report) => [report.reporting_year, String(report.period_end || '').slice(0, 4)],
+        start: 'period_start',
+        end: 'period_end',
+        due: 'due_date',
+        updated: 'updated_at',
+        overdue: (report) => isOverdue(report) ? 'yes true overdue' : 'no false'
+    };
+
+    function isOverdue(report) {
+        return report.is_overdue === true
+            || report.is_overdue === 1
+            || report.is_overdue === '1'
+            || report.is_overdue === 't'
+            || report.is_overdue === 'true';
+    }
 
     function period(report) {
         return `${report.period_start} – ${report.period_end}`;
     }
 
     function render() {
-        const selected = elements.filter.value;
+        const selected = elements.status.value;
         const filtered = reports.filter((report) => {
-            if (!selected) return true;
-            if (selected === 'OVERDUE') return report.is_overdue === true;
-            return report.status === selected;
+            const statusMatches = !selected
+                || (selected === 'OVERDUE'
+                    ? isOverdue(report)
+                    : report.status === selected);
+            const reportYear = String(
+                report.reporting_year || report.period_end || ''
+            ).slice(0, 4);
+
+            return statusMatches
+                && (!elements.year.value || reportYear === elements.year.value)
+                && UobAdvancedSearch.inDateRange(
+                    report.due_date,
+                    elements.dueFrom.value,
+                    elements.dueTo.value
+                )
+                && UobAdvancedSearch.matches(
+                    report,
+                    elements.search.value.trim(),
+                    searchSchema
+                );
         });
+        elements.count.textContent = `${filtered.length} of ${reports.length} ${reports.length === 1 ? 'report' : 'reports'}`;
         elements.body.replaceChildren();
         filtered.forEach((report) => {
             const row = document.createElement('tr');
@@ -42,7 +108,7 @@
             periodCell.textContent = period(report);
             const deadline = document.createElement('td');
             deadline.textContent = report.due_date;
-            if (report.is_overdue === true) {
+            if (isOverdue(report)) {
                 const overdue = document.createElement('span');
                 overdue.className = 'd-block small text-danger fw-semibold mt-1';
                 overdue.textContent = 'Overdue';
@@ -65,7 +131,46 @@
         elements.table.classList.toggle('d-none', filtered.length === 0);
     }
 
-    elements.filter.addEventListener('change', render);
+    function loadYears() {
+        const years = [...new Set(reports.map((report) =>
+            String(report.reporting_year || report.period_end || '').slice(0, 4)
+        ).filter((year) => /^\d{4}$/.test(year)))].sort().reverse();
+        years.forEach((year) => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            elements.year.append(option);
+        });
+    }
+
+    function setFiltersEnabled(enabled) {
+        [
+            elements.search,
+            elements.status,
+            elements.year,
+            elements.dueFrom,
+            elements.dueTo,
+            elements.clear
+        ].forEach((element) => {
+            element.disabled = !enabled;
+        });
+    }
+
+    function clearFilters() {
+        elements.search.value = '';
+        elements.status.value = '';
+        elements.year.value = '';
+        elements.dueFrom.value = '';
+        elements.dueTo.value = '';
+        render();
+    }
+
+    elements.search.addEventListener('input', render);
+    elements.status.addEventListener('change', render);
+    elements.year.addEventListener('change', render);
+    elements.dueFrom.addEventListener('change', render);
+    elements.dueTo.addEventListener('change', render);
+    elements.clear.addEventListener('click', clearFilters);
 
     (async function initialize() {
         try {
@@ -77,6 +182,8 @@
             const payload = await AgreementApi.performanceReports();
             reports = payload.reports || [];
             elements.dashboard.classList.toggle('d-none', payload.can_view_dashboard !== true);
+            loadYears();
+            setFiltersEnabled(true);
             render();
         } catch (error) {
             elements.loading.classList.add('d-none');

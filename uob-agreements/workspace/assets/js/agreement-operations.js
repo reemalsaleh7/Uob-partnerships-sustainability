@@ -251,7 +251,7 @@
     elements.form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (state.busy || !elements.form.reportValidity()) return;
-        if (!window.confirm('Finalize this signing record? It cannot be edited or removed afterward.')) return;
+        if (!await WorkspaceDialog.confirm('Finalize this signing record? It cannot be edited or removed afterward.', { confirmLabel: 'Finalize signing record' })) return;
         clearMessages();
         setBusy(true);
         try {

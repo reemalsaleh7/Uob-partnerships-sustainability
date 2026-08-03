@@ -26,7 +26,9 @@ foreach ($basePaths as $basePath) {
 
 $uri = '/' . ltrim($uri, '/');
 
-if ($method === 'GET' && $uri === '/agreements') {
+if ($method === 'POST' && $uri === '/agreement-document-extraction') {
+    $controller->extractDocumentClauses();
+} elseif ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {
     $controller->annotations((int) $matches[1]);
@@ -52,6 +54,8 @@ if ($method === 'GET' && $uri === '/agreements') {
     $controller->create();
 } elseif ($method === 'PUT' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
     $controller->update((int) $matches[1]);
+} elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/administrative-corrections$#', $uri, $matches)) {
+    $controller->administrativelyCorrect((int) $matches[1]);
 } elseif ($method === 'DELETE' && preg_match('#^/agreements/([0-9]+)$#', $uri, $matches)) {
     $controller->delete((int) $matches[1]);
 } elseif ($method === 'POST' && preg_match('#^/agreements/([0-9]+)/submit$#', $uri, $matches)) {

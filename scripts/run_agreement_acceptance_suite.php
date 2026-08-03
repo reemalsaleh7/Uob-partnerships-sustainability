@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $quick = in_array('--quick', $argv, true);
 $tests = [
+    'DatabaseManagerSmokeTest.php',
     'ApiBoundarySmokeTest.php',
     'AuthenticationHardeningSmokeTest.php',
     'AgreementReleaseReadinessSmokeTest.php',
@@ -18,6 +19,8 @@ $tests = [
     'AgreementOperationalStatusSmokeTest.php',
     'AgreementPerformanceMonitoringSmokeTest.php',
     'AgreementAnnotationSmokeTest.php',
+    'AgreementAdministrativeCorrectionSmokeTest.php',
+    'PortalAdvancedSearchSmokeTest.php',
 ];
 
 if (!$quick) {

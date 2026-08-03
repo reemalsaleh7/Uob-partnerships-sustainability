@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/AgreementService.php';
 require_once __DIR__ . '/../services/AgreementAnnotationService.php';
+require_once __DIR__ . '/../services/AgreementClauseExtractionService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
@@ -54,6 +55,32 @@ class AgreementController {
         Response::success($timeline);
     }
 
+    public function extractDocumentClauses(): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+            'ADMIN_CORRECT_LEGACY_AGREEMENT',
+        ]);
+
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            Response::error(
+                'Choose a governance / MOU clauses DOCX file to extract',
+                422
+            );
+        }
+
+        try {
+            $extractor = new AgreementClauseExtractionService();
+            Response::success($extractor->extract($_FILES['file']));
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
+    }
+
     public function create(): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('CREATE_AGREEMENT');
@@ -85,6 +112,32 @@ class AgreementController {
         }
 
         Response::success(['message' => 'Agreement updated']);
+    }
+
+    public function administrativelyCorrect(int $agreementId): void {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('ADMIN_CORRECT_LEGACY_AGREEMENT');
+
+        $input = ApiRequest::json();
+        $data = $this->agreementInput($input);
+        $data['correction_reason'] = $input['correction_reason'] ?? null;
+
+        try {
+            $result = $this->agreementService
+                ->administrativelyCorrectLegacyAgreement(
+                    $agreementId,
+                    $data,
+                    $this->userId()
+                );
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (OutOfBoundsException $exception) {
+            Response::error($exception->getMessage(), 404);
+        } catch (DomainException $exception) {
+            Response::error($exception->getMessage(), 403);
+        }
+
+        Response::success($result);
     }
 
     public function annotations(int $agreementId): void

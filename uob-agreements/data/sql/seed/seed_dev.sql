@@ -76,28 +76,111 @@ FROM (VALUES
     ('Leadership', 'Department Head', 'Department head', TRUE),
     ('Academic', 'Faculty Member', 'Faculty agreement creator', FALSE),
     ('Administrative', 'Legal Reviewer', 'Legal Office agreement reviewer', FALSE),
-('Administrative', 'Finance Reviewer', 'Financial Office agreement reviewer', FALSE)
+    ('Administrative', 'Finance Reviewer', 'Financial Office agreement reviewer', FALSE)
 ) AS v(type_name, name, description, is_unique)
 JOIN position_types pt ON pt.name = v.type_name
 ON CONFLICT (name) DO UPDATE
 SET position_type_id = EXCLUDED.position_type_id, description = EXCLUDED.description, is_unique = EXCLUDED.is_unique;
 
-INSERT INTO users (university_id, first_name, last_name, email, password_hash, is_active)
+-- Reconcile development identities by either unique key. Older installations
+-- sometimes have the expected DEV university_id under an obsolete email, so
+-- an email-only upsert is not safe or rerunnable.
+CREATE TEMP TABLE uob_dev_users (
+    university_id VARCHAR(30) PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL
+) ON COMMIT DROP;
+
+INSERT INTO uob_dev_users (
+    university_id, first_name, last_name, email, password_hash
+)
 VALUES
-    ('DEV-ADMIN-001', 'Dev', 'Administrator', 'dev.admin@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-PRES-001', 'Dev', 'President', 'dev.president@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-VP-001', 'Dev', 'VicePresident', 'dev.vp@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-DEAN-001', 'Dev', 'Dean', 'dev.dean@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-HEAD-001', 'Dev', 'DepartmentHead', 'dev.head@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-    ('DEV-LEGAL-001', 'Dev', 'LegalReviewer', 'dev.legal@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE),
-('DEV-FIN-001', 'Dev', 'FinanceReviewer', 'dev.finance@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66', TRUE)
-ON CONFLICT (email) DO UPDATE
-SET university_id = EXCLUDED.university_id, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
-    password_hash = EXCLUDED.password_hash, is_active = TRUE;
+    ('DEV-ADMIN-001', 'Dev', 'Administrator', 'dev.admin@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-PRES-001', 'Dev', 'President', 'dev.president@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-VP-001', 'Dev', 'VicePresident', 'dev.vp@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-DEAN-001', 'Dev', 'Dean', 'dev.dean@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-HEAD-001', 'Dev', 'DepartmentHead', 'dev.head@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-FAC-001', 'Dev', 'Faculty', 'dev.faculty@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-LEGAL-001', 'Dev', 'LegalReviewer', 'dev.legal@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66'),
+    ('DEV-FIN-001', 'Dev', 'FinanceReviewer', 'dev.finance@uob.test', '$2y$10$xbIlZ2LKFvYRQc7rW4GFgeyA2feEPxPTT9WlPwC//YI/8u3k.QX66');
+
+-- Stop rather than merge or delete accounts if the two unique identifiers
+-- point to different rows. That requires a deliberate data-repair decision.
+DO $$
+DECLARE
+    conflicting_ids TEXT;
+BEGIN
+    SELECT string_agg(d.university_id, ', ' ORDER BY d.university_id)
+    INTO conflicting_ids
+    FROM uob_dev_users d
+    JOIN users by_id
+      ON by_id.university_id = d.university_id
+    JOIN users by_email
+      ON by_email.email = d.email
+    WHERE by_id.user_id <> by_email.user_id;
+
+    IF conflicting_ids IS NOT NULL THEN
+        RAISE EXCEPTION
+            'Development identity collision for: %. The university ID and email belong to different user rows; no accounts were changed.',
+            conflicting_ids;
+    END IF;
+END
+$$;
+
+UPDATE users u
+SET
+    university_id = d.university_id,
+    first_name = d.first_name,
+    last_name = d.last_name,
+    email = d.email,
+    password_hash = d.password_hash,
+    is_active = TRUE
+FROM uob_dev_users d
+WHERE u.university_id = d.university_id
+   OR u.email = d.email;
+
+INSERT INTO users (
+    university_id, first_name, last_name, email, password_hash, is_active
+)
+SELECT
+    d.university_id,
+    d.first_name,
+    d.last_name,
+    d.email,
+    d.password_hash,
+    TRUE
+FROM uob_dev_users d
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM users u
+    WHERE u.university_id = d.university_id
+       OR u.email = d.email
+);
+
+DO $$
+BEGIN
+    IF (
+        SELECT count(*)
+        FROM uob_dev_users d
+        JOIN users u
+          ON u.university_id = d.university_id
+         AND u.email = d.email
+         AND u.is_active = TRUE
+    ) <> 8 THEN
+        RAISE EXCEPTION
+            'Development user reconciliation did not produce all eight expected active accounts.';
+    END IF;
+END
+$$;
 
 DELETE FROM user_roles
-WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE 'dev.%@uob.test');
+WHERE user_id IN (
+    SELECT u.user_id
+    FROM users u
+    JOIN uob_dev_users d ON d.university_id = u.university_id
+);
 
 INSERT INTO user_roles (user_id, role_id)
 SELECT
@@ -109,16 +192,20 @@ FROM (
 
         ('dev.president@uob.test', 'Agreement Creator'),
         ('dev.president@uob.test', 'Agreement Approver'),
+        ('dev.president@uob.test', 'Initiative Approver'),
 
         ('dev.vp@uob.test', 'Agreement Creator'),
         ('dev.vp@uob.test', 'Agreement Approver'),
+        ('dev.vp@uob.test', 'Initiative Approver'),
 
         ('dev.dean@uob.test', 'Agreement Creator'),
+        ('dev.dean@uob.test', 'Initiative Approver'),
 
         ('dev.legal@uob.test', 'Agreement Approver'),
         ('dev.finance@uob.test', 'Agreement Approver'),
 
         ('dev.head@uob.test', 'Initiative Creator'),
+        ('dev.head@uob.test', 'Initiative Approver'),
         ('dev.faculty@uob.test', 'Initiative Creator')
 ) AS assignments(email, role_name)
 JOIN users u
@@ -186,12 +273,22 @@ SELECT r.role_id, p.permission_id FROM roles r JOIN permissions p
 WHERE r.role_name = 'Initiative Creator'
 ON CONFLICT DO NOTHING;
 
-DELETE FROM user_positions
-WHERE user_id IN (SELECT user_id FROM users WHERE email LIKE 'dev.%@uob.test');
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.role_id, p.permission_id FROM roles r JOIN permissions p
+  ON p.permission_code IN (
+      'APPROVE_INITIATIVE', 'REJECT_INITIATIVE', 'VIEW_REPORTS'
+  )
+WHERE r.role_name = 'Initiative Approver'
+ON CONFLICT DO NOTHING;
 
-INSERT INTO user_positions (user_id, position_id, unit_id, start_date, is_active)
-SELECT u.user_id, p.position_id, ou.unit_id, CURRENT_DATE, TRUE
-FROM (VALUES
+CREATE TEMP TABLE uob_dev_positions (
+    email VARCHAR(255) PRIMARY KEY,
+    position_name VARCHAR(255) NOT NULL,
+    unit_code VARCHAR(50) NOT NULL
+) ON COMMIT DROP;
+
+INSERT INTO uob_dev_positions (email, position_name, unit_code)
+VALUES
     ('dev.admin@uob.test', 'System Administrator', 'UOB'),
     ('dev.president@uob.test', 'President', 'PRES'),
     ('dev.vp@uob.test', 'Vice President', 'VP'),
@@ -199,26 +296,133 @@ FROM (VALUES
     ('dev.head@uob.test', 'Department Head', 'CS'),
     ('dev.faculty@uob.test', 'Faculty Member', 'CS'),
     ('dev.legal@uob.test', 'Legal Reviewer', 'LEGAL'),
-('dev.finance@uob.test', 'Finance Reviewer', 'FIN')
-) AS v(email, position_name, unit_code)
+    ('dev.finance@uob.test', 'Finance Reviewer', 'FIN');
+
+-- Preserve assignment history: close obsolete active development assignments
+-- instead of deleting them.
+UPDATE user_positions up
+SET
+    is_active = FALSE,
+    end_date = COALESCE(
+        up.end_date,
+        GREATEST(CURRENT_DATE, up.start_date)
+    )
+FROM users u
+JOIN uob_dev_users du ON du.university_id = u.university_id
+WHERE up.user_id = u.user_id
+  AND up.is_active = TRUE
+  AND NOT EXISTS (
+      SELECT 1
+      FROM uob_dev_positions expected
+      JOIN positions p ON p.name = expected.position_name
+      JOIN organizational_units ou ON ou.code = expected.unit_code
+      WHERE expected.email = u.email
+        AND p.position_id = up.position_id
+        AND ou.unit_id = up.unit_id
+  );
+
+-- A local fixture must own each unique workflow position. Close a conflicting
+-- active local assignment before adding the deterministic development actor.
+UPDATE user_positions up
+SET
+    is_active = FALSE,
+    end_date = COALESCE(
+        up.end_date,
+        GREATEST(CURRENT_DATE, up.start_date)
+    )
+FROM positions p,
+     organizational_units ou,
+     uob_dev_positions expected,
+     users target
+WHERE p.name = expected.position_name
+  AND ou.code = expected.unit_code
+  AND target.email = expected.email
+  AND p.is_unique = TRUE
+  AND up.position_id = p.position_id
+  AND up.unit_id = ou.unit_id
+  AND up.is_active = TRUE
+  AND up.user_id <> target.user_id;
+
+-- Older local seeds may have created duplicate non-unique assignments. Retain
+-- the newest active row and close the others before verification.
+WITH ranked_assignments AS (
+    SELECT
+        up.user_position_id,
+        row_number() OVER (
+            PARTITION BY up.user_id, up.position_id, up.unit_id
+            ORDER BY up.start_date DESC, up.user_position_id DESC
+        ) AS row_number
+    FROM user_positions up
+    JOIN users u ON u.user_id = up.user_id
+    JOIN uob_dev_users du ON du.university_id = u.university_id
+    WHERE up.is_active = TRUE
+)
+UPDATE user_positions up
+SET
+    is_active = FALSE,
+    end_date = COALESCE(
+        up.end_date,
+        GREATEST(CURRENT_DATE, up.start_date)
+    )
+FROM ranked_assignments ranked
+WHERE ranked.user_position_id = up.user_position_id
+  AND ranked.row_number > 1;
+
+INSERT INTO user_positions (user_id, position_id, unit_id, start_date, is_active)
+SELECT u.user_id, p.position_id, ou.unit_id, CURRENT_DATE, TRUE
+FROM uob_dev_positions v
 JOIN users u ON u.email = v.email
 JOIN positions p ON p.name = v.position_name
 JOIN organizational_units ou ON ou.code = v.unit_code
 WHERE NOT EXISTS (
     SELECT 1
     FROM user_positions existing
-    WHERE existing.position_id = p.position_id
+    WHERE existing.user_id = u.user_id
+      AND existing.position_id = p.position_id
       AND existing.unit_id = ou.unit_id
       AND existing.is_active = TRUE
-      AND p.is_unique = TRUE
 );
+
+DO $$
+BEGIN
+    IF (
+        SELECT count(*)
+        FROM uob_dev_positions expected
+        JOIN users u ON u.email = expected.email
+        JOIN positions p ON p.name = expected.position_name
+        JOIN organizational_units ou ON ou.code = expected.unit_code
+        JOIN user_positions up
+          ON up.user_id = u.user_id
+         AND up.position_id = p.position_id
+         AND up.unit_id = ou.unit_id
+         AND up.is_active = TRUE
+         AND (up.end_date IS NULL OR up.end_date >= CURRENT_DATE)
+    ) <> 8 THEN
+        RAISE EXCEPTION
+            'Development position reconciliation did not produce all eight expected active assignments.';
+    END IF;
+END
+$$;
+
+UPDATE partners p
+SET
+    partner_type = v.partner_type,
+    country = v.country,
+    email = v.email,
+    is_active = TRUE
+FROM (VALUES
+    ('Bahrain Institute of Technology', 'ACADEMIC', 'Bahrain', 'contact@bit.test'),
+    ('Gulf Research Centre', 'ACADEMIC', 'Bahrain', 'contact@grc.test'),
+    ('Future Skills Foundation', 'NON_PROFIT', 'Bahrain', 'contact@fsf.test')
+) AS v(organization_name, partner_type, country, email)
+WHERE p.organization_name = v.organization_name;
 
 INSERT INTO partners (organization_name, partner_type, country, email, is_active)
 SELECT v.organization_name, v.partner_type, v.country, v.email, TRUE
 FROM (VALUES
-    ('Bahrain Institute of Technology', 'University', 'Bahrain', 'contact@bit.test'),
-    ('Gulf Research Centre', 'Research Center', 'Bahrain', 'contact@grc.test'),
-    ('Future Skills Foundation', 'Nonprofit', 'Bahrain', 'contact@fsf.test')
+    ('Bahrain Institute of Technology', 'ACADEMIC', 'Bahrain', 'contact@bit.test'),
+    ('Gulf Research Centre', 'ACADEMIC', 'Bahrain', 'contact@grc.test'),
+    ('Future Skills Foundation', 'NON_PROFIT', 'Bahrain', 'contact@fsf.test')
 ) AS v(organization_name, partner_type, country, email)
 WHERE NOT EXISTS (SELECT 1 FROM partners p WHERE p.organization_name = v.organization_name);
 
