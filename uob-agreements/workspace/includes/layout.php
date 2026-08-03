@@ -65,8 +65,7 @@ function workspaceHeader(
         rel="stylesheet"
     >
 {$extraStyles}
-    <link href="assets/css/workspace.css?v=20260802-agreement-detail-v2" rel="stylesheet">
-    <link href="assets/css/workspace.css?v=20260722-showcase-data" rel="stylesheet">
+    <link href="assets/css/workspace.css?v=20260803-unified-overview" rel="stylesheet">
     <link href="assets/css/workspace-sidebar-polish.css?v=20260802-phase14g" rel="stylesheet">
     <link href="assets/css/workspace-rtl.css?v=20260802-phase17b" rel="stylesheet">
 </head>

@@ -3236,3 +3236,296 @@ textarea.form-control {
         padding: 0.75rem;
     }
 }
+
+/* Unified Agreements and Initiatives overview */
+.dashboard-priority-heading {
+    margin-bottom: 0.8rem;
+}
+
+.dashboard-priority-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-priority-card.is-agreement {
+    background: linear-gradient(145deg, #ffffff, #f4f8ff);
+    border-color: #d4e2f4;
+    border-inline-start-color: #2f68a9;
+}
+
+.dashboard-priority-card.is-initiative {
+    background: linear-gradient(145deg, #ffffff, #f1fbf8);
+    border-color: #cde8df;
+    border-inline-start-color: #16806f;
+}
+
+.dashboard-priority-card.is-agreement > span {
+    color: #245992;
+}
+
+.dashboard-priority-card.is-initiative > span {
+    color: #11695d;
+}
+
+.dashboard-priority-card.is-danger {
+    border-inline-start-color: var(--workspace-danger);
+}
+
+.dashboard-priority-card.is-warning {
+    border-inline-start-color: var(--workspace-warning);
+}
+
+.dashboard-priority-card.is-clear {
+    border-inline-start-color: var(--workspace-success);
+}
+
+.dashboard-portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-portfolio-card {
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dce5ee;
+    border-radius: 1.2rem;
+    box-shadow: 0 0.55rem 1.8rem rgba(17, 38, 61, 0.06);
+}
+
+.dashboard-portfolio-card > header {
+    display: flex;
+    min-height: 9.25rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.35rem;
+    border-bottom: 1px solid #e7edf3;
+}
+
+.dashboard-portfolio-card.is-agreement > header {
+    background:
+        radial-gradient(20rem 9rem at 100% 0, rgba(47, 104, 169, 0.13), transparent 70%),
+        #f8fbff;
+}
+
+.dashboard-portfolio-card.is-initiative > header {
+    background:
+        radial-gradient(20rem 9rem at 100% 0, rgba(22, 128, 111, 0.14), transparent 70%),
+        #f6fcfa;
+}
+
+.dashboard-portfolio-card h3,
+.dashboard-portfolio-card p {
+    margin: 0;
+}
+
+.dashboard-portfolio-card h3 {
+    margin-top: 0.45rem;
+    color: var(--workspace-ink);
+    font-size: 1.2rem;
+    font-weight: 900;
+}
+
+.dashboard-portfolio-card p {
+    max-width: 27rem;
+    margin-top: 0.45rem;
+    color: var(--uob-muted);
+    font-size: 0.7rem;
+    line-height: 1.6;
+}
+
+.dashboard-portfolio-card > header > a {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.7rem;
+    color: var(--uob-blue);
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid #d9e4ef;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 850;
+    text-decoration: none;
+}
+
+.dashboard-portfolio-card.is-initiative > header > a {
+    color: #11695d;
+    border-color: #cce5dd;
+}
+
+.dashboard-module-label {
+    display: inline-flex;
+    padding: 0.28rem 0.55rem;
+    color: #245992;
+    background: #e7f0fb;
+    border-radius: 999px;
+    font-size: 0.61rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.is-initiative .dashboard-module-label {
+    color: #11695d;
+    background: #dff4ed;
+}
+
+.dashboard-module-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-module-metric {
+    min-width: 0;
+    padding: 1.15rem 1.25rem;
+}
+
+.dashboard-module-metric:nth-child(odd) {
+    border-inline-end: 1px solid #e8edf2;
+}
+
+.dashboard-module-metric:nth-child(-n + 2) {
+    border-bottom: 1px solid #e8edf2;
+}
+
+.dashboard-module-metric strong,
+.dashboard-module-metric span,
+.dashboard-module-metric small {
+    display: block;
+}
+
+.dashboard-module-metric strong {
+    color: var(--workspace-ink);
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.dashboard-module-metric span {
+    margin-top: 0.45rem;
+    color: var(--workspace-ink);
+    font-size: 0.7rem;
+    font-weight: 850;
+}
+
+.dashboard-module-metric small {
+    margin-top: 0.2rem;
+    color: var(--uob-muted);
+    font-size: 0.61rem;
+    line-height: 1.45;
+}
+
+.dashboard-module-metric.is-success strong {
+    color: var(--workspace-success);
+}
+
+.dashboard-module-metric.is-warning strong {
+    color: var(--workspace-warning);
+}
+
+.dashboard-module-loading {
+    grid-column: 1 / -1;
+    padding: 3.7rem 1.25rem;
+    color: var(--uob-muted);
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+.dashboard-action.is-agreement {
+    background: linear-gradient(145deg, #fff, #f7faff);
+    border-color: #d8e4f1;
+}
+
+.dashboard-action.is-initiative {
+    background: linear-gradient(145deg, #fff, #f4fbf9);
+    border-color: #d3e8e2;
+}
+
+.dashboard-action.is-initiative:hover,
+.dashboard-action.is-initiative:focus,
+.dashboard-action.is-initiative span {
+    color: #11695d;
+}
+
+.dashboard-action.is-initiative:hover,
+.dashboard-action.is-initiative:focus {
+    border-color: rgba(22, 128, 111, 0.35);
+}
+
+.dashboard-work-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-work-card {
+    min-height: 20rem;
+    overflow: hidden;
+}
+
+.dashboard-list-item.is-agreement {
+    box-shadow: inset 0.18rem 0 #dce9f7;
+}
+
+.dashboard-list-item.is-initiative {
+    box-shadow: inset 0.18rem 0 #d7eee7;
+}
+
+.dashboard-guidance-card .form-section > ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+    padding: 0;
+    list-style: none;
+}
+
+.dashboard-guidance-card .form-section > ul > li {
+    margin: 0 !important;
+    padding: 0.85rem 0.95rem;
+    background: #f7f9fb;
+    border: 1px solid #e4eaf0;
+    border-radius: 0.8rem;
+}
+
+@media (max-width: 1199.98px) {
+    .dashboard-priority-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-portfolio-grid,
+    .dashboard-work-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-work-card {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-guidance-card .form-section > ul {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-priority-grid,
+    .dashboard-module-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-portfolio-card > header {
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    .dashboard-module-metric:nth-child(odd) {
+        border-inline-end: 0;
+    }
+
+    .dashboard-module-metric:nth-child(-n + 3) {
+        border-bottom: 1px solid #e8edf2;
+    }
+}

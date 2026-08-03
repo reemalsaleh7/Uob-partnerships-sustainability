@@ -20,6 +20,9 @@ function workspaceSource(string $relativePath): string
 $layout = workspaceSource('uob-agreements/workspace/includes/layout.php');
 $dashboard = workspaceSource('uob-agreements/workspace/index.php');
 $dashboardJs = workspaceSource('uob-agreements/workspace/assets/js/dashboard.js');
+$dashboardInitiatives = workspaceSource(
+    'uob-agreements/workspace/assets/js/dashboard-initiative-integration.js'
+);
 $agreementPage = workspaceSource('uob-agreements/workspace/agreement.php');
 $agreementJs = workspaceSource('uob-agreements/workspace/assets/js/agreement-detail.js');
 $agreementForm = workspaceSource('uob-agreements/workspace/agreement-form.php');
@@ -116,6 +119,31 @@ workspaceAssert(
     'Overview priority cards are missing the layout that separates labels, counts, and descriptions'
 );
 workspaceAssert(
+    str_contains($dashboard, 'data-agreement-portfolio')
+        && str_contains($dashboard, 'data-initiative-portfolio')
+        && str_contains($dashboard, 'data-agreement-metrics')
+        && str_contains($dashboard, 'data-initiative-metrics')
+        && str_contains($dashboard, 'data-initiative-work-list'),
+    'Overview does not present Agreements and Initiatives as equal work areas'
+);
+workspaceAssert(
+    str_contains($dashboardJs, "'Agreements and Initiatives, together in one workspace.'")
+        && str_contains($dashboardJs, 'renderAgreementMetrics')
+        && str_contains($dashboardInitiatives, 'renderMetrics')
+        && str_contains($dashboardInitiatives, "'/initiative-requests'")
+        && str_contains(
+            $dashboardInitiatives,
+            "'/initiative-requests/converted-initiatives'"
+        ),
+    'Overview does not load separate live Agreement and Initiative summaries'
+);
+workspaceAssert(
+    str_contains($workspaceStyles, '.dashboard-portfolio-grid')
+        && str_contains($workspaceStyles, '.dashboard-work-grid')
+        && str_contains($workspaceStyles, '.dashboard-action.is-initiative'),
+    'Unified Overview responsive module styling is missing'
+);
+workspaceAssert(
     str_contains($routes, '/workflow-timeline$#'),
     'Workflow timeline API route is missing'
 );
@@ -169,10 +197,11 @@ workspaceAssert(
 );
 workspaceAssert(
     str_contains($dashboard, 'data-dashboard-priorities')
-        && str_contains($dashboardJs, "priority('Act now'")
+        && str_contains($dashboardJs, 'renderAgreementPriorities')
+        && str_contains($dashboardInitiatives, 'renderPriorities')
         && str_contains($performanceDashboard, "'Reporting coverage'")
         && str_contains($performanceDashboard, 'deadlines'),
-    'Role priorities and performance insights are missing from the dashboards'
+    'Combined role priorities and performance insights are missing from the dashboards'
 );
 
 echo "Workspace experience smoke test passed.\n";

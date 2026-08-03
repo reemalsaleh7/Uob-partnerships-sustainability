@@ -1,49 +1,21 @@
 (function () {
     'use strict';
 
-    const actionContainer = document.querySelector(
-        '[data-dashboard-actions]'
-    );
-    const dashboardContent = document.querySelector(
-        '[data-dashboard-content]'
-    );
+    const elements = {
+        actions: document.querySelector('[data-dashboard-actions]'),
+        priorities: document.querySelector('[data-dashboard-priorities]'),
+        metrics: document.querySelector('[data-initiative-metrics]'),
+        workList: document.querySelector('[data-initiative-work-list]')
+    };
 
-    if (!actionContainer || !dashboardContent) {
+    if (!elements.actions || !elements.priorities || !elements.metrics) {
         return;
-    }
-
-    function action(title, description, href, label) {
-        const link = document.createElement('a');
-        link.className = 'dashboard-action';
-        link.href = href;
-
-        const heading = document.createElement('strong');
-        heading.textContent = title;
-        const text = document.createElement('small');
-        text.textContent = description;
-        const cta = document.createElement('span');
-        cta.textContent = `${label} →`;
-        link.append(heading, text, cta);
-        return link;
-    }
-
-    function kpi(value, label, detail) {
-        const card = document.createElement('div');
-        card.className = 'dashboard-kpi-card';
-        const number = document.createElement('strong');
-        number.textContent = String(value ?? 0);
-        const name = document.createElement('span');
-        name.textContent = label;
-        const context = document.createElement('small');
-        context.textContent = detail;
-        card.append(number, name, context);
-        return card;
     }
 
     function requestItems(payload) {
         return Array.isArray(payload)
             ? payload
-            : (payload?.items || []);
+            : (Array.isArray(payload?.items) ? payload.items : []);
     }
 
     function normalizedStatus(status) {
@@ -57,9 +29,13 @@
 
         const messages = {
             DRAFT: 'Draft — complete and submit it.',
+            UNDER_REVIEW: 'Moving through the Initiative approval route.',
+            RESUBMITTED: 'Resubmitted and moving through approval.',
             REVISION_REQUIRED: 'Changes requested — revise and resubmit.',
-            APPROVED: 'Approved — ready to convert.',
-            CONVERTING: 'Conversion draft in progress.',
+            APPROVED: item.can_convert
+                ? 'Approved — ready to convert to a final Initiative.'
+                : 'Approved Initiative request.',
+            CONVERTING: 'Final Initiative form is in progress.',
             CONVERTED: 'Converted to a final Initiative.',
             REJECTED: 'Request rejected.'
         };
@@ -68,223 +44,221 @@
             || 'Open the request to view its progress.';
     }
 
-    function buildRequestRow(item) {
-        const row = document.createElement('li');
-        row.className = 'dashboard-list-item';
+    function waitForOverview() {
+        if (window.UobOverview) {
+            return Promise.resolve(window.UobOverview);
+        }
 
-        const copy = document.createElement('div');
-        const title = document.createElement('strong');
-        title.textContent = item.title || item.request_code;
-        const detail = document.createElement('small');
-        detail.textContent = `${item.request_code || 'Initiative request'} · ${requestDetail(item)}`;
-        copy.append(title, detail);
-
-        const open = document.createElement('a');
-        open.className = 'btn btn-sm btn-outline-primary align-self-center';
-        open.href = `initiative-workflow.php?view=detail&id=${
-            encodeURIComponent(item.request_id)
-        }`;
-        open.textContent = String(item.status || 'Open')
-            .replaceAll('_', ' ');
-
-        row.append(copy, open);
-        row.addEventListener('click', (event) => {
-            if (event.target.closest('a, button')) {
-                return;
-            }
-            window.location.assign(open.href);
+        return new Promise((resolve) => {
+            document.addEventListener(
+                'uob:overview-ready',
+                (event) => resolve(event.detail),
+                { once: true }
+            );
         });
-        row.style.cursor = 'pointer';
-        return row;
     }
 
-    function integrateActions(user, access, unreadCount) {
-        const existing = Array.from(actionContainer.children);
-        const retained = existing.filter((card) => {
-            const title = card.querySelector('strong')?.textContent || '';
-            return ![
-                'Start an initiative',
-                'Initiative hub',
-                'My profile'
-            ].includes(title);
-        });
-
-        const integrated = [];
+    function initiativeActions(overview, access, unreadCount) {
+        const { action } = overview.helpers;
+        const cards = [];
 
         if (access.can_create_initiative) {
-            integrated.push(action(
+            cards.push(action(
                 'Start an Initiative request',
                 'Create a draft, add collaborators, and submit it through the University approval route.',
                 'initiative-workflow.php?view=form',
-                'Start request'
+                'Start request',
+                'initiative'
             ));
         }
 
-        integrated.push(action(
+        cards.push(action(
             'Initiative requests',
-            'Open requests you created, joined, review, or administer.',
-            'initiative-workflow.php',
-            'Open requests'
-        ));
-
-        integrated.push(action(
-            'Initiative notifications',
             unreadCount > 0
-                ? `${unreadCount} unread Initiative update${unreadCount === 1 ? '' : 's'}.`
-                : 'Approval assignments, revisions, decisions, and reminders.',
-            'initiative-workflow.php?view=notifications',
-            unreadCount > 0 ? `View ${unreadCount} unread` : 'Open notifications'
+                ? `${unreadCount} unread update${unreadCount === 1 ? '' : 's'} across requests you can access.`
+                : 'Open requests you created, joined, review, or administer.',
+            'initiative-workflow.php',
+            'Open requests',
+            'initiative'
         ));
-
-        integrated.push(action(
+        cards.push(action(
             'Final Initiatives',
-            'Open approved requests that were converted into final Initiative records.',
+            'Open approved requests converted into final Initiative records.',
             'initiative-portfolio.php',
-            'Open portfolio'
+            'Open portfolio',
+            'initiative'
         ));
 
-        retained.forEach((card) => {
-            if (integrated.length < 5) {
-                integrated.push(card);
-            }
-        });
+        if (!access.can_create_initiative && unreadCount > 0) {
+            cards.push(action(
+                'Initiative notifications',
+                `${unreadCount} unread Initiative update${unreadCount === 1 ? '' : 's'} needs attention.`,
+                'initiative-workflow.php?view=notifications',
+                'Open updates',
+                'initiative'
+            ));
+        }
 
-        integrated.push(action(
-            'My profile',
-            'Review your position, role, and system access.',
-            'profile.php',
-            'View profile'
-        ));
-
-        actionContainer.replaceChildren(...integrated.slice(0, 6));
+        return cards;
     }
 
-    function addInitiativeSection(
-        requests,
-        initiatives,
-        unreadCount
-    ) {
-        document.querySelector(
-            '[data-dashboard-initiative-section]'
-        )?.remove();
+    function renderActions(overview, access, unreadCount) {
+        const agreementCards = overview.baseActions.filter((card) =>
+            card.dataset.dashboardActionKey !== 'profile'
+        ).slice(0, 4);
+        const profile = overview.baseActions.find((card) =>
+            card.dataset.dashboardActionKey === 'profile'
+        );
+        const initiativeCards = initiativeActions(
+            overview,
+            access,
+            unreadCount
+        ).slice(0, Math.max(3, 7 - agreementCards.length));
+        const cards = [...agreementCards, ...initiativeCards];
 
-        const section = document.createElement('section');
-        section.dataset.dashboardInitiativeSection = 'true';
-        section.className = 'mt-5';
+        if (profile && cards.length < 8) {
+            cards.push(profile);
+        }
+        elements.actions.replaceChildren(...cards.slice(0, 8));
+    }
 
-        const heading = document.createElement('div');
-        heading.className = 'dashboard-section-title';
-        const copy = document.createElement('div');
-        const title = document.createElement('h2');
-        title.textContent = 'Initiative workflow';
-        const description = document.createElement('p');
-        description.textContent = 'Your requests, decisions, notifications, and converted Initiatives in one place.';
-        copy.append(title, description);
-        const all = document.createElement('a');
-        all.href = 'initiative-workflow.php';
-        all.textContent = 'View all requests';
-        heading.append(copy, all);
-
-        const underReview = requests.filter((item) =>
-            ['UNDER_REVIEW', 'RESUBMITTED'].includes(
-                normalizedStatus(item.status)
+    function renderMetrics(overview, summary) {
+        const { moduleMetric } = overview.helpers;
+        elements.metrics.replaceChildren(
+            moduleMetric(
+                summary.requests.length,
+                'Visible requests',
+                'Created, joined, reviewed, or administered by you'
+            ),
+            moduleMetric(
+                summary.underReview,
+                'Under review',
+                'Moving through Initiative approval'
+            ),
+            moduleMetric(
+                summary.finalInitiatives.length,
+                'Final Initiatives',
+                'Approved and converted records',
+                'is-success'
+            ),
+            moduleMetric(
+                summary.unreadCount,
+                'Unread updates',
+                summary.unreadCount ? 'Open notifications for details' : 'You are up to date',
+                summary.unreadCount ? 'is-warning' : ''
             )
-        ).length;
-        const revision = requests.filter((item) =>
-            normalizedStatus(item.status) === 'REVISION_REQUIRED'
-        ).length;
+        );
+    }
 
-        const kpis = document.createElement('div');
-        kpis.className = 'dashboard-kpi-grid mb-4';
-        kpis.append(
-            kpi(requests.length, 'Visible requests', 'Created, joined, reviewed, or administered by you'),
-            kpi(underReview, 'Under review', 'Currently moving through approval'),
-            kpi(revision, 'Revision required', revision ? 'Requests waiting for changes' : 'No revision work waiting'),
-            kpi(unreadCount, 'Unread updates', unreadCount ? 'Open notifications for details' : 'You are up to date')
+    function renderPriorities(overview, summary) {
+        const { priority } = overview.helpers;
+        const agreement = overview.agreement;
+        const agreementAction = agreement.attention + agreement.reviewTasks;
+        const initiativeAction = summary.attentionRows.length;
+        const totalInReview = agreement.underReview + summary.underReview;
+        const reportsAndUpdates = agreement.overdue + summary.unreadCount;
+        const inReviewHref = summary.underReview > 0
+            ? 'initiative-workflow.php'
+            : 'agreements.php?scope=mine';
+        const reportsAndUpdatesHref = summary.unreadCount > 0
+            ? 'initiative-workflow.php?view=notifications'
+            : 'performance-reports.php';
+
+        elements.priorities.replaceChildren(
+            priority(
+                'Agreements',
+                agreementAction,
+                'Drafts, returns, or assigned Agreement reviews requiring action',
+                agreement.reviewTasks ? 'workflow-inbox.php' : 'agreements.php?scope=mine',
+                agreementAction ? 'is-danger' : 'is-clear',
+                'agreement'
+            ),
+            priority(
+                'Initiatives',
+                initiativeAction,
+                'Drafts, returns, or approved requests ready for your next step',
+                'initiative-workflow.php',
+                initiativeAction ? 'is-danger' : 'is-clear',
+                'initiative'
+            ),
+            priority(
+                'In review',
+                totalInReview,
+                'Agreements and Initiatives moving through their approval routes',
+                inReviewHref
+            ),
+            priority(
+                'Reports & updates',
+                reportsAndUpdates,
+                'Overdue Agreement reports and unread Initiative notifications',
+                reportsAndUpdatesHref,
+                reportsAndUpdates ? 'is-warning' : 'is-clear'
+            )
+        );
+    }
+
+    function requestPriority(item) {
+        const status = normalizedStatus(item.status);
+        if (status === 'REVISION_REQUIRED') return 0;
+        if (status === 'DRAFT') return 1;
+        if (item.can_convert) return 2;
+        if (['UNDER_REVIEW', 'RESUBMITTED'].includes(status)) return 3;
+        return 4;
+    }
+
+    function renderWork(overview, summary) {
+        const { workItem, emptyItem } = overview.helpers;
+        elements.workList.replaceChildren();
+        const sorted = [...summary.requests].sort((left, right) =>
+            requestPriority(left) - requestPriority(right)
         );
 
-        const workHeading = document.createElement('div');
-        workHeading.className = 'dashboard-section-title';
-        const workCopy = document.createElement('div');
-        const workTitle = document.createElement('h2');
-        workTitle.textContent = 'Recent Initiative requests';
-        const workDescription = document.createElement('p');
-        workDescription.textContent = 'Open any row to continue the exact workflow where it stopped.';
-        workCopy.append(workTitle, workDescription);
-        const portfolio = document.createElement('a');
-        portfolio.href = 'initiative-portfolio.php';
-        portfolio.textContent = `Final Initiatives (${initiatives.length})`;
-        workHeading.append(workCopy, portfolio);
-
-        const card = document.createElement('section');
-        card.className = 'workspace-card';
-        const list = document.createElement('ul');
-        list.className = 'dashboard-list';
-
-        requests.slice(0, 6).forEach((item) => {
-            list.append(buildRequestRow(item));
+        sorted.slice(0, 5).forEach((item) => {
+            const status = String(item.status || 'Open').replaceAll('_', ' ');
+            const row = workItem(
+                item.title || item.request_code || 'Initiative request',
+                `${item.request_code || 'Initiative request'} · ${requestDetail(item)}`,
+                status,
+                `initiative-workflow.php?view=detail&id=${encodeURIComponent(item.request_id)}`,
+                'initiative'
+            );
+            row.addEventListener('click', (event) => {
+                if (event.target.closest('a, button')) return;
+                window.location.assign(
+                    `initiative-workflow.php?view=detail&id=${encodeURIComponent(item.request_id)}`
+                );
+            });
+            row.style.cursor = 'pointer';
+            elements.workList.append(row);
         });
 
-        if (requests.length === 0) {
-            const empty = document.createElement('li');
-            empty.className = 'dashboard-empty';
-            empty.textContent = 'No Initiative requests are visible to your account yet.';
-            list.append(empty);
+        if (!sorted.length) {
+            elements.workList.append(emptyItem(
+                summary.canCreate
+                    ? 'No Initiative requests yet. Start a request when you are ready.'
+                    : 'No Initiative work is visible to your account yet.'
+            ));
         }
-
-        card.append(list);
-        section.append(heading, kpis, workHeading, card);
-
-        const actionsSection = actionContainer;
-        actionsSection.insertAdjacentElement('afterend', section);
     }
 
-    function connectAgreementUseButtons() {
-        document.querySelectorAll(
-            '[data-legacy-initiative]'
-        ).forEach((link) => {
-            const legacyTarget = String(
-                link.dataset.legacyInitiative || ''
-            );
-            const legacyUrl = new URL(
-                legacyTarget,
-                'http://uob.local/'
-            );
-            const agreementId = Number(
-                legacyUrl.searchParams.get('agreement_id')
-            );
-
-            if (
-                !Number.isInteger(agreementId)
-                || agreementId < 1
-            ) {
-                return;
-            }
-
-            delete link.dataset.legacyInitiative;
-            link.removeAttribute('data-legacy-initiative');
-            link.href =
-                `initiative-workflow.php?view=form&agreement_id=${
-                    encodeURIComponent(agreementId)
-                }`;
-            link.title =
-                'Create an Initiative request using this Agreement';
-        });
-    }
-
-    async function waitForDashboard() {
-        const startedAt = Date.now();
-        while (
-            dashboardContent.classList.contains('d-none')
-            && Date.now() - startedAt < 5000
-        ) {
-            await new Promise((resolve) => setTimeout(resolve, 80));
-        }
+    function showUnavailable(overview, error) {
+        const { moduleMetric, emptyItem } = overview.helpers;
+        elements.metrics.replaceChildren(moduleMetric(
+            '—',
+            'Initiative data unavailable',
+            'Agreement information remains available on this overview',
+            'is-warning'
+        ));
+        elements.workList.replaceChildren(emptyItem(
+            'Initiative work could not be loaded. Open the Initiative module to try again.'
+        ));
+        console.error('Initiative overview integration failed:', error);
     }
 
     async function initialize() {
+        const overview = await waitForOverview();
+
         try {
-            const user = await AgreementApi.requireSession();
             const [access, requestPayload, unreadPayload, initiativePayload] =
                 await Promise.all([
                     AgreementApi.request('/initiative-access'),
@@ -297,26 +271,35 @@
                     )
                 ]);
 
-            await waitForDashboard();
-            connectAgreementUseButtons();
-
             const requests = requestItems(requestPayload);
-            const initiatives = requestItems(initiativePayload);
-            const unreadCount = Number(
-                unreadPayload?.unread_count || 0
+            const finalInitiatives = requestItems(initiativePayload);
+            const unreadCount = Number(unreadPayload?.unread_count || 0);
+            const underReview = requests.filter((item) =>
+                ['UNDER_REVIEW', 'RESUBMITTED'].includes(
+                    normalizedStatus(item.status)
+                )
+            ).length;
+            const attentionRows = requests.filter((item) =>
+                ['DRAFT', 'REVISION_REQUIRED'].includes(
+                    normalizedStatus(item.status)
+                ) || item.can_convert === true
             );
-
-            integrateActions(user, access, unreadCount);
-            addInitiativeSection(
+            const summary = {
                 requests,
-                initiatives,
-                unreadCount
-            );
+                finalInitiatives,
+                unreadCount,
+                underReview,
+                attentionRows,
+                canCreate: access.can_create_initiative === true
+            };
+
+            overview.initiative = summary;
+            renderActions(overview, access, unreadCount);
+            renderMetrics(overview, summary);
+            renderPriorities(overview, summary);
+            renderWork(overview, summary);
         } catch (error) {
-            console.error(
-                'Initiative dashboard integration failed:',
-                error
-            );
+            showUnavailable(overview, error);
         }
     }
 
