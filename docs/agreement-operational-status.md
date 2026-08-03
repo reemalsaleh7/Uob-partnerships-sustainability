@@ -4,8 +4,9 @@
 
 Approval and operation are separate. President approval leaves an Agreement in
 `APPROVED`. A creator or system administrator then uploads the executed file,
-records the actual signing/effective/expiry dates and final signatories, and
-finalizes an immutable signing record.
+records the expiry date and final signatories, and finalizes an immutable
+signing record. The server records the finalization day as the signing date and
+uses the Agreement's project start date as the effective date.
 
 ## State rules
 

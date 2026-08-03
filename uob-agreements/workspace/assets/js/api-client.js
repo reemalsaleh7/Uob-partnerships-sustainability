@@ -684,6 +684,11 @@
                 `/documents/${encodeURIComponent(id)}/download`
             );
         },
+        previewDocument(id) {
+            return request(
+                `/documents/${encodeURIComponent(id)}/preview`
+            );
+        },
         deleteDocument(id) {
             return request(`/documents/${encodeURIComponent(id)}`, {
                 method: 'DELETE'
@@ -729,6 +734,13 @@
         },
         lifecycleRequests() {
             return request('/agreement-lifecycle-requests');
+        },
+        lifecycleRequestsForAgreement(agreementId) {
+            return request('/agreement-lifecycle-requests').then((rows) => (
+                (Array.isArray(rows) ? rows : []).filter(
+                    (row) => Number(row.agreement_id) === Number(agreementId)
+                )
+            ));
         },
         lifecycleRequest(id) {
             return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}`);

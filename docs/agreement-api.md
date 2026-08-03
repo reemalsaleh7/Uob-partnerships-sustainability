@@ -690,7 +690,9 @@ user may finalize signing. Secure document storage keys are never returned.
 ### `POST /agreements/{id}/signing-record`
 
 Requires `MANAGE_AGREEMENT_OPERATIONS`. The Agreement creator (or a system
-administrator) supplies the signed-document ID, actual signing/effective/expiry
-dates, optional public ceremony details, and at least one UOB plus one linked
-partner signatory. The operation is transactional and permanent. It activates
-the Agreement immediately only when its effective date has arrived.
+administrator) supplies the signed-document ID, expiry date, optional ceremony
+details, and at least one UOB plus one linked partner signatory. The server
+records the finalization day as the signing date and derives the effective date
+from the Agreement's project start date; client-supplied signing/effective dates
+are not accepted as authoritative. The operation is transactional and permanent.
+It activates the Agreement immediately only when its effective date has arrived.

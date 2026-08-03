@@ -31,13 +31,14 @@ function operationalAgreement(
     AgreementVersionRepository $versions,
     int $creatorId,
     int $partnerId,
-    string $title
+    string $title,
+    string $startDate = '2026-01-01'
 ): int {
     $agreementId = $agreements->create([
         'title' => $title,
         'agreement_type' => 'Memorandum of Understanding',
         'description' => 'Rollback-only operational status test Agreement.',
-        'start_date' => '2026-01-01',
+        'start_date' => $startDate,
         'end_date' => '2100-12-31',
         'created_by' => $creatorId,
         'status' => 'APPROVED',
@@ -101,13 +102,10 @@ function operationalDocument(
 function operationalSigningInput(
     int $documentId,
     int $partnerId,
-    string $effectiveDate,
     string $expiryDate
 ): array {
     return [
         'signed_document_id' => $documentId,
-        'signing_date' => '2026-07-21',
-        'effective_date' => $effectiveDate,
         'expiry_date' => $expiryDate,
         'venue' => 'University of Bahrain',
         'public_announcement_url' => 'https://www.uob.edu.bh/',
@@ -166,7 +164,6 @@ try {
         operationalSigningInput(
             $activeDocumentId,
             $partnerId,
-            $today->format('Y-m-d'),
             $today->modify('+1 day')->format('Y-m-d')
         )
     );
@@ -184,7 +181,6 @@ try {
             operationalSigningInput(
                 $activeDocumentId,
                 $partnerId,
-                $today->format('Y-m-d'),
                 $today->modify('+1 day')->format('Y-m-d')
             )
         );
@@ -212,7 +208,8 @@ try {
         $versions,
         $creator,
         $partnerId,
-        'Scheduled activation and expiry smoke test'
+        'Scheduled activation and expiry smoke test',
+        '2099-01-01'
     );
     $scheduledDocumentId = operationalDocument(
         $db,
@@ -226,7 +223,6 @@ try {
         operationalSigningInput(
             $scheduledDocumentId,
             $partnerId,
-            '2099-01-01',
             '2099-12-31'
         )
     );

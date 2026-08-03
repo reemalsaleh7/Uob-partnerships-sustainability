@@ -12,7 +12,13 @@
         versionBody: document.getElementById('version-table-body'),
         relationshipSection: document.querySelector('[data-relationship-section]'),
         relationshipRows: document.querySelector('[data-relationship-rows]'),
-        lifecycle: document.querySelector('[data-lifecycle-request]'),
+        lifecycleHistorySection: document.querySelector('[data-lifecycle-history-section]'),
+        lifecycleHistoryRows: document.querySelector('[data-lifecycle-history-rows]'),
+        lifecycleHistoryLoading: document.querySelector('[data-lifecycle-history-loading]'),
+        lifecycleHistoryEmpty: document.querySelector('[data-lifecycle-history-empty]'),
+        lifecycleHistoryError: document.querySelector('[data-lifecycle-history-error]'),
+        lifecycleHistoryTable: document.querySelector('[data-lifecycle-history-table]'),
+        lifecycleActions: document.querySelectorAll('[data-lifecycle-request]'),
         administrativeCorrection: document.querySelector('[data-administrative-correction]'),
         correctionSection: document.querySelector('[data-administrative-corrections]'),
         correctionList: document.querySelector('[data-administrative-correction-list]'),
@@ -72,52 +78,109 @@
             agreement.partners.forEach((partner) => {
                 const card = document.createElement('article');
                 card.className = 'partner-summary-card';
+                const header = document.createElement('div');
+                header.className = 'partner-summary-header';
                 const name = document.createElement('h3');
                 name.className = 'h6 mb-2';
                 name.textContent = partner.organization_name || `Partner #${partner.partner_id}`;
+                if (partner.logo_url) {
+                    try {
+                        const logoUrl = new URL(String(partner.logo_url), window.location.href);
+                        if (!['http:', 'https:'].includes(logoUrl.protocol)) {
+                            throw new Error('Unsupported logo protocol');
+                        }
+                        const logo = document.createElement('img');
+                        logo.className = 'partner-summary-logo';
+                        logo.src = logoUrl.toString();
+                        logo.alt = '';
+                        logo.loading = 'lazy';
+                        header.append(logo);
+                    } catch (error) {
+                        // Ignore an invalid directory logo URL; the profile still renders.
+                    }
+                }
+                header.append(name);
                 const details = document.createElement('dl');
                 details.className = 'partner-summary-details mb-0';
 
                 const addDetail = (label, value) => {
-                    if (!value) return;
+                    if (value === null || value === undefined || value === '') return;
                     const row = document.createElement('div');
                     const term = document.createElement('dt');
                     const description = document.createElement('dd');
                     term.textContent = label;
-                    description.textContent = value;
+                    if (value && typeof value === 'object' && value.nodeType) {
+                        description.append(value);
+                    } else {
+                        description.textContent = String(value);
+                    }
                     row.append(term, description);
                     details.append(row);
                 };
 
-                addDetail('Type', partner.partner_type);
-                addDetail('Location', [partner.city, partner.country].filter(Boolean).join(', '));
-
-                if (partner.website) {
-                    const row = document.createElement('div');
-                    const term = document.createElement('dt');
-                    const description = document.createElement('dd');
+                const safeLink = (value, prefix = '') => {
                     const link = document.createElement('a');
-                    term.textContent = 'Website';
-                    const website = String(partner.website).trim();
-                    const candidate = /^[a-z][a-z0-9+.-]*:/i.test(website)
-                        ? website
-                        : `https://${website}`;
-                    link.textContent = website;
+                    link.textContent = value;
+                    const candidate = prefix
+                        ? `${prefix}${value}`
+                        : (/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`);
                     try {
-                        const url = new URL(candidate);
-                        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Unsupported protocol');
+                        const url = new URL(candidate, window.location.href);
+                        const allowed = prefix
+                            ? [prefix.replace(':', '') + ':']
+                            : ['http:', 'https:'];
+                        if (!allowed.includes(url.protocol)) throw new Error('Unsupported protocol');
                         link.href = url.toString();
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
+                        if (!prefix) {
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                        }
                     } catch (error) {
                         link.removeAttribute('href');
                     }
-                    description.append(link);
-                    row.append(term, description);
-                    details.append(row);
-                }
+                    return link;
+                };
 
-                card.append(name, details);
+                addDetail('Partner record', `#${partner.partner_id}`);
+                addDetail('Type', partner.partner_type);
+                addDetail('Country', partner.country);
+                addDetail('City', partner.city);
+                addDetail('Address', partner.address);
+                if (partner.website) addDetail('Website', safeLink(String(partner.website).trim()));
+                if (partner.email) addDetail('Email', safeLink(String(partner.email).trim(), 'mailto:'));
+                if (partner.phone) addDetail('Phone', safeLink(String(partner.phone).trim(), 'tel:'));
+                addDetail('Brief profile', partner.profile);
+                if (partner.latitude != null && partner.longitude != null) {
+                    addDetail('Coordinates', `${partner.latitude}, ${partner.longitude}`);
+                }
+                addDetail('Directory status', yesNo(partner.is_active) === 'Yes' ? 'Active' : 'Inactive');
+
+                card.append(header, details);
+
+                const directoryContacts = Array.isArray(partner.contacts)
+                    ? partner.contacts
+                    : [];
+                if (directoryContacts.length) {
+                    const contactHeading = document.createElement('h4');
+                    contactHeading.className = 'h6 mt-3 mb-2';
+                    contactHeading.textContent = 'Partner directory contacts';
+                    const contactList = document.createElement('div');
+                    contactList.className = 'partner-directory-contacts';
+                    directoryContacts.forEach((contact) => {
+                        const contactItem = document.createElement('div');
+                        const contactName = document.createElement('strong');
+                        const contactDetail = document.createElement('span');
+                        contactName.textContent = contact.full_name || 'Unnamed contact';
+                        contactDetail.textContent = [
+                            contact.job_title,
+                            contact.email,
+                            contact.phone
+                        ].filter(Boolean).join(' · ') || 'No contact details recorded';
+                        contactItem.append(contactName, contactDetail);
+                        contactList.append(contactItem);
+                    });
+                    card.append(contactHeading, contactList);
+                }
                 partnerSummary.append(card);
             });
         }
@@ -187,6 +250,96 @@
         });
     }
 
+    function renderLifecycleHistory(result) {
+        const error = result?.error instanceof Error ? result.error : null;
+        const rows = Array.isArray(result) ? result : [];
+        elements.lifecycleHistoryLoading.classList.add('d-none');
+        elements.lifecycleHistoryError.classList.toggle('d-none', !error);
+        elements.lifecycleHistoryError.textContent = error
+            ? (error.message || 'Lifecycle requests could not be loaded.')
+            : '';
+        elements.lifecycleHistoryEmpty.classList.toggle(
+            'd-none',
+            Boolean(error) || rows.length !== 0
+        );
+        elements.lifecycleHistoryTable.classList.toggle(
+            'd-none',
+            Boolean(error) || rows.length === 0
+        );
+        elements.lifecycleHistoryRows.replaceChildren();
+
+        rows.forEach((request) => {
+            const row = document.createElement('tr');
+            const requestCell = document.createElement('td');
+            const requestTitle = document.createElement('strong');
+            const requestId = document.createElement('span');
+            requestTitle.className = 'd-block';
+            requestTitle.textContent = String(request.request_type || 'Lifecycle')
+                .replaceAll('_', ' ');
+            requestId.className = 'small text-secondary';
+            requestId.textContent = `Request #${request.lifecycle_request_id}`;
+            requestCell.append(requestTitle, requestId);
+
+            const statusCell = document.createElement('td');
+            statusCell.append(AgreementApi.createStatusBadge(request.status));
+
+            const requesterCell = document.createElement('td');
+            requesterCell.textContent = request.requester_name
+                || request.requester_email
+                || `User #${request.requested_by}`;
+
+            const outcomeCell = document.createElement('td');
+            outcomeCell.textContent = request.decision_comments
+                || request.justification
+                || '—';
+
+            const updatedCell = document.createElement('td');
+            updatedCell.textContent = AgreementApi.formatDate(
+                request.decided_at || request.updated_at || request.created_at
+            );
+
+            const actionCell = document.createElement('td');
+            actionCell.className = 'text-end';
+            const link = document.createElement('a');
+            link.className = 'btn btn-sm btn-outline-primary';
+            link.href = `lifecycle-request.php?id=${encodeURIComponent(request.lifecycle_request_id)}`;
+            link.textContent = 'Open';
+            actionCell.append(link);
+
+            row.append(
+                requestCell,
+                statusCell,
+                requesterCell,
+                outcomeCell,
+                updatedCell,
+                actionCell
+            );
+            elements.lifecycleHistoryRows.append(row);
+        });
+    }
+
+    function lifecycleRequestsForAgreement(agreementId) {
+        if (typeof AgreementApi.lifecycleRequestsForAgreement === 'function') {
+            return AgreementApi.lifecycleRequestsForAgreement(agreementId);
+        }
+
+        // Compatibility for an already-open tab that loaded the API client
+        // before the Agreement-specific lifecycle helper was introduced.
+        if (typeof AgreementApi.lifecycleRequests === 'function') {
+            return AgreementApi.lifecycleRequests().then((rows) => (
+                (Array.isArray(rows) ? rows : []).filter(
+                    (row) => Number(row.agreement_id) === Number(agreementId)
+                )
+            ));
+        }
+
+        return Promise.reject(new AgreementApi.ApiError(
+            'Lifecycle request history is temporarily unavailable. Reload this page.',
+            503,
+            null
+        ));
+    }
+
     function agreementId() {
         const value = new URLSearchParams(window.location.search).get('id');
 
@@ -226,10 +379,9 @@
 
         [
             'title_ar', 'geographic_scope', 'start_date', 'end_date',
-            'signing_date', 'effective_date', 'legal_binding_status',
+            'legal_binding_status',
             'responsible_unit_name', 'need_justification', 'objectives',
-            'expected_value', 'focus_areas', 'collaboration_areas',
-            'implementation_methods', 'monitoring_plan', 'confidentiality_terms',
+            'expected_value', 'focus_areas', 'confidentiality_terms',
             'intellectual_property_terms', 'compliance_terms',
             'relationship_disclaimer', 'amendment_terms',
             'dispute_resolution_terms', 'other_terms', 'signing_link'
@@ -247,7 +399,6 @@
         );
         setField('human_resources_summary', yesNo(agreement.human_resources_commitments) === 'Yes' ? (agreement.human_resources_description || 'Yes') : 'None');
         setField('training_programs_summary', yesNo(agreement.training_programs) === 'Yes' ? (agreement.training_programs_description || 'Yes') : 'None');
-        setField('rankings_summary', (agreement.rankings || []).map((value) => value.replaceAll('_', ' ')).join(', ') || 'Not applicable');
         setField('sdgs_summary', (agreement.sdgs || []).map((value) => `SDG ${value}`).join(', ') || 'None selected');
         renderRelatedRecords(agreement);
 
@@ -467,11 +618,13 @@
         );
         elements.administrativeCorrection.href = `agreement-form.php?id=${encodeURIComponent(agreement.agreement_id)}&mode=administrative-correction`;
 
-        elements.lifecycle.classList.toggle(
-            'd-none',
-            !['APPROVED', 'ACTIVE'].includes(agreement.status) || !canCreate
-        );
-        elements.lifecycle.href = `lifecycle-form.php?agreement_id=${encodeURIComponent(agreement.agreement_id)}`;
+        elements.lifecycleActions.forEach((action) => {
+            action.classList.toggle(
+                'd-none',
+                !['APPROVED', 'ACTIVE'].includes(agreement.status) || !canCreate
+            );
+            action.href = `lifecycle-form.php?agreement_id=${encodeURIComponent(agreement.agreement_id)}`;
+        });
 
         elements.edit.classList.toggle(
             'd-none',
@@ -516,10 +669,11 @@
             }
             const user = await AgreementApi.requireSession('VIEW_AGREEMENT');
 
-            const [agreement, versions, timeline] = await Promise.all([
+            const [agreement, versions, timeline, lifecycleRequests] = await Promise.all([
                 AgreementApi.agreement(id),
                 AgreementApi.versions(id),
-                AgreementApi.agreementTimeline(id)
+                AgreementApi.agreementTimeline(id),
+                lifecycleRequestsForAgreement(id).catch((error) => ({ error }))
             ]);
 
             if (!agreement) {
@@ -530,6 +684,7 @@
             renderAgreement(agreement);
             renderVersions(versions);
             renderWorkflow(timeline);
+            renderLifecycleHistory(lifecycleRequests);
             configureActions(user, agreement);
             showFeedbackFromQuery();
             elements.loading.classList.add('d-none');
