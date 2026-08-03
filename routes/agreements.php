@@ -26,7 +26,9 @@ foreach ($basePaths as $basePath) {
 
 $uri = '/' . ltrim($uri, '/');
 
-if ($method === 'GET' && $uri === '/agreements') {
+if ($method === 'POST' && $uri === '/agreement-document-extraction') {
+    $controller->extractDocumentClauses();
+} elseif ($method === 'GET' && $uri === '/agreements') {
     $controller->index();
 } elseif ($method === 'GET' && preg_match('#^/agreements/([0-9]+)/annotations$#', $uri, $matches)) {
     $controller->annotations((int) $matches[1]);

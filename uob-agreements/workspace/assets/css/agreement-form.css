@@ -1,0 +1,679 @@
+/* Agreement form aligned with the focused Initiative request experience. */
+body.agreement-form-focus .workspace-sidebar {
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+}
+
+body.agreement-form-focus .workspace-sidebar.is-open {
+    transform: translateX(0);
+}
+
+body.agreement-form-focus .workspace-stage {
+    margin-left: 0;
+    transition: margin-left .22s ease;
+}
+
+body.agreement-form-focus .workspace-menu-button {
+    display: block;
+    flex: 0 0 auto;
+}
+
+body.agreement-form-focus .workspace-topbar {
+    justify-content: flex-start;
+}
+
+body.agreement-form-focus .workspace-topbar-actions {
+    margin-left: auto;
+}
+
+body.agreement-form-focus .agreement-request-hero {
+    position: relative;
+    display: flex;
+    min-height: 9.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    overflow: hidden;
+    padding: 1.35rem 1.75rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 88% 12%, rgba(219, 180, 63, .28), transparent 28%),
+        linear-gradient(135deg, #071b35 0%, #0b3159 58%, #174b69 100%);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 1.3rem;
+    box-shadow: 0 15px 34px rgba(7, 27, 53, .14);
+}
+
+body.agreement-form-focus .agreement-request-hero::after {
+    position: absolute;
+    right: -3rem;
+    bottom: -6rem;
+    width: 15rem;
+    height: 15rem;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 2rem rgba(255, 255, 255, .03),
+        0 0 0 4rem rgba(255, 255, 255, .02);
+    content: "";
+}
+
+body.agreement-form-focus .agreement-request-hero > div {
+    position: relative;
+    z-index: 1;
+}
+
+body.agreement-form-focus .agreement-request-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    margin-bottom: .45rem;
+}
+
+body.agreement-form-focus .agreement-request-hero .eyebrow {
+    color: #f4cf63;
+    font-size: .62rem;
+}
+
+body.agreement-form-focus .agreement-request-hero h1 {
+    max-width: 42rem;
+    margin-bottom: .35rem !important;
+    color: #fff;
+    font-size: clamp(1.8rem, 2.5vw, 2.35rem);
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -.035em;
+}
+
+body.agreement-form-focus .agreement-request-hero p:not(.eyebrow) {
+    max-width: 46rem;
+    color: rgba(255, 255, 255, .78);
+    font-size: .88rem;
+    line-height: 1.55;
+}
+
+body.agreement-form-focus .agreement-request-hero-back {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .28rem .55rem;
+    color: rgba(255, 255, 255, .86);
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 999px;
+    font-size: .68rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+body.agreement-form-focus .agreement-request-hero-back:hover,
+body.agreement-form-focus .agreement-request-hero-back:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, .1);
+}
+
+body.agreement-form-focus .agreement-request-hero-meta-divider {
+    width: 1px;
+    height: 1rem;
+    background: rgba(255, 255, 255, .28);
+}
+
+body.agreement-form-focus .agreement-request-hero-badge {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    flex: 0 0 5.8rem;
+    min-height: 5.8rem;
+    place-content: center;
+    text-align: center;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 1.1rem;
+    backdrop-filter: blur(12px);
+}
+
+body.agreement-form-focus .agreement-request-hero-badge span {
+    color: #f4cf63;
+    font-size: 2rem;
+    font-weight: 950;
+    line-height: 1;
+}
+
+body.agreement-form-focus .agreement-request-hero-badge small {
+    margin-top: .3rem;
+    color: #fff;
+    font-size: .58rem;
+    font-weight: 800;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+}
+
+body.agreement-form-focus .agreement-request-form {
+    --agreement-blue: #1764d8;
+    --agreement-gold: #c3a23b;
+    --agreement-navy: #0b2848;
+}
+
+body.agreement-form-focus .agreement-form-shell {
+    display: grid;
+    grid-template-columns: 17.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+}
+
+body.agreement-form-focus .agreement-form-step-panel,
+body.agreement-form-focus .agreement-form-content {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #dce5ef;
+    border-radius: 1.3rem;
+    box-shadow: 0 14px 34px rgba(15, 35, 65, .065);
+}
+
+body.agreement-form-focus .agreement-form-step-panel {
+    position: sticky;
+    top: 5.7rem;
+    max-height: calc(100vh - 7rem);
+    padding: 1.35rem 1.2rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+body.agreement-form-focus .agreement-form-step-panel-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: 1.15rem;
+}
+
+body.agreement-form-focus .agreement-form-step-panel-heading h2 {
+    margin: 0;
+    color: #26364d;
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: -.02em;
+}
+
+body.agreement-form-focus .agreement-form-step-panel-heading span {
+    color: #7a8798;
+    font-size: .62rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+body.agreement-form-focus .agreement-step-timeline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+}
+
+body.agreement-form-focus .agreement-step {
+    position: relative;
+    display: flex;
+    min-height: 4.55rem;
+    align-items: flex-start;
+    justify-items: initial;
+    gap: .85rem;
+    padding: .12rem .1rem .78rem;
+    color: #68778b;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+}
+
+body.agreement-form-focus .agreement-step:not(:last-child)::before {
+    position: absolute;
+    z-index: 0;
+    top: 2.2rem;
+    bottom: -.1rem;
+    left: 1.17rem;
+    width: 2px;
+    height: auto;
+    content: "";
+    background: #d7dde6;
+    border-radius: 999px;
+}
+
+body.agreement-form-focus .agreement-step.is-complete:not(:last-child)::before {
+    background: #75c99e;
+}
+
+body.agreement-form-focus .agreement-step-marker {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    margin: 0;
+    place-items: center;
+    color: #68778b;
+    background: #fff;
+    border: 2px solid #b8c3d0;
+    border-radius: 50%;
+    font-size: .72rem;
+    font-weight: 900;
+}
+
+body.agreement-form-focus .agreement-step-copy {
+    display: grid;
+    min-width: 0;
+    gap: .08rem;
+    padding-top: .02rem;
+}
+
+body.agreement-form-focus .agreement-step-copy small {
+    color: #8793a4;
+    font-size: .62rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+body.agreement-form-focus .agreement-step-label {
+    display: block;
+    overflow: visible;
+    width: auto;
+    color: #46566c;
+    font-size: .82rem;
+    font-weight: 900;
+    line-height: 1.32;
+    text-align: left;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+body.agreement-form-focus .agreement-step-description {
+    color: #8794a5;
+    font-size: .64rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+body.agreement-form-focus .agreement-step:hover,
+body.agreement-form-focus .agreement-step:focus-visible,
+body.agreement-form-focus .agreement-step.is-current {
+    color: var(--agreement-blue);
+    outline: 0;
+}
+
+body.agreement-form-focus .agreement-step.is-current .agreement-step-marker {
+    color: #fff;
+    background: var(--agreement-blue);
+    border-color: var(--agreement-blue);
+    box-shadow: 0 0 0 .35rem #e7efff;
+}
+
+body.agreement-form-focus .agreement-step.is-current .agreement-step-copy small,
+body.agreement-form-focus .agreement-step.is-current .agreement-step-label {
+    color: #155fcc;
+}
+
+body.agreement-form-focus .agreement-step.is-complete:not(.is-current) .agreement-step-marker {
+    color: #178157;
+    background: #e8f8ef;
+    border-color: #55b986;
+}
+
+body.agreement-form-focus .agreement-step.needs-attention .agreement-step-marker {
+    color: #a12638;
+    background: #fff1f2;
+    border-color: #e88a98;
+}
+
+body.agreement-form-focus .agreement-form-content {
+    min-height: 34rem;
+    padding: clamp(1.2rem, 2.4vw, 2rem);
+}
+
+body.agreement-form-focus .agreement-form-content > [data-change-reason-section] {
+    margin-top: 0 !important;
+    margin-bottom: 1.25rem;
+    border-color: #efd98e;
+    box-shadow: none;
+}
+
+body.agreement-form-focus .agreement-form-section {
+    display: none;
+    margin-top: 0 !important;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: agreement-form-enter .2s ease;
+}
+
+body.agreement-form-focus .agreement-form-section.is-open {
+    display: block;
+}
+
+@keyframes agreement-form-enter {
+    from { opacity: .35; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+body.agreement-form-focus .agreement-section-toggle {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 0 1.25rem;
+    text-align: left;
+    color: #25384f;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #e4eaf1;
+    border-radius: 0;
+    cursor: default;
+}
+
+body.agreement-form-focus .agreement-section-toggle:hover,
+body.agreement-form-focus .agreement-section-toggle:focus-visible {
+    background: transparent;
+    outline: 0;
+}
+
+body.agreement-form-focus .agreement-section-number {
+    width: 2.55rem;
+    height: 2.55rem;
+    color: #fff;
+    background: var(--agreement-navy);
+    border-radius: .8rem;
+    font-size: .84rem;
+}
+
+body.agreement-form-focus .agreement-section-heading strong {
+    color: var(--agreement-navy);
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: -.02em;
+}
+
+body.agreement-form-focus .agreement-section-heading small {
+    margin-top: .32rem;
+    color: #68798d;
+    font-size: .78rem;
+    line-height: 1.6;
+}
+
+body.agreement-form-focus .agreement-section-chevron {
+    display: none;
+}
+
+body.agreement-form-focus .section-status {
+    min-width: 0;
+    padding: .42rem .7rem;
+    font-size: .62rem;
+}
+
+body.agreement-form-focus .agreement-section-body {
+    border-top: 0;
+}
+
+body.agreement-form-focus .agreement-section-body > .form-section {
+    padding: 1.7rem 0 0;
+}
+
+body.agreement-form-focus .form-label {
+    color: #25384f;
+    font-weight: 850;
+}
+
+body.agreement-form-focus .form-control,
+body.agreement-form-focus .form-select {
+    min-height: 3.25rem;
+    border-color: #d6e0ea;
+    border-radius: .9rem;
+    background-color: #fcfdff;
+}
+
+body.agreement-form-focus textarea.form-control {
+    min-height: 7.5rem;
+    padding-top: .85rem;
+}
+
+body.agreement-form-focus .form-control:focus,
+body.agreement-form-focus .form-select:focus {
+    border-color: var(--agreement-gold);
+    box-shadow: 0 0 0 .22rem rgba(195, 162, 59, .14);
+}
+
+body.agreement-form-focus .partner-picker,
+body.agreement-form-focus .new-partner-panel,
+body.agreement-form-focus .clause-upload-panel,
+body.agreement-form-focus .conditional-panel,
+body.agreement-form-focus .early-termination-panel,
+body.agreement-form-focus .executive-suggestion-panel,
+body.agreement-form-focus .executive-program-card,
+body.agreement-form-focus .contact-row,
+body.agreement-form-focus .metric-row {
+    background: linear-gradient(145deg, #f8fafc, #fff);
+    border: 1px solid #dde6ef;
+    border-radius: 1rem;
+}
+
+body.agreement-form-focus .contact-row,
+body.agreement-form-focus .metric-row {
+    padding: 1rem;
+}
+
+body.agreement-form-focus .agreement-form-actions {
+    position: sticky;
+    z-index: 20;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-left: 18.75rem;
+    padding: 1rem 1.1rem;
+    background: rgba(255, 255, 255, .97);
+    border: 1px solid #dce5ef;
+    border-radius: 1rem;
+    box-shadow: 0 12px 28px rgba(15, 35, 65, .075);
+    backdrop-filter: blur(12px);
+}
+
+body.agreement-form-focus .agreement-form-actions-left,
+body.agreement-form-focus .agreement-form-actions-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .65rem;
+}
+
+body.agreement-form-focus .agreement-form-actions-right {
+    justify-content: flex-end;
+}
+
+body.agreement-form-focus .agreement-form-actions [data-save-readiness] {
+    max-width: 18rem;
+    line-height: 1.45;
+}
+
+body.agreement-form-focus .agreement-form-actions .btn {
+    min-height: 2.85rem;
+    padding-inline: 1.15rem;
+    border-radius: .8rem;
+    font-weight: 850;
+}
+
+body.agreement-form-focus .agreement-form-actions .btn-primary {
+    background: var(--agreement-navy);
+    border-color: var(--agreement-navy);
+}
+
+body.agreement-form-focus .agreement-form-actions .btn-primary:hover {
+    background: #123c65;
+    border-color: #123c65;
+}
+
+html[dir="rtl"] body.agreement-form-focus .agreement-request-hero-meta,
+html[dir="rtl"] body.agreement-form-focus .agreement-step,
+html[dir="rtl"] body.agreement-form-focus .agreement-section-toggle {
+    text-align: right;
+}
+
+html[dir="rtl"] body.agreement-form-focus .agreement-step:not(:last-child)::before {
+    right: 1.17rem;
+    left: auto;
+}
+
+html[dir="rtl"] body.agreement-form-focus .agreement-step-label {
+    text-align: right;
+}
+
+@media (max-width: 991.98px) {
+    body.agreement-form-focus .workspace-stage {
+        margin-left: 0;
+    }
+
+    body.agreement-form-focus .agreement-form-shell {
+        display: block;
+    }
+
+    body.agreement-form-focus .agreement-form-step-panel {
+        position: static;
+        max-height: none;
+        margin-bottom: 1rem;
+        padding: 1.1rem;
+        overflow: hidden;
+    }
+
+    body.agreement-form-focus .agreement-step-timeline {
+        display: flex;
+        gap: 0;
+        padding: .2rem 0 .55rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scroll-snap-type: x proximity;
+    }
+
+    body.agreement-form-focus .agreement-step {
+        display: grid;
+        flex: 0 0 8rem;
+        min-height: 5.7rem;
+        grid-template-columns: 1fr;
+        align-content: start;
+        justify-items: center;
+        gap: .55rem;
+        padding: 0 .4rem;
+        text-align: center;
+        scroll-snap-align: start;
+    }
+
+    body.agreement-form-focus .agreement-step:not(:last-child)::before,
+    html[dir="rtl"] body.agreement-form-focus .agreement-step:not(:last-child)::before {
+        top: 1.08rem;
+        right: auto;
+        bottom: auto;
+        left: 50%;
+        width: 100%;
+        height: 2px;
+    }
+
+    body.agreement-form-focus .agreement-step-copy {
+        width: 100%;
+        justify-items: center;
+    }
+
+    body.agreement-form-focus .agreement-step-label,
+    html[dir="rtl"] body.agreement-form-focus .agreement-step-label {
+        font-size: .72rem;
+        text-align: center;
+    }
+
+    body.agreement-form-focus .agreement-step-description {
+        display: none;
+    }
+
+    body.agreement-form-focus .agreement-form-actions {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    body.agreement-form-focus .agreement-request-hero {
+        min-height: auto;
+        align-items: flex-start;
+        padding: 1.2rem 1.25rem;
+    }
+
+    body.agreement-form-focus .agreement-request-hero h1 {
+        font-size: 1.65rem;
+    }
+
+    body.agreement-form-focus .agreement-request-hero-badge {
+        display: none;
+    }
+
+    body.agreement-form-focus .agreement-form-content {
+        min-height: 0;
+        padding: 1.15rem;
+    }
+
+    body.agreement-form-focus .agreement-section-toggle {
+        grid-template-columns: 2.45rem minmax(0, 1fr);
+        gap: .75rem;
+    }
+
+    body.agreement-form-focus .agreement-section-number {
+        width: 2.3rem;
+        height: 2.3rem;
+    }
+
+    body.agreement-form-focus .agreement-section-heading strong {
+        font-size: 1.15rem;
+    }
+
+    body.agreement-form-focus .section-status {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    body.agreement-form-focus .agreement-form-actions {
+        position: static;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    body.agreement-form-focus .agreement-form-actions-left,
+    body.agreement-form-focus .agreement-form-actions-right {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+    }
+
+    body.agreement-form-focus .agreement-form-actions [data-save-readiness] {
+        grid-column: 1 / -1;
+        max-width: none;
+    }
+}
+
+@media (max-width: 479.98px) {
+    body.agreement-form-focus .agreement-request-hero-meta-divider,
+    body.agreement-form-focus .agreement-request-hero .eyebrow {
+        display: none;
+    }
+
+    body.agreement-form-focus .agreement-form-actions-left,
+    body.agreement-form-focus .agreement-form-actions-right {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.agreement-form-focus .agreement-form-section {
+        animation: none;
+    }
+}

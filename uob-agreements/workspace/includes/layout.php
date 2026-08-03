@@ -113,11 +113,12 @@ HTML;
     );
     $initiativeView = (string) ($_GET['view'] ?? '');
 
-    $initiativeRequestsActive = in_array(
-        $currentScript,
-        ['initiative-workflow.php', 'initiative-hub.php'],
-        true
-    ) && $initiativeView !== 'notifications'
+    $initiativeHubActive = $currentScript === 'initiative-hub.php'
+        ? ' active'
+        : '';
+
+    $initiativeRequestsActive = $currentScript === 'initiative-workflow.php'
+        && $initiativeView !== 'notifications'
         ? ' active'
         : '';
 
@@ -185,6 +186,9 @@ HTML;
                 </a>
 
                 <p class="workspace-nav-label mt-4">Initiatives</p>
+                <a class="workspace-nav-link{$initiativeHubActive}" href="initiative-hub.php">
+                    <span>Initiative hub</span><small>Guidance and starting points</small>
+                </a>
                 <a class="workspace-nav-link{$initiativeRequestsActive}" href="initiative-workflow.php">
                     <span>Initiative requests</span><small>Create, review, and follow</small>
                 </a>

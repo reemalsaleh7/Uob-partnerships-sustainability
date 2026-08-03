@@ -97,6 +97,10 @@ class AgreementDocumentRepository {
             FROM agreement_documents
             WHERE agreement_id = :agreement_id
               AND document_type = :document_type
+              AND storage_key IS NOT NULL
+              AND mime_type IS NOT NULL
+              AND file_size_bytes > 0
+              AND sha256_checksum IS NOT NULL
             LIMIT 1
         ');
         $stmt->execute([

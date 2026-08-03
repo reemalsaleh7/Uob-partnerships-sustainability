@@ -73,12 +73,6 @@ class AgreementValidator {
         if (empty($data['start_date']) || empty($data['end_date'])) {
             $errors[] = 'Agreement start and end dates are required before submission';
         }
-        if (empty($data['signing_date'])) {
-            $errors[] = 'Signing date is required before submission';
-        }
-        if (empty($data['effective_date'])) {
-            $errors[] = 'Effective date is required before submission';
-        }
         if (count(self::partnerIds($data)) !== 1) {
             $errors[] = 'Exactly one partner is required before submission';
         }

@@ -4,10 +4,10 @@
 ## Comprehensive field regression
 
 1. Apply `20260721_comprehensive_agreement_fields.sql` twice and confirm both runs succeed.
-2. Create a draft with exactly one partner whose type, country, website, and profile are complete; Arabic/English titles; dates; objectives; impact; commitments; SDGs; four contact roles; one or more executive programmes; and every planned-outcome metric, including trained students.
+2. Create a draft with exactly one partner whose type, country, website, and profile are complete; Arabic/English titles; project start/end dates; objectives; impact; commitments; SDGs; four contact roles; one or more executive programmes; and every planned-outcome metric, including trained students. Confirm signing and effective dates are absent from the creation form.
 3. Reload the edit form and confirm every scalar, selected partner, checkbox, contact, programme, and metric is restored.
 4. Save the draft and confirm the latest `agreement_versions.agreement_snapshot` contains the same nested partner, SDG, ranking, contact, program, and metric arrays.
-5. Attempt submission without the Arabic name; project, signing, or effective dates; need/justification; objectives; expected value; complete coordinator/signatory records; complete planned outcomes; an executive programme; or the governance/MOU DOCX file. Confirm the API returns `422` and no workflow is created. Leave Article 1/2 extracted fields blank and confirm they do not block submission.
+5. Attempt submission without the Arabic name; project start/end dates; need/justification; objectives; expected value; complete coordinator/signatory records; complete planned outcomes; an executive programme; or the governance/MOU DOCX file. Confirm the API returns `422` and no workflow is created. Leave Article 1/2 extracted fields blank and confirm they do not block submission.
 6. Complete the required fields and submit; confirm Initial VP activates normally.
 7. Complete the workflow and confirm only approved public fields appear in the PostgreSQL catalogue. Contacts, clauses, workflow comments, versions, and private documents must remain absent from public output.
 8. Update an existing Agreement with the former four-field API payload and confirm omitted comprehensive child collections are preserved rather than erased.
@@ -210,6 +210,9 @@ Development-only password: `UobDev2026!`.
 | H-14 | Use an authenticated tab for over 12 hours            | Absolute session expiry requires a new login.                                                             |
 | H-15 | Deactivate a currently signed-in user                 | Their next protected API request returns `401`.                                                           |
 | H-16 | Submit five consecutive invalid passwords             | Account is locked for 15 minutes, then becomes eligible to authenticate again.                            |
+| H-17 | Extract clauses from an authenticated DOCX upload      | The Agreement router reaches the extraction controller; extension, MIME, signature, required DOCX parts, macro, and 10 MB checks run before extraction. |
+| H-18 | Upload a queued governance or media file               | Governance accepts only DOCX; media accepts only JPG/JPEG/PNG/WebP/MP4; other document types continue to accept only PDF/DOC/DOCX. |
+| H-19 | Submit or resubmit without a stored governance DOCX    | `422`; the workflow does not start or resume until a secure `GOVERNANCE_CLAUSES` document exists. |
 
 ## Integration and release acceptance
 

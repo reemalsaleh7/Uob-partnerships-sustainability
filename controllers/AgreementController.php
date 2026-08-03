@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/AgreementService.php';
 require_once __DIR__ . '/../services/AgreementAnnotationService.php';
+require_once __DIR__ . '/../services/AgreementClauseExtractionService.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/PermissionMiddleware.php';
 require_once __DIR__ . '/../helpers/ApiRequest.php';
@@ -52,6 +53,32 @@ class AgreementController {
         }
 
         Response::success($timeline);
+    }
+
+    public function extractDocumentClauses(): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::requireAny([
+            'CREATE_AGREEMENT',
+            'EDIT_AGREEMENT',
+            'ADMIN_CORRECT_LEGACY_AGREEMENT',
+        ]);
+
+        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            Response::error(
+                'Choose a governance / MOU clauses DOCX file to extract',
+                422
+            );
+        }
+
+        try {
+            $extractor = new AgreementClauseExtractionService();
+            Response::success($extractor->extract($_FILES['file']));
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
     }
 
     public function create(): void {

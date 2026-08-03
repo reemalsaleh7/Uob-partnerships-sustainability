@@ -25,7 +25,7 @@ This model consolidates the four official University of Bahrain cooperation form
 | Partner organization | `agreement_partners` | Forms and CSV | Exactly one partner is allowed for a current Agreement. Partner type, country, website, brief profile, city, logo, and coordinates stay in `partners`. Website is mandatory for new and selected partner records. New and edited profiles use Public/government, Private, Academic, or Non-profit as the four controlled organization types. |
 | Summary/profile | `agreements.description` | Request form and CSV | Required before submission; approved summary may be public. |
 | Start/end dates | `agreements.start_date`, `end_date` | Request, lifecycle, legacy form, CSV | Both required before submission; end cannot precede start. They remain separate values but either visible date box opens one shared duration calendar and updates both values. Programme and renewal durations use the same interaction. |
-| Signing/effective dates | `agreements.signing_date`, `effective_date` | MOU | Both are mandatory in the guided form and before submission. |
+| Signing/effective dates | `agreements.signing_date`, `effective_date` | Final signing | Not collected on the creation form or required before submission. They are recorded after approval through the final-signing operation, where they control scheduled activation and operational status. |
 | Fixed and renewal terms | `auto_renew`, `fixed_term_months`, `renewal_term_months`, `non_renewal_notice_months` | MOU and CSV | A non-automatically-renewing Agreement requires its fixed term in months. An automatically renewing Agreement instead records each renewal term and the non-renewal notice period. |
 | Termination notice | `termination_notice_months` | MOU / legacy data | Retained for historical compatibility but no longer collected on the creation form. A proposal to terminate an Agreement must use the separate termination lifecycle request. |
 | Responsible unit | `responsible_unit_id` or creator active unit | Request form and legacy owner entity | Applicant identity/unit are trusted system data, not arbitrary client values. |
@@ -119,9 +119,9 @@ the race where two requests try to create a current Agreement simultaneously.
   between them. Clicking either field opens the same range calendar and updates
   both values. Each executive programme uses the same one-calendar range
   behavior while persisting its start and end values separately.
-- Project start means planned activity delivery. Effective date means the date
-  an approved and signed Agreement becomes operational/legal and is the date
-  used by status activation.
+- Project start means planned activity delivery. Signing and effective dates
+  are deliberately deferred until the approved instrument is finalized; the
+  effective date recorded there controls scheduled activation.
 - Automatic-renewal fields appear only when enabled. Non-renewal notice prevents
   the next automatic term. When automatic renewal is disabled, a fixed Agreement
   term in months is required and can be prefilled from the selected date range.
@@ -186,7 +186,7 @@ The existing `agreement_relationships`, `agreement_actions`, workflow engine, ve
 ## Validation and versioning
 
 - Draft creation remains backward compatible with the former four-field API.
-- Formal submission requires an Arabic name; exactly one partner with a complete country; server-derived geographic scope; project, signing, and effective dates; description; need/justification; objectives; expected value; four complete coordinator/signatory records; at least one complete executive programme; every planned-outcome field; and an attached governance/MOU DOCX document. Extracted Article 1/2 and other clause text remains optional.
+- Formal submission requires an Arabic name; exactly one partner with a complete country; server-derived geographic scope; project start/end dates; description; need/justification; objectives; expected value; four complete coordinator/signatory records; at least one complete executive programme; every planned-outcome field; and an attached governance/MOU DOCX document. Signing and effective dates are captured later during final signing. Extracted Article 1/2 and other clause text remains optional.
 - Commitment descriptions become required only when their corresponding flag is enabled.
 - Every save snapshots scalar and repeating child data in `agreement_versions.agreement_snapshot`.
 - Reviewers and the public catalogue receive only the fields allowed by their existing record-visibility or publication rules.

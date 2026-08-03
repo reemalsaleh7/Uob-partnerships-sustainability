@@ -7,7 +7,10 @@ require_once __DIR__ . '/includes/layout.php';
 workspaceHeader(
     'Agreement form',
     'agreements',
-    ['https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css']
+    [
+        'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css',
+        'assets/css/agreement-form.css?v=20260803-initiative-alignment-v1',
+    ]
 );
 
 function field(
@@ -105,18 +108,36 @@ $sdgs = [
 ];
 ?>
 
-<div class="mb-4">
-    <a href="agreements.php" class="back-link" data-cancel-link>← Back to Agreements</a>
-</div>
+<script>
+document.body.classList.add('agreement-form-focus');
+document.body.classList.remove('agreement-form-sidebar-open');
+document.getElementById('workspaceSidebar')?.classList.remove('is-open');
+</script>
 
-<section class="page-heading agreement-form-heading">
+<section class="agreement-request-hero">
     <div>
-        <p class="eyebrow mb-2" data-form-eyebrow>Agreement management</p>
+        <div class="agreement-request-hero-meta">
+            <a
+                href="agreements.php"
+                class="agreement-request-hero-back"
+                data-cancel-link
+                aria-label="Back to all Agreements"
+            >
+                <span aria-hidden="true">←</span>
+                <span>All Agreements</span>
+            </a>
+            <span class="agreement-request-hero-meta-divider" aria-hidden="true"></span>
+            <p class="eyebrow mb-0" data-form-eyebrow>Agreement management</p>
+        </div>
         <h1 class="display-6 mb-2" data-form-title>Create comprehensive Agreement</h1>
-        <p class="text-secondary mb-0" data-form-description>
+        <p class="mb-0" data-form-description>
             Complete one section at a time. Applicant identity, organizational unit,
             submission time, status, and approvals are recorded automatically.
         </p>
+    </div>
+    <div class="agreement-request-hero-badge" aria-label="10 guided sections">
+        <span>10</span>
+        <small>guided sections</small>
     </div>
 </section>
 
@@ -127,23 +148,26 @@ $sdgs = [
     <span>Preparing Agreement form…</span>
 </div>
 
-<form id="agreement-form" class="d-none" novalidate>
-    <div class="agreement-form-toolbar mt-4" aria-label="Form section controls">
-        <div class="agreement-form-progress">
-            <span data-progress-label>0 of 10 sections complete</span>
+<form id="agreement-form" class="agreement-request-form d-none mt-4" novalidate>
+    <section class="agreement-form-shell">
+        <aside class="agreement-form-step-panel" aria-label="Agreement form progress">
+            <div class="agreement-form-step-panel-heading">
+                <h2>Form Steps</h2>
+                <span data-progress-label>0 of 10 complete</span>
+            </div>
             <nav class="agreement-step-timeline" aria-label="Agreement form sections" data-step-timeline>
                 <?php foreach ([
-                    1 => 'Partner',
-                    2 => 'Duration',
-                    3 => 'Purpose',
-                    4 => 'Resources',
-                    5 => 'Impact',
-                    6 => 'MOU clauses',
-                    7 => 'People',
-                    8 => 'Programmes',
-                    9 => 'Outcomes',
-                    10 => 'Media',
-                ] as $stepNumber => $stepLabel): ?>
+                    1 => ['Partner', 'Identity and organization'],
+                    2 => ['Duration', 'Dates and renewal'],
+                    3 => ['Purpose', 'Need and objectives'],
+                    4 => ['Resources', 'Commitments and support'],
+                    5 => ['Impact', 'Sustainable development'],
+                    6 => ['MOU clauses', 'Governance and terms'],
+                    7 => ['People', 'Contacts and signatories'],
+                    8 => ['Programmes', 'Implementation plan'],
+                    9 => ['Outcomes', 'Targets and measures'],
+                    10 => ['Media', 'Supporting evidence'],
+                ] as $stepNumber => [$stepLabel, $stepDescription]): ?>
                     <button
                         type="button"
                         class="agreement-step"
@@ -151,16 +175,17 @@ $sdgs = [
                         aria-label="Go to section <?= $stepNumber ?>: <?= $stepLabel ?>"
                     >
                         <span class="agreement-step-marker"><?= $stepNumber ?></span>
-                        <span class="agreement-step-label"><?= $stepLabel ?></span>
+                        <span class="agreement-step-copy">
+                            <small>Step <?= $stepNumber ?></small>
+                            <strong class="agreement-step-label"><?= $stepLabel ?></strong>
+                            <span class="agreement-step-description"><?= $stepDescription ?></span>
+                        </span>
                     </button>
                 <?php endforeach; ?>
             </nav>
-        </div>
-        <div class="agreement-form-toolbar-actions">
-            <button type="button" class="btn btn-sm btn-outline-primary" data-expand-all>Open all</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-collapse-all>Collapse all</button>
-        </div>
-    </div>
+        </aside>
+
+        <div class="agreement-form-content">
 
     <section class="workspace-card mt-4 d-none" aria-labelledby="change-reason-title" data-change-reason-section>
         <div class="workspace-card-header"><div>
@@ -296,23 +321,6 @@ $sdgs = [
             <div class="date-range-summary" data-project-duration-summary></div>
             <div class="invalid-feedback">Select both the project start and end dates.</div>
         </div>
-        <?php field(
-            'signing_date',
-            'Signing date *',
-            'date',
-            'col-md-3',
-            'required',
-            'The date the authorized parties sign the approved instrument.'
-        ); ?>
-        <?php field(
-            'effective_date',
-            'Effective date *',
-            'date',
-            'col-md-3',
-            'required',
-            'The date the signed Agreement becomes operational/legal. It may be the signing date or a later date and is separate from activity start.'
-        ); ?>
-
         <div class="col-12">
             <div class="renewal-choice">
                 <div class="form-check form-switch">
@@ -601,17 +609,30 @@ $sdgs = [
     </div></div>
     <?php sectionFooter(); ?>
 
-    <div class="form-actions sticky-form-actions mt-4">
-        <span class="small text-secondary me-auto" data-save-readiness>Required sections still need attention.</span>
-        <a href="agreements.php" class="btn btn-outline-secondary" data-cancel-link>Cancel</a>
-        <button id="save-agreement" class="btn btn-primary" type="submit">
-            <span data-save-label>Save draft</span>
-            <span class="spinner-border spinner-border-sm ms-2 d-none" data-save-spinner aria-hidden="true"></span>
-        </button>
+        </div>
+    </section>
+
+    <div class="form-actions sticky-form-actions agreement-form-actions mt-4">
+        <div class="agreement-form-actions-left">
+            <button class="btn btn-outline-secondary" type="button" data-previous-section>
+                Previous
+            </button>
+            <button class="btn btn-outline-primary" type="button" data-next-section>
+                Next section
+            </button>
+        </div>
+        <div class="agreement-form-actions-right">
+            <span class="small text-secondary" data-save-readiness>Required sections still need attention.</span>
+            <a href="agreements.php" class="btn btn-outline-secondary" data-cancel-link>Cancel</a>
+            <button id="save-agreement" class="btn btn-primary" type="submit">
+                <span data-save-label>Save draft</span>
+                <span class="spinner-border spinner-border-sm ms-2 d-none" data-save-spinner aria-hidden="true"></span>
+            </button>
+        </div>
     </div>
 </form>
 
 <?php workspaceFooter([
     'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js',
-    'assets/js/agreement-form.js?v=20260729-guided-form-v4',
+    'assets/js/agreement-form.js?v=20260803-initiative-alignment-v1',
 ]); ?>

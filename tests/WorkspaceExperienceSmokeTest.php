@@ -40,6 +40,9 @@ $apiClient = workspaceSource(
 $workspaceStyles = workspaceSource(
     'uob-agreements/workspace/assets/css/workspace.css'
 );
+$agreementFormStyles = workspaceSource(
+    'uob-agreements/workspace/assets/css/agreement-form.css'
+);
 $lifecycleForm = workspaceSource(
     'uob-agreements/workspace/lifecycle-form.php'
 );
@@ -108,8 +111,11 @@ workspaceAssert(
 );
 workspaceAssert(
     str_contains($agreementJs, 'agreement-form.php?id=')
-        && str_contains($agreementForm, 'agreement-form-toolbar')
-        && str_contains($agreementForm, 'agreement-form-section'),
+        && str_contains($agreementForm, 'agreement-request-hero')
+        && str_contains($agreementForm, 'agreement-form-shell')
+        && str_contains($agreementForm, 'agreement-form-step-panel')
+        && str_contains($agreementForm, 'agreement-form-section')
+        && str_contains($agreementFormStyles, '.agreement-form-shell'),
     'Agreement editing is not routed through the redesigned comprehensive form'
 );
 workspaceAssert(

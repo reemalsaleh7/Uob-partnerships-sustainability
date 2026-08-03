@@ -36,6 +36,9 @@ $lifecycleJavascript = agreementFormSource(
 $styles = agreementFormSource(
     'uob-agreements/workspace/assets/css/workspace.css'
 );
+$formStyles = agreementFormSource(
+    'uob-agreements/workspace/assets/css/agreement-form.css'
+);
 $partnerRepository = agreementFormSource(
     'repositories/PartnerRepository.php'
 );
@@ -43,6 +46,9 @@ $agreementService = agreementFormSource('services/AgreementService.php');
 $agreementValidator = agreementFormSource('validators/AgreementValidator.php');
 $partnerRoutes = agreementFormSource('routes/partners.php');
 $agreementRoutes = agreementFormSource('routes/agreements.php');
+$agreementController = agreementFormSource(
+    'controllers/AgreementController.php'
+);
 $clauseExtraction = agreementFormSource(
     'services/AgreementClauseExtractionService.php'
 );
@@ -82,7 +88,10 @@ agreementFormAssert(
     !str_contains($form, '<label for="geographic_scope"')
         && str_contains($form, 'data-derived-partner-scope')
         && str_contains($javascript, 'derivedPartnerScope')
-        && str_contains($agreementService, 'withDerivedPartnerScope'),
+        && str_contains($agreementService, 'withDerivedPartnerScope')
+        && str_contains($agreementService, 'findActiveByIds')
+        && str_contains($agreementService, "? 'LOCAL'")
+        && str_contains($agreementService, ": 'INTERNATIONAL'"),
     'Partner scope must be derived from selected partner countries'
 );
 agreementFormAssert(
@@ -162,12 +171,20 @@ agreementFormAssert(
 );
 agreementFormAssert(
     str_contains($form, 'data-form-section')
-        && str_contains($form, 'data-expand-all')
-        && str_contains($form, 'data-collapse-all')
+        && str_contains($form, 'agreement-request-hero')
+        && str_contains($form, 'agreement-form-shell')
+        && str_contains($form, 'agreement-form-step-panel')
+        && str_contains($form, 'data-previous-section')
+        && str_contains($form, 'data-next-section')
         && substr_count($form, 'data-section-number="') === 1
         && str_contains($form, "        10,\n        'media'")
         && str_contains($javascript, 'maybeAdvanceSection')
+        && str_contains($javascript, 'showSection')
+        && str_contains($javascript, 'moveSection')
         && str_contains($styles, '.agreement-section-toggle')
+        && str_contains($formStyles, '.agreement-request-hero')
+        && str_contains($formStyles, '.agreement-form-shell')
+        && str_contains($formStyles, '.agreement-step.is-current')
         && str_contains($form, 'data-step-timeline')
         && str_contains($form, 'data-step-target=')
         && str_contains($javascript, 'is-current')
@@ -254,8 +271,16 @@ agreementFormAssert(
         $form,
         "'title_ar', 'اسم مشروع التعاون (العربية) *'"
     )
-        && str_contains($form, "'Signing date *'")
-        && str_contains($form, "'Effective date *'")
+        && !str_contains($form, "'Signing date *'")
+        && !str_contains($form, "'Effective date *'")
+        && !str_contains(
+            $agreementValidator,
+            'Signing date is required before submission'
+        )
+        && !str_contains(
+            $agreementValidator,
+            'Effective date is required before submission'
+        )
         && !str_contains(
             $form,
             "'Fields of cooperation / MOU Article 1 *'"
@@ -285,9 +310,40 @@ agreementFormAssert(
 );
 agreementFormAssert(
     str_contains($agreementRoutes, '/agreement-document-extraction')
+        && str_contains(
+            $agreementRoutes,
+            '$controller->extractDocumentClauses()'
+        )
+        && str_contains(
+            $agreementController,
+            'AgreementClauseExtractionService'
+        )
+        && str_contains(
+            $agreementController,
+            'public function extractDocumentClauses'
+        )
+        && str_contains(
+            $agreementController,
+            "PermissionMiddleware::requireAny"
+        )
         && str_contains($documentStorage, "'mp4'")
         && str_contains($documentStorage, "'webp'")
+        && str_contains(
+            $documentStorage,
+            'normalizedAllowedExtensions'
+        )
         && str_contains($documentRepository, 'hasDocumentType')
+        && str_contains($documentRepository, 'storage_key IS NOT NULL')
+        && str_contains($agreementService, "'GOVERNANCE_CLAUSES'")
+        && str_contains($agreementService, "'MEDIA'")
+        && str_contains(
+            $agreementService,
+            "'GOVERNANCE_CLAUSES' => ['docx']"
+        )
+        && str_contains(
+            $agreementService,
+            "'MEDIA' => ['jpg', 'jpeg', 'png', 'webp', 'mp4']"
+        )
         && str_contains(
             $agreementService,
             'Upload the governance / MOU clauses DOCX file before submission'

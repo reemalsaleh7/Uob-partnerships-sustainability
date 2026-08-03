@@ -48,6 +48,8 @@ final class AgreementClauseExtractionService
             );
         }
 
+        $this->validateDocxMediaTypeAndSignature($temporaryPath);
+
         $text = $this->extractDocxText($temporaryPath);
         if ($text === '') {
             throw new InvalidArgumentException(
@@ -72,6 +74,46 @@ final class AgreementClauseExtractionService
         ];
     }
 
+    private function validateDocxMediaTypeAndSignature(string $path): void
+    {
+        if (!class_exists('finfo')) {
+            throw new RuntimeException(
+                'The PHP Fileinfo extension is required for clause extraction'
+            );
+        }
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($path);
+        $allowedMimeTypes = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/octet-stream',
+        ];
+        if (
+            !is_string($mimeType)
+            || !in_array(strtolower($mimeType), $allowedMimeTypes, true)
+        ) {
+            throw new InvalidArgumentException(
+                'The uploaded content is not a valid DOCX file'
+            );
+        }
+
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            throw new RuntimeException(
+                'The uploaded Agreement document could not be inspected'
+            );
+        }
+        $signature = fread($handle, 4);
+        fclose($handle);
+
+        if (!str_starts_with((string) $signature, "PK\x03\x04")) {
+            throw new InvalidArgumentException(
+                'The uploaded content is not a valid DOCX file'
+            );
+        }
+    }
+
     private function extractDocxText(string $path): string
     {
         if (!class_exists('ZipArchive')) {
@@ -88,6 +130,7 @@ final class AgreementClauseExtractionService
         try {
             if (
                 $archive->locateName('word/vbaProject.bin') !== false
+                || $archive->locateName('[Content_Types].xml') === false
                 || $archive->locateName('word/document.xml') === false
             ) {
                 throw new InvalidArgumentException(

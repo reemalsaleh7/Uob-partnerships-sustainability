@@ -58,7 +58,10 @@ class DocumentStorageService
         $this->allowMedia = $allowMedia;
     }
 
-    public function store(array $uploadedFile): array
+    public function store(
+        array $uploadedFile,
+        ?array $allowedExtensions = null
+    ): array
     {
         $error = (int) ($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE);
 
@@ -86,14 +89,20 @@ class DocumentStorageService
             pathinfo($originalName, PATHINFO_EXTENSION)
         );
 
+        $allowedExtensions = $this->normalizedAllowedExtensions(
+            $allowedExtensions
+        );
+
         if (
             !array_key_exists($extension, self::ALLOWED_EXTENSIONS)
-            || (!$this->allowMedia && $this->isMediaExtension($extension))
+            || !in_array($extension, $allowedExtensions, true)
         ) {
             throw new InvalidArgumentException(
-                $this->allowMedia
-                    ? 'Only PDF, DOC, DOCX, JPG, PNG, WebP, and MP4 files are allowed'
-                    : 'Only PDF, DOC, and DOCX files are allowed'
+                'Only these file extensions are allowed: '
+                . implode(', ', array_map(
+                    'strtoupper',
+                    $allowedExtensions
+                ))
             );
         }
 
@@ -214,6 +223,32 @@ class DocumentStorageService
                     true
                 )
         ));
+    }
+
+    private function normalizedAllowedExtensions(?array $extensions): array
+    {
+        if ($extensions === null) {
+            return self::allowedExtensions($this->allowMedia);
+        }
+
+        $normalized = array_values(array_unique(array_filter(
+            array_map(
+                static fn (mixed $extension): string => strtolower(trim(
+                    (string) $extension
+                )),
+                $extensions
+            ),
+            static fn (string $extension): bool =>
+                array_key_exists($extension, self::ALLOWED_EXTENSIONS)
+        )));
+
+        if ($normalized === []) {
+            throw new InvalidArgumentException(
+                'No permitted upload extensions were configured'
+            );
+        }
+
+        return $normalized;
     }
 
     private function pathForNewKey(string $storageKey): string

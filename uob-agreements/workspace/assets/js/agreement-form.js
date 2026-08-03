@@ -46,6 +46,8 @@
         changeReasonLabel: document.querySelector('[data-change-reason-label]'),
         progressLabel: document.querySelector('[data-progress-label]'),
         stepTimeline: document.querySelector('[data-step-timeline]'),
+        previousSection: document.querySelector('[data-previous-section]'),
+        nextSection: document.querySelector('[data-next-section]'),
         extractClauses: document.querySelector('[data-extract-clauses]'),
         extractLabel: document.querySelector('[data-extract-label]'),
         extractSpinner: document.querySelector('[data-extract-spinner]'),
@@ -76,12 +78,13 @@
         visitedSections: new Set(),
         validationAttempted: false,
         programSuggestions: {},
-        nextProgramIndex: 0
+        nextProgramIndex: 0,
+        activeSectionNumber: '1'
     };
 
     const scalarFields = [
         'title', 'title_ar', 'agreement_type', 'description',
-        'start_date', 'end_date', 'effective_date', 'signing_date',
+        'start_date', 'end_date',
         'fixed_term_months', 'renewal_term_months', 'non_renewal_notice_months',
         'need_justification', 'expected_value',
         'objectives', 'focus_areas', 'collaboration_areas',
@@ -1447,9 +1450,72 @@
     function setSectionOpen(section, isOpen) {
         const toggle = section.querySelector('[data-section-toggle]');
         const body = section.querySelector('[data-section-body]');
-        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle?.setAttribute('aria-expanded', String(isOpen));
         body.hidden = !isOpen;
         section.classList.toggle('is-open', isOpen);
+    }
+
+    function updateWizardControls() {
+        const activeIndex = sectionNodes.findIndex(
+            (section) =>
+                section.dataset.sectionNumber === state.activeSectionNumber
+        );
+        elements.previousSection.disabled = activeIndex <= 0;
+        elements.nextSection.disabled = activeIndex < 0
+            || activeIndex >= sectionNodes.length - 1;
+        elements.nextSection.textContent = activeIndex === sectionNodes.length - 2
+            ? 'Review final section'
+            : 'Next section';
+    }
+
+    function showSection(section, options = {}) {
+        if (!section) return;
+        const { focus = false, scroll = false } = options;
+        sectionNodes.forEach((candidate) => {
+            setSectionOpen(candidate, candidate === section);
+        });
+        state.activeSectionNumber = section.dataset.sectionNumber;
+        state.visitedSections.add(state.activeSectionNumber);
+        updateAllSectionStatuses();
+
+        elements.stepTimeline
+            .querySelector(
+                `[data-step-target="${state.activeSectionNumber}"]`
+            )
+            ?.scrollIntoView({
+                behavior: scroll ? 'smooth' : 'auto',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+
+        if (scroll) {
+            document.querySelector('.agreement-form-content')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        if (focus) {
+            window.setTimeout(() => {
+                section.querySelector(
+                    '[data-section-body] input:not([type="hidden"]), '
+                    + '[data-section-body] select, '
+                    + '[data-section-body] textarea, '
+                    + '[data-section-body] button'
+                )?.focus({ preventScroll: true });
+            }, 300);
+        }
+    }
+
+    function moveSection(offset) {
+        const activeIndex = sectionNodes.findIndex(
+            (section) =>
+                section.dataset.sectionNumber === state.activeSectionNumber
+        );
+        const target = sectionNodes[activeIndex + offset];
+        if (target) {
+            showSection(target, { focus: true, scroll: true });
+        }
     }
 
     function sectionHasRequiredFields(section) {
@@ -1555,9 +1621,6 @@
         elements.progressLabel.textContent =
             `${completed} of ${sectionNodes.length} sections complete`;
 
-        const firstIncomplete = sectionNodes.find(
-            (section) => !sectionIsComplete(section)
-        ) || sectionNodes[sectionNodes.length - 1];
         elements.stepTimeline
             .querySelectorAll('[data-step-target]')
             .forEach((step) => {
@@ -1567,7 +1630,8 @@
                         === step.dataset.stepTarget
                 );
                 const complete = section && sectionIsComplete(section);
-                const current = section === firstIncomplete;
+                const current = section?.dataset.sectionNumber
+                    === state.activeSectionNumber;
                 step.classList.toggle('is-complete', Boolean(complete));
                 step.classList.toggle(
                     'needs-attention',
@@ -1591,6 +1655,7 @@
         elements.saveReadiness.textContent = requiredComplete
             ? 'Required sections are complete. You can save this draft.'
             : 'Required sections still need attention.';
+        updateWizardControls();
     }
 
     function maybeAdvanceSection(section) {
@@ -1608,11 +1673,7 @@
         if (!next) return;
         state.autoAdvancedSections.add(section.dataset.sectionNumber);
         window.setTimeout(() => {
-            setSectionOpen(section, false);
-            state.visitedSections.add(next.dataset.sectionNumber);
-            setSectionOpen(next, true);
-            updateAllSectionStatuses();
-            next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showSection(next, { scroll: true });
         }, 350);
     }
 
@@ -1649,14 +1710,7 @@
         ) {
             const invalidSection = firstInvalidSection();
             if (invalidSection) {
-                setSectionOpen(invalidSection, true);
-                invalidSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-                window.setTimeout(() => {
-                    invalidSection.querySelector(':invalid')?.focus();
-                }, 400);
+                showSection(invalidSection, { focus: true, scroll: true });
             }
             return false;
         }
@@ -2003,7 +2057,13 @@
             }
             syncConditionalSections();
             refreshProgramSuggestions();
-            updateAllSectionStatuses();
+            showSection(
+                sectionNodes.find(
+                    (section) =>
+                        section.dataset.sectionNumber
+                        === state.activeSectionNumber
+                ) || sectionNodes[0]
+            );
             state.initialized = true;
             elements.loading.classList.add('d-none');
             form.classList.remove('d-none');
@@ -2018,24 +2078,11 @@
             const section = button.closest('[data-form-section]');
             const isOpen = button.getAttribute('aria-expanded') === 'true';
             if (!isOpen) {
-                state.visitedSections.add(section.dataset.sectionNumber);
+                showSection(section, { focus: true });
             }
-            setSectionOpen(section, !isOpen);
-            updateAllSectionStatuses();
         });
     });
 
-    document.querySelector('[data-expand-all]').addEventListener('click', () => {
-        sectionNodes.forEach((section) => {
-            state.visitedSections.add(section.dataset.sectionNumber);
-            setSectionOpen(section, true);
-        });
-        updateAllSectionStatuses();
-    });
-    document.querySelector('[data-collapse-all]').addEventListener('click', () => {
-        sectionNodes.forEach((section) => setSectionOpen(section, false));
-        updateAllSectionStatuses();
-    });
     elements.stepTimeline.addEventListener('click', (event) => {
         const step = event.target.closest('[data-step-target]');
         if (!step) return;
@@ -2044,19 +2091,10 @@
                 candidate.dataset.sectionNumber === step.dataset.stepTarget
         );
         if (!section) return;
-        state.visitedSections.add(section.dataset.sectionNumber);
-        setSectionOpen(section, true);
-        updateAllSectionStatuses();
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.setTimeout(() => {
-            section.querySelector(
-                '[data-section-body] input:not([type="hidden"]), '
-                + '[data-section-body] select, '
-                + '[data-section-body] textarea, '
-                + '[data-section-body] button'
-            )?.focus({ preventScroll: true });
-        }, 400);
+        showSection(section, { focus: true, scroll: true });
     });
+    elements.previousSection.addEventListener('click', () => moveSection(-1));
+    elements.nextSection.addEventListener('click', () => moveSection(1));
 
     elements.partnerSearch.addEventListener('input', renderPartnerResults);
     elements.partnerResults.addEventListener('click', (event) => {
