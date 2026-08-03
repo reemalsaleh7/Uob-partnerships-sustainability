@@ -46,6 +46,7 @@ $agreementService = agreementFormSource('services/AgreementService.php');
 $agreementValidator = agreementFormSource('validators/AgreementValidator.php');
 $partnerRoutes = agreementFormSource('routes/partners.php');
 $agreementRoutes = agreementFormSource('routes/agreements.php');
+$apiBoundary = agreementFormSource('api/index.php');
 $agreementController = agreementFormSource(
     'controllers/AgreementController.php'
 );
@@ -83,6 +84,14 @@ agreementFormAssert(
         && str_contains($form, 'data-edit-partner') === false
         && str_contains($javascript, 'dataset.editPartner'),
     'The searchable single-partner experience is incomplete'
+);
+agreementFormAssert(
+    str_contains($apiBoundary, "str_starts_with(\$requestPath, '/partners')")
+        && str_contains($javascript, 'partnerSearchOpen')
+        && str_contains($javascript, "addEventListener('focus'")
+        && str_contains($form, 'role="combobox"')
+        && str_contains($form, 'aria-controls="partner-search-results"'),
+    'Partner directory search is not routed or exposed accessibly'
 );
 agreementFormAssert(
     !str_contains($form, '<label for="geographic_scope"')
@@ -190,6 +199,12 @@ agreementFormAssert(
         && str_contains($javascript, 'is-current')
         && str_contains($javascript, 'visitedSections')
         && str_contains($javascript, 'sectionNeedsAttention')
+        && str_contains($javascript, 'setSectionOpen(section, !isOpen)')
+        && !str_contains(
+            $javascript,
+            'setSectionOpen(candidate, candidate === section)'
+        )
+        && str_contains($formStyles, '.agreement-step:last-child::before')
         && str_contains($styles, '.agreement-form-section.needs-attention .agreement-section-number')
         && str_contains($styles, '.partner-results[hidden]'),
     'The guided collapsible section workflow is incomplete'
@@ -421,10 +436,9 @@ $contacts = $contactExtractor->invoke($extractor, [
     'Name: Dr Aisha Ahmed',
     'Job title: Director of Partnerships',
     'Email: aisha@uob.example',
+    'Phone: +973 1743 8000',
     'Partner Coordinator',
-    'Name: Mr Daniel Smith',
-    'Position: International Office Manager',
-    'Email: daniel@partner.example',
+    'Name: Mr Daniel Smith; Position: International Office Manager; Email: daniel@partner.example; Mobile No.: +44 20 7946 0958',
     'For and on behalf of the University of Bahrain',
     'Full name: Prof Mariam Ali',
     'Capacity: President',
@@ -449,6 +463,14 @@ agreementFormAssert(
             === 'Mr Daniel Smith'
         && ($contactsByRole['PARTNER:COORDINATOR']['job_title'] ?? '')
             === 'International Office Manager'
+        && ($contactsByRole['UOB:COORDINATOR']['email'] ?? '')
+            === 'aisha@uob.example'
+        && ($contactsByRole['UOB:COORDINATOR']['phone'] ?? '')
+            === '+973 1743 8000'
+        && ($contactsByRole['PARTNER:COORDINATOR']['email'] ?? '')
+            === 'daniel@partner.example'
+        && ($contactsByRole['PARTNER:COORDINATOR']['phone'] ?? '')
+            === '+44 20 7946 0958'
         && ($contactsByRole['UOB:SIGNATORY']['full_name'] ?? '')
             === 'Prof Mariam Ali'
         && ($contactsByRole['UOB:SIGNATORY']['job_title'] ?? '')

@@ -140,7 +140,7 @@ try {
         exit;
     }
 
-    if ($requestPath === '/partners') {
+    if (str_starts_with($requestPath, '/partners')) {
         require dirname(__DIR__) . '/routes/partners.php';
         exit;
     }

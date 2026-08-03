@@ -104,11 +104,12 @@ the race where two requests try to create a current Agreement simultaneously.
 ## Guided form behavior
 
 - Ten sections render as accessible disclosure panels. Only the first opens
-  initially; required sections advance when complete, while Open all and
-  Collapse all remain available.
+  initially; creators can leave multiple sections open and scroll naturally,
+  while Open all and Collapse all remain available. Completing a section
+  updates its status without moving the viewport automatically.
 - The former percentage bar is a clickable ten-step timeline. Each step shows
   complete, current, or needs-attention state and opens and scrolls to its
-  corresponding form section. No step begins complete. Optional sections such
+  corresponding form section without collapsing other open sections. No step begins complete. Optional sections such
   as Resources, SDGs, and Supporting media become complete after the creator
   explicitly opens and reviews them. Required incomplete sections turn red
   only after they are visited, started, or included in a failed validation.
@@ -135,8 +136,10 @@ the race where two requests try to create a current Agreement simultaneously.
 - A governance/MOU DOCX file is mandatory for a new Agreement. Choosing it
   immediately starts automatic language-aware extraction. Article 1 fields of
   cooperation, Article 2 implementation methods, governance clauses,
-  coordinators, and signatories are copied only into empty fields and remain
-  subject to creator review. Numbered-article parsing prevents Article 2 from
+  coordinators, and signatories are copied into empty or previously extracted
+  fields and remain subject to creator review. Coordinator names, email
+  addresses, and phone numbers accept labeled English and Arabic DOCX values.
+  Numbered-article parsing prevents Article 2 from
   being grouped into Article 1. The clause text fields are optional; the DOCX
   itself and the complete coordinator/signatory records remain mandatory.
   Submission and resubmission are rejected by the server if no

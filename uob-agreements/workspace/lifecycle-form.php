@@ -9,18 +9,26 @@ workspaceHeader(
 );
 ?>
 
-<div class="mb-4"><a href="lifecycle-requests.php" class="back-link">← Back to Lifecycle requests</a></div>
 <div id="lifecycle-form-alert" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
 <div id="lifecycle-form-loading" class="loading-state"><div class="spinner-border text-primary"></div><span>Loading request form…</span></div>
 
 <div id="lifecycle-form-content" class="d-none">
-    <section class="page-heading">
-        <p class="eyebrow mb-2">Official Agreement lifecycle request</p>
-        <h1 class="display-6 mb-2" data-form-title>New lifecycle request</h1>
-        <p class="text-secondary mb-0">Original Agreement: <strong data-agreement-title></strong></p>
+    <section class="workspace-form-hero">
+        <div>
+            <div class="workspace-form-hero-meta">
+                <a href="lifecycle-requests.php" class="workspace-form-hero-back">← Back to Lifecycle requests</a>
+                <span aria-hidden="true"></span>
+                <p class="eyebrow mb-0">Official Agreement lifecycle request</p>
+            </div>
+            <h1 class="display-6 mb-2" data-form-title>New lifecycle request</h1>
+            <p class="mb-0">Original Agreement: <strong data-agreement-title></strong></p>
+        </div>
+        <div class="workspace-form-hero-badge" aria-label="4 guided sections">
+            <span>4</span><small>guided sections</small>
+        </div>
     </section>
 
-    <form id="lifecycle-request-form" class="mt-4 guided-lifecycle-form" novalidate>
+    <form id="lifecycle-request-form" class="mt-4 guided-lifecycle-form workspace-standard-form" novalidate>
         <div class="agreement-form-toolbar lifecycle-form-toolbar" aria-label="Lifecycle request sections">
             <div class="agreement-form-progress">
                 <span data-lifecycle-progress>0 of 4 sections complete</span>

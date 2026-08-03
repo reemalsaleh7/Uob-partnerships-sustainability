@@ -46,6 +46,8 @@
         changeReasonLabel: document.querySelector('[data-change-reason-label]'),
         progressLabel: document.querySelector('[data-progress-label]'),
         stepTimeline: document.querySelector('[data-step-timeline]'),
+        expandAll: document.querySelector('[data-expand-all]'),
+        collapseAll: document.querySelector('[data-collapse-all]'),
         previousSection: document.querySelector('[data-previous-section]'),
         nextSection: document.querySelector('[data-next-section]'),
         extractClauses: document.querySelector('[data-extract-clauses]'),
@@ -72,6 +74,7 @@
         selectedPartnerIds: new Set(),
         partnerAgreementContext: null,
         partnerContextRequest: 0,
+        partnerSearchOpen: false,
         editingPartnerId: null,
         hasGovernanceDocument: false,
         autoAdvancedSections: new Set(),
@@ -232,17 +235,20 @@
     function renderPartnerResults() {
         const query = normalized(elements.partnerSearch.value);
         elements.partnerResults.replaceChildren();
-        if (query === '') {
+        if (!state.partnerSearchOpen) {
             elements.partnerResults.hidden = true;
+            elements.partnerSearch.setAttribute('aria-expanded', 'false');
             elements.partnerSearchCount.textContent = '';
             return;
         }
 
         const matches = [...state.partners.values()].filter((partner) =>
-            partnerSearchText(partner).includes(query)
+            query === '' || partnerSearchText(partner).includes(query)
         );
+        const visibleLimit = query === '' ? 12 : 30;
         elements.partnerResults.hidden = false;
-        matches.slice(0, 30).forEach((partner) => {
+        elements.partnerSearch.setAttribute('aria-expanded', 'true');
+        matches.slice(0, visibleLimit).forEach((partner) => {
             elements.partnerResults.appendChild(partnerResultNode(partner));
         });
 
@@ -253,9 +259,11 @@
             elements.partnerResults.appendChild(empty);
         }
 
-        elements.partnerSearchCount.textContent = matches.length > 30
-            ? `Showing 30 of ${matches.length}`
-            : `${matches.length} found`;
+        elements.partnerSearchCount.textContent = query === ''
+            ? `${matches.length} available`
+            : (matches.length > visibleLimit
+                ? `Showing ${visibleLimit} of ${matches.length}`
+                : `${matches.length} found`);
     }
 
     function partnerCardNode(partner) {
@@ -1471,9 +1479,7 @@
     function showSection(section, options = {}) {
         if (!section) return;
         const { focus = false, scroll = false } = options;
-        sectionNodes.forEach((candidate) => {
-            setSectionOpen(candidate, candidate === section);
-        });
+        setSectionOpen(section, true);
         state.activeSectionNumber = section.dataset.sectionNumber;
         state.visitedSections.add(state.activeSectionNumber);
         updateAllSectionStatuses();
@@ -1489,7 +1495,7 @@
             });
 
         if (scroll) {
-            document.querySelector('.agreement-form-content')?.scrollIntoView({
+            section.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
             });
@@ -1669,12 +1675,11 @@
             return;
         }
 
-        const next = sectionNodes[sectionNodes.indexOf(section) + 1];
-        if (!next) return;
+        // Completion updates the timeline without moving the user's viewport.
+        // The next section remains available through the step rail, buttons,
+        // or normal page scrolling.
         state.autoAdvancedSections.add(section.dataset.sectionNumber);
-        window.setTimeout(() => {
-            showSection(next, { scroll: true });
-        }, 350);
+        updateAllSectionStatuses();
     }
 
     function firstInvalidSection() {
@@ -1914,7 +1919,18 @@
             return;
         }
 
+        if (!/\.docx$/i.test(file.name) || file.size <= 0 || file.size > 10485760) {
+            elements.clauseFeedback.textContent =
+                'Choose a valid DOCX file larger than 0 bytes and no more than 10 MB.';
+            elements.clauseFeedback.classList.remove('d-none', 'is-success');
+            elements.clauseFeedback.classList.add('is-error');
+            return;
+        }
+
         clearMessages();
+        elements.clauseFeedback.classList.remove('d-none', 'is-error', 'is-success');
+        elements.clauseFeedback.textContent =
+            `Extracting clauses and contact details from ${file.name}…`;
         elements.extractClauses.disabled = true;
         elements.extractLabel.textContent = 'Extracting…';
         elements.extractSpinner.classList.remove('d-none');
@@ -1947,17 +1963,26 @@
                 const index = [...document.querySelectorAll('[data-contact-row]')]
                     .indexOf(row);
                 const mapping = {
-                    full_name: `contact_${index}_name`,
-                    job_title: `contact_${index}_title`,
-                    email: `contact_${index}_email`,
-                    phone: `contact_${index}_phone`
+                    name: [contact.full_name ?? contact.name, `contact_${index}_name`],
+                    title: [contact.job_title ?? contact.title, `contact_${index}_title`],
+                    email: [contact.email, `contact_${index}_email`],
+                    phone: [contact.phone ?? contact.mobile ?? contact.telephone, `contact_${index}_phone`]
                 };
-                Object.entries(mapping).forEach(([source, targetName]) => {
+                Object.entries(mapping).forEach(([source, definition]) => {
+                    const [rawValue, targetName] = definition;
                     const target = control(targetName);
-                    const value = String(contact[source] || '').trim();
-                    if (target && !target.value.trim() && value) {
+                    const value = String(rawValue || '').trim();
+                    if (
+                        target
+                        && (
+                            !target.value.trim()
+                            || target.dataset.extractionSuggested === 'true'
+                        )
+                        && value
+                    ) {
                         target.value = value;
-                        if (['full_name', 'job_title'].includes(source)) {
+                        target.dataset.extractionSuggested = 'true';
+                        if (['name', 'title'].includes(source)) {
                             target.lang = result.language || '';
                             target.dir =
                                 result.language === 'ar' ? 'rtl' : 'ltr';
@@ -1969,9 +1994,14 @@
             elements.clauseFeedback.textContent = result.extracted
                 ? `${result.message} ${applied} empty clause field${applied === 1 ? '' : 's'} and ${contactsApplied} coordinator/signatory field${contactsApplied === 1 ? '' : 's'} populated.`
                 : result.message;
-            elements.clauseFeedback.classList.remove('d-none');
+            elements.clauseFeedback.classList.remove('d-none', 'is-error');
+            elements.clauseFeedback.classList.add('is-success');
             updateAllSectionStatuses();
         } catch (error) {
+            elements.clauseFeedback.textContent = error.message
+                || 'The selected file could not be extracted.';
+            elements.clauseFeedback.classList.remove('d-none', 'is-success');
+            elements.clauseFeedback.classList.add('is-error');
             showError(error);
         } finally {
             elements.extractClauses.disabled = false;
@@ -2077,10 +2107,25 @@
         button.addEventListener('click', () => {
             const section = button.closest('[data-form-section]');
             const isOpen = button.getAttribute('aria-expanded') === 'true';
+            setSectionOpen(section, !isOpen);
             if (!isOpen) {
-                showSection(section, { focus: true });
+                state.activeSectionNumber = section.dataset.sectionNumber;
+                state.visitedSections.add(state.activeSectionNumber);
             }
+            updateAllSectionStatuses();
         });
+    });
+
+    elements.expandAll.addEventListener('click', () => {
+        sectionNodes.forEach((section) => {
+            state.visitedSections.add(section.dataset.sectionNumber);
+            setSectionOpen(section, true);
+        });
+        updateAllSectionStatuses();
+    });
+    elements.collapseAll.addEventListener('click', () => {
+        sectionNodes.forEach((section) => setSectionOpen(section, false));
+        updateAllSectionStatuses();
     });
 
     elements.stepTimeline.addEventListener('click', (event) => {
@@ -2096,14 +2141,28 @@
     elements.previousSection.addEventListener('click', () => moveSection(-1));
     elements.nextSection.addEventListener('click', () => moveSection(1));
 
-    elements.partnerSearch.addEventListener('input', renderPartnerResults);
+    elements.partnerSearch.addEventListener('focus', () => {
+        state.partnerSearchOpen = true;
+        renderPartnerResults();
+    });
+    elements.partnerSearch.addEventListener('input', () => {
+        state.partnerSearchOpen = true;
+        renderPartnerResults();
+    });
+    elements.partnerSearch.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        state.partnerSearchOpen = false;
+        renderPartnerResults();
+    });
     elements.partnerResults.addEventListener('click', (event) => {
         const button = event.target.closest('[data-partner-id]');
         if (!button) return;
         const id = button.dataset.partnerId;
         selectPartner(id, !state.selectedPartnerIds.has(id));
         elements.partnerSearch.value = '';
+        state.partnerSearchOpen = false;
         renderPartnerResults();
+        elements.partnerSearch.focus();
     });
     elements.selectedPartners.addEventListener('click', (event) => {
         const editButton = event.target.closest('[data-edit-partner]');
@@ -2217,6 +2276,14 @@
             updateControlFeedback(event.target);
             window.setTimeout(() => maybeAdvanceSection(section), 0);
         }
+    });
+
+    form.addEventListener('focusin', (event) => {
+        const section = event.target.closest('[data-form-section]');
+        if (!section) return;
+        state.activeSectionNumber = section.dataset.sectionNumber;
+        state.visitedSections.add(state.activeSectionNumber);
+        updateAllSectionStatuses();
     });
 
     if (window.bootstrap?.Tooltip) {

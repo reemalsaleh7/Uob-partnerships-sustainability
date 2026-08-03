@@ -9,7 +9,7 @@ workspaceHeader(
     'agreements',
     [
         'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css',
-        'assets/css/agreement-form.css?v=20260803-initiative-alignment-v1',
+        'assets/css/agreement-form.css?v=20260803-collapsible-form-v2',
     ]
 );
 
@@ -131,8 +131,8 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
         </div>
         <h1 class="display-6 mb-2" data-form-title>Create comprehensive Agreement</h1>
         <p class="mb-0" data-form-description>
-            Complete one section at a time. Applicant identity, organizational unit,
-            submission time, status, and approvals are recorded automatically.
+            Open any section you need and scroll freely through the form. Applicant identity,
+            organizational unit, submission time, status, and approvals are recorded automatically.
         </p>
     </div>
     <div class="agreement-request-hero-badge" aria-label="10 guided sections">
@@ -148,12 +148,18 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
     <span>Preparing Agreement form…</span>
 </div>
 
-<form id="agreement-form" class="agreement-request-form d-none mt-4" novalidate>
+<form id="agreement-form" class="agreement-request-form workspace-standard-form d-none mt-4" novalidate>
     <section class="agreement-form-shell">
         <aside class="agreement-form-step-panel" aria-label="Agreement form progress">
             <div class="agreement-form-step-panel-heading">
-                <h2>Form Steps</h2>
-                <span data-progress-label>0 of 10 complete</span>
+                <div>
+                    <h2>Form Steps</h2>
+                    <span data-progress-label>0 of 10 complete</span>
+                </div>
+                <div class="agreement-section-controls" aria-label="Section display controls">
+                    <button type="button" data-expand-all>Open all</button>
+                    <button type="button" data-collapse-all>Collapse all</button>
+                </div>
             </div>
             <nav class="agreement-step-timeline" aria-label="Agreement form sections" data-step-timeline>
                 <?php foreach ([
@@ -231,10 +237,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <button type="button" class="btn btn-sm btn-outline-primary" data-show-new-partner>+ Add missing partner</button>
                 </div>
                 <div class="partner-search-wrap">
-                    <input id="partner-search" type="search" class="form-control" placeholder="Search by organization, type, country, or website" autocomplete="off" data-partner-search>
+                    <input id="partner-search" type="search" class="form-control" placeholder="Search by organization, type, country, or website" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="partner-search-results" data-partner-search>
                     <span class="partner-search-count" data-partner-search-count></span>
                 </div>
-                <div class="partner-results" role="listbox" aria-label="Available partner organizations" data-partner-results hidden></div>
+                <div id="partner-search-results" class="partner-results" role="listbox" aria-label="Available partner organizations" data-partner-results hidden></div>
                 <select id="partner_ids" name="partner_id" class="visually-hidden" tabindex="-1" aria-hidden="true"></select>
                 <div class="partner-selection-heading">
                     <strong>Selected partner</strong>
@@ -634,5 +640,5 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
 
 <?php workspaceFooter([
     'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js',
-    'assets/js/agreement-form.js?v=20260803-initiative-alignment-v1',
+    'assets/js/agreement-form.js?v=20260803-collapsible-form-v2',
 ]); ?>

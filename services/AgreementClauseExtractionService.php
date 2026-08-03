@@ -407,10 +407,17 @@ final class AgreementClauseExtractionService
                     $index,
                     $anyRolePattern
                 );
-                $contextText = implode("\n", $context);
+                $partyContext = implode("\n", array_merge(
+                    $this->precedingPartyContext(
+                        $paragraphs,
+                        $index,
+                        $anyRolePattern
+                    ),
+                    $context
+                ));
                 $partyType = $this->contactPartyType(
                     $paragraph,
-                    $contextText,
+                    $partyContext,
                     array_values($contacts),
                     $role
                 );
@@ -425,24 +432,9 @@ final class AgreementClauseExtractionService
                         $context,
                         '(?:job\s+title|title|position|designation|capacity|المسمى\s+الوظيفي|المنصب|الصفة)'
                     ),
-                    'email' => '',
-                    'phone' => '',
+                    'email' => $this->emailValue($context),
+                    'phone' => $this->phoneValue($context),
                 ];
-
-                if (preg_match(
-                    '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu',
-                    $contextText,
-                    $email
-                )) {
-                    $contact['email'] = $email[0];
-                }
-                if (preg_match(
-                    '/(?:\+\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,5}\d{2,4}/u',
-                    $contextText,
-                    $phone
-                )) {
-                    $contact['phone'] = trim($phone[0]);
-                }
 
                 if ($contact['full_name'] === '') {
                     $contact['full_name'] = $this->roleValue(
@@ -492,6 +484,24 @@ final class AgreementClauseExtractionService
         return $context;
     }
 
+    private function precedingPartyContext(
+        array $paragraphs,
+        int $roleIndex,
+        string $anyRolePattern
+    ): array {
+        $context = [];
+        $minimum = max(0, $roleIndex - 5);
+        for ($index = $roleIndex - 1; $index >= $minimum; $index--) {
+            $paragraph = (string) $paragraphs[$index];
+            if (preg_match($anyRolePattern, $paragraph) === 1) {
+                break;
+            }
+            array_unshift($context, $paragraph);
+        }
+
+        return $context;
+    }
+
     private function contactPartyType(
         string $roleParagraph,
         string $context,
@@ -533,7 +543,14 @@ final class AgreementClauseExtractionService
 
     private function labeledValue(array $paragraphs, string $labels): string
     {
-        $inline = '/^\s*' . $labels . '\s*[:\-]\s*(.+?)\s*$/iu';
+        $nextLabel = '(?:full\s+name|name|job\s+title|title|position'
+            . '|designation|capacity|e-?mail(?:\s+address)?|phone'
+            . '|telephone|tel\.?|mobile(?:\s+(?:number|no\.?))?'
+            . '|الاسم\s+الكامل|الاسم|المسمى\s+الوظيفي|المنصب|الصفة'
+            . '|البريد\s+الإلكتروني|البريد|الهاتف|رقم\s+الهاتف|الجوال)';
+        $inline = '/(?:^|[|;،]\s*)' . $labels
+            . '\s*[:\-]\s*(.+?)(?=[|;،]?\s+' . $nextLabel
+            . '\s*[:\-]|\s*$)/iu';
         $standalone = '/^\s*' . $labels . '\s*[:\-]?\s*$/iu';
         foreach ($paragraphs as $index => $paragraph) {
             if (preg_match($inline, $paragraph, $match) === 1) {
@@ -550,6 +567,58 @@ final class AgreementClauseExtractionService
                     && preg_match('/[:@]/u', $value) !== 1
                 ) {
                     return $value;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function emailValue(array $paragraphs): string
+    {
+        $labeled = $this->labeledValue(
+            $paragraphs,
+            '(?:e-?mail(?:\s+address)?|البريد\s+الإلكتروني|البريد)'
+        );
+        $source = $labeled !== '' ? $labeled : implode("\n", $paragraphs);
+        if (preg_match(
+            '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu',
+            $source,
+            $match
+        ) === 1) {
+            return trim($match[0]);
+        }
+
+        return '';
+    }
+
+    private function phoneValue(array $paragraphs): string
+    {
+        $labeled = $this->labeledValue(
+            $paragraphs,
+            '(?:phone|telephone|tel\.?|mobile(?:\s+(?:number|no\.?))?'
+                . '|الهاتف|رقم\s+الهاتف|الجوال)'
+        );
+        $sources = array_values(array_filter([
+            $labeled,
+            implode("\n", $paragraphs),
+        ]));
+
+        foreach ($sources as $source) {
+            preg_match_all(
+                '/(?<!\d)(?:\+?\d[\d\s().\-]{5,}\d)(?!\d)/u',
+                $source,
+                $matches
+            );
+            foreach ($matches[0] ?? [] as $candidate) {
+                $candidate = trim((string) $candidate, " \t\n\r\0\x0B.,;:");
+                $digits = preg_replace('/\D+/', '', $candidate) ?? '';
+                if (
+                    strlen($digits) >= 7
+                    && strlen($digits) <= 15
+                    && preg_match('/^\d{4}[\-\/.]\d{1,2}[\-\/.]\d{1,2}$/', $candidate) !== 1
+                ) {
+                    return $candidate;
                 }
             }
         }

@@ -12,6 +12,23 @@ $controller = new PartnerController();
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+$basePaths = [];
+if (!empty($_SERVER['SCRIPT_NAME'])) {
+    $basePaths[] = dirname((string) $_SERVER['SCRIPT_NAME']);
+}
+$basePaths[] = '/Uob-partnerships-sustainability';
+
+foreach ($basePaths as $basePath) {
+    if (
+        $basePath
+        && $basePath !== '/'
+        && str_starts_with((string) $uri, $basePath)
+    ) {
+        $uri = substr((string) $uri, strlen($basePath));
+        break;
+    }
+}
+
 $uri = '/' . ltrim((string) $uri, '/');
 
 if ($method === 'GET' && $uri === '/partners') {
@@ -34,10 +51,10 @@ if ($method === 'GET' && $uri === '/partners') {
     && preg_match('#^/partners/([0-9]+)$#', $uri, $matches)
 ) {
     $controller->update((int) $matches[1]);
+} else {
+    header('HTTP/1.1 404 Not Found');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Route not found',
+    ]);
 }
-
-header('HTTP/1.1 404 Not Found');
-echo json_encode([
-    'success' => false,
-    'error' => 'Route not found',
-]);

@@ -1692,6 +1692,162 @@ textarea.form-control {
     font-weight: 700;
 }
 
+.clause-extraction-feedback.is-success {
+    color: #166534;
+    background: #ecfdf3;
+    border: 1px solid #a7e3be;
+}
+
+.clause-extraction-feedback.is-error {
+    color: #9f1d2a;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+}
+
+/* Shared visual language for the primary Agreement, Initiative, and lifecycle
+   forms. Feature-specific styles can extend these controls without changing
+   their spacing, focus treatment, or action hierarchy. */
+.workspace-standard-form {
+    --workspace-form-navy: #0b2848;
+    --workspace-form-gold: #c3a23b;
+    --workspace-form-border: #d6e0ea;
+    --workspace-form-surface: #fcfdff;
+}
+
+.workspace-standard-form .form-label {
+    color: #25384f;
+    font-weight: 850;
+}
+
+.workspace-standard-form .form-control,
+.workspace-standard-form .form-select {
+    min-height: 3.25rem;
+    border-color: var(--workspace-form-border);
+    border-radius: .9rem;
+    background-color: var(--workspace-form-surface);
+}
+
+.workspace-standard-form textarea.form-control {
+    min-height: 7.5rem;
+    padding-top: .85rem;
+}
+
+.workspace-standard-form .form-control:focus,
+.workspace-standard-form .form-select:focus {
+    border-color: var(--workspace-form-gold);
+    box-shadow: 0 0 0 .22rem rgba(195, 162, 59, .14);
+}
+
+.workspace-standard-form .form-actions .btn,
+.workspace-standard-form .initiative-form-actions .btn {
+    min-height: 2.85rem;
+    padding-inline: 1.15rem;
+    border-radius: .8rem;
+    font-weight: 850;
+}
+
+.workspace-form-hero {
+    position: relative;
+    display: flex;
+    min-height: 9.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    overflow: hidden;
+    padding: 1.35rem 1.75rem;
+    color: #fff;
+    background:
+        radial-gradient(circle at 88% 12%, rgba(219, 180, 63, .28), transparent 28%),
+        linear-gradient(135deg, #071b35 0%, #0b3159 58%, #174b69 100%);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 1.3rem;
+    box-shadow: 0 15px 34px rgba(7, 27, 53, .14);
+}
+
+.workspace-form-hero > div {
+    position: relative;
+    z-index: 1;
+}
+
+.workspace-form-hero h1 {
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: -.035em;
+}
+
+.workspace-form-hero p:not(.eyebrow) {
+    color: rgba(255, 255, 255, .78);
+}
+
+.workspace-form-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    margin-bottom: .45rem;
+}
+
+.workspace-form-hero-meta .eyebrow {
+    color: #f4cf63;
+}
+
+.workspace-form-hero-meta > span {
+    width: 1px;
+    height: 1rem;
+    background: rgba(255, 255, 255, .28);
+}
+
+.workspace-form-hero-back {
+    color: rgba(255, 255, 255, .88);
+    font-size: .75rem;
+    font-weight: 850;
+    text-decoration: none;
+}
+
+.workspace-form-hero-back:hover,
+.workspace-form-hero-back:focus-visible {
+    color: #fff;
+}
+
+.workspace-form-hero-badge {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    flex: 0 0 5.8rem;
+    min-height: 5.8rem;
+    place-content: center;
+    text-align: center;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 1.1rem;
+}
+
+.workspace-form-hero-badge span {
+    color: #f4cf63;
+    font-size: 2rem;
+    font-weight: 950;
+    line-height: 1;
+}
+
+.workspace-form-hero-badge small {
+    margin-top: .3rem;
+    color: #fff;
+    font-size: .58rem;
+    font-weight: 800;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+}
+
+@media (max-width: 767.98px) {
+    .workspace-form-hero {
+        min-height: auto;
+        padding: 1.2rem 1.25rem;
+    }
+
+    .workspace-form-hero-badge {
+        display: none;
+    }
+}
+
 .executive-suggestion-panel {
     background: #fffaf0;
     border-color: #eadfbf;

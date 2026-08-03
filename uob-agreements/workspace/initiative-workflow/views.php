@@ -208,7 +208,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
 ></div>
 
 <form
-    class="initiative-request-form mt-4"
+    class="initiative-request-form workspace-standard-form mt-4"
     novalidate
     data-request-form
 >
@@ -1454,7 +1454,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
         </div>
     </section>
 
-    <form class="initiative-final-form" novalidate data-final-form data-final-mode="<?= $isExistingFinalForm ? 'existing' : 'approved' ?>">
+    <form class="initiative-final-form workspace-standard-form" novalidate data-final-form data-final-mode="<?= $isExistingFinalForm ? 'existing' : 'approved' ?>">
         <div class="initiative-final-shell">
             <aside class="initiative-final-step-panel">
                 <h2>Form Steps</h2>
@@ -2711,4 +2711,3 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
     </div>
 </div>
 <?php endif; ?>
-

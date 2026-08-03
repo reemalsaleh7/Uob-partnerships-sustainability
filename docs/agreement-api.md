@@ -117,7 +117,8 @@ private-note metadata but never copy the comment text.
 file in `file`. The endpoint requires an authenticated Agreement creator/editor,
 enforces the 10 MB limit, checks extension, detected media type, ZIP signature,
 required DOCX parts, and rejects macro-enabled content. It returns suggested
-Article 1/2 fields and coordinator/signatory values for review; it does not save
+Article 1/2 fields and labeled coordinator/signatory names, titles, email
+addresses, and phone numbers for review; it does not save
 the temporary extraction upload. The selected DOCX is stored only after the
 Agreement draft/version exists, through
 `POST /agreements/{id}/documents` with

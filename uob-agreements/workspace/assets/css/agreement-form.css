@@ -183,7 +183,7 @@ body.agreement-form-focus .agreement-form-step-panel {
 
 body.agreement-form-focus .agreement-form-step-panel-heading {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: .75rem;
     margin-bottom: 1.15rem;
@@ -198,10 +198,37 @@ body.agreement-form-focus .agreement-form-step-panel-heading h2 {
 }
 
 body.agreement-form-focus .agreement-form-step-panel-heading span {
+    display: block;
+    margin-top: .2rem;
     color: #7a8798;
     font-size: .62rem;
     font-weight: 800;
     white-space: nowrap;
+}
+
+body.agreement-form-focus .agreement-section-controls {
+    display: flex;
+    flex: 0 0 auto;
+    gap: .28rem;
+}
+
+body.agreement-form-focus .agreement-section-controls button {
+    padding: .28rem .42rem;
+    color: #53657b;
+    background: #f6f8fb;
+    border: 1px solid #dce4ed;
+    border-radius: .45rem;
+    font-size: .58rem;
+    font-weight: 850;
+    line-height: 1.2;
+}
+
+body.agreement-form-focus .agreement-section-controls button:hover,
+body.agreement-form-focus .agreement-section-controls button:focus-visible {
+    color: #155fcc;
+    background: #edf4ff;
+    border-color: #b8cef0;
+    outline: 0;
 }
 
 body.agreement-form-focus .agreement-step-timeline {
@@ -230,10 +257,14 @@ body.agreement-form-focus .agreement-step {
     transform: none;
 }
 
-body.agreement-form-focus .agreement-step:not(:last-child)::before {
+/* Reset the older horizontal stepper connector before drawing one clean
+   outgoing segment for every step except the last. */
+body.agreement-form-focus .agreement-step::before {
     position: absolute;
     z-index: 0;
+    display: block;
     top: 2.2rem;
+    right: auto;
     bottom: -.1rem;
     left: 1.17rem;
     width: 2px;
@@ -241,6 +272,11 @@ body.agreement-form-focus .agreement-step:not(:last-child)::before {
     content: "";
     background: #d7dde6;
     border-radius: 999px;
+}
+
+body.agreement-form-focus .agreement-step:last-child::before {
+    display: none;
+    content: none;
 }
 
 body.agreement-form-focus .agreement-step.is-complete:not(:last-child)::before {
@@ -342,18 +378,23 @@ body.agreement-form-focus .agreement-form-content > [data-change-reason-section]
 }
 
 body.agreement-form-focus .agreement-form-section {
-    display: none;
+    display: block;
     margin-top: 0 !important;
-    overflow: visible;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    animation: agreement-form-enter .2s ease;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dce5ef;
+    border-radius: 1rem;
+    box-shadow: 0 7px 20px rgba(15, 35, 65, .045);
+    scroll-margin-top: 5.8rem;
+}
+
+body.agreement-form-focus .agreement-form-section + .agreement-form-section {
+    margin-top: 1rem !important;
 }
 
 body.agreement-form-focus .agreement-form-section.is-open {
-    display: block;
+    border-color: #cfdce9;
+    box-shadow: 0 12px 28px rgba(15, 35, 65, .065);
 }
 
 @keyframes agreement-form-enter {
@@ -367,20 +408,25 @@ body.agreement-form-focus .agreement-section-toggle {
     grid-template-columns: 2.8rem minmax(0, 1fr) auto;
     align-items: center;
     gap: 1rem;
-    padding: 0 0 1.25rem;
+    padding: 1.05rem 1.15rem;
     text-align: left;
     color: #25384f;
-    background: transparent;
+    background: linear-gradient(180deg, #fff, #fbfcfe);
     border: 0;
-    border-bottom: 1px solid #e4eaf1;
+    border-bottom: 0;
     border-radius: 0;
-    cursor: default;
+    cursor: pointer;
 }
 
 body.agreement-form-focus .agreement-section-toggle:hover,
 body.agreement-form-focus .agreement-section-toggle:focus-visible {
-    background: transparent;
+    background: #f7faff;
     outline: 0;
+}
+
+body.agreement-form-focus .agreement-form-section.is-open .agreement-section-toggle {
+    background: #f8fbff;
+    border-bottom: 1px solid #e4eaf1;
 }
 
 body.agreement-form-focus .agreement-section-number {
@@ -394,7 +440,7 @@ body.agreement-form-focus .agreement-section-number {
 
 body.agreement-form-focus .agreement-section-heading strong {
     color: var(--agreement-navy);
-    font-size: 1.4rem;
+    font-size: 1.08rem;
     font-weight: 900;
     letter-spacing: -.02em;
 }
@@ -407,7 +453,19 @@ body.agreement-form-focus .agreement-section-heading small {
 }
 
 body.agreement-form-focus .agreement-section-chevron {
-    display: none;
+    display: block;
+    width: .65rem;
+    height: .65rem;
+    margin-left: .2rem;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    transform: rotate(45deg);
+    transition: transform .18s ease;
+}
+
+body.agreement-form-focus .agreement-section-toggle[aria-expanded="true"]
+.agreement-section-chevron {
+    transform: rotate(225deg);
 }
 
 body.agreement-form-focus .section-status {
@@ -421,7 +479,7 @@ body.agreement-form-focus .agreement-section-body {
 }
 
 body.agreement-form-focus .agreement-section-body > .form-section {
-    padding: 1.7rem 0 0;
+    padding: 1.45rem;
 }
 
 body.agreement-form-focus .form-label {
@@ -524,7 +582,7 @@ html[dir="rtl"] body.agreement-form-focus .agreement-section-toggle {
     text-align: right;
 }
 
-html[dir="rtl"] body.agreement-form-focus .agreement-step:not(:last-child)::before {
+html[dir="rtl"] body.agreement-form-focus .agreement-step::before {
     right: 1.17rem;
     left: auto;
 }
@@ -572,14 +630,19 @@ html[dir="rtl"] body.agreement-form-focus .agreement-step-label {
         scroll-snap-align: start;
     }
 
-    body.agreement-form-focus .agreement-step:not(:last-child)::before,
-    html[dir="rtl"] body.agreement-form-focus .agreement-step:not(:last-child)::before {
+    body.agreement-form-focus .agreement-step::before,
+    html[dir="rtl"] body.agreement-form-focus .agreement-step::before {
         top: 1.08rem;
         right: auto;
         bottom: auto;
         left: 50%;
         width: 100%;
         height: 2px;
+    }
+
+    body.agreement-form-focus .agreement-step:last-child::before,
+    html[dir="rtl"] body.agreement-form-focus .agreement-step:last-child::before {
+        display: none;
     }
 
     body.agreement-form-focus .agreement-step-copy {
@@ -623,7 +686,7 @@ html[dir="rtl"] body.agreement-form-focus .agreement-step-label {
     }
 
     body.agreement-form-focus .agreement-section-toggle {
-        grid-template-columns: 2.45rem minmax(0, 1fr);
+        grid-template-columns: 2.45rem minmax(0, 1fr) auto;
         gap: .75rem;
     }
 
@@ -639,6 +702,11 @@ html[dir="rtl"] body.agreement-form-focus .agreement-step-label {
     body.agreement-form-focus .section-status {
         grid-column: 2;
         justify-self: start;
+    }
+
+    body.agreement-form-focus .agreement-section-chevron {
+        grid-column: 3;
+        grid-row: 1 / span 2;
     }
 
     body.agreement-form-focus .agreement-form-actions {

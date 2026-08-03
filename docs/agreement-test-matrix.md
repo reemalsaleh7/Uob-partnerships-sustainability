@@ -16,7 +16,15 @@
     confirm only then that invalid required fields receive red feedback.
 11. Upload a DOCX containing distinct Article 1, Article 2, UOB/partner
     coordinators, and UOB/partner signatories. Confirm articles remain separate
-    and each name/job title is assigned to the correct role.
+    and each name, job title, email, and phone number is assigned to the correct
+    role, including contact details written on one labeled line.
+12. Focus the partner search with an empty query, type a partial organization,
+    country, website, or profile value, and select the result. Confirm the API
+    gateway routes `/partners`, `/partners/lookup`, partner update, and
+    Agreement-context requests through the partner controller.
+13. Open several Agreement sections, use the step rail to focus another one,
+    and scroll back to the earlier sections. Confirm the previously opened
+    sections remain open and the first/last timeline connectors do not double.
 
 Run these scenarios against the development fixtures after applying all migrations and restarting Apache. Service smoke tests execute inside transactions and roll back temporary records. HTTP lifecycle tests persist only the explicitly created development record.
 
