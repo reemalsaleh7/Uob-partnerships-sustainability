@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
+require_once __DIR__ . '/../repositories/PartnerRepository.php';
+require_once __DIR__ . '/../repositories/AgreementAdministrativeCorrectionRepository.php';
 require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
 require_once __DIR__ . '/../repositories/AgreementDocumentRepository.php';
 require_once __DIR__ . '/../repositories/AuditRepository.php';
@@ -14,6 +16,8 @@ require_once __DIR__ . '/../services/DocumentStorageService.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 class AgreementService {
     private AgreementRepository $agreementRepo;
+    private PartnerRepository $partnerRepo;
+    private AgreementAdministrativeCorrectionRepository $administrativeCorrectionRepo;
     private ApprovalService $approvalService;
     private AgreementVersionRepository $agreementVersionRepo;
     private AgreementDocumentRepository $agreementDocumentRepo;
@@ -25,6 +29,8 @@ class AgreementService {
 
     public function __construct() {
         $this->agreementRepo = new AgreementRepository();
+        $this->partnerRepo = new PartnerRepository();
+        $this->administrativeCorrectionRepo = new AgreementAdministrativeCorrectionRepository();
         $this->agreementVersionRepo = new AgreementVersionRepository();
         $this->agreementDocumentRepo = new AgreementDocumentRepository();
         $this->auditRepo = new AuditRepository();
@@ -36,7 +42,12 @@ class AgreementService {
     }
 
     public function createAgreement(array $data): array {
-        $errors = AgreementValidator::validateCreate($data);
+        $data = $this->withDerivedPartnerScope($data);
+        $errors = array_merge(
+            AgreementValidator::validateCreate($data),
+            $this->validatePartnerSelection($data),
+            $this->validatePartnerAgreementUniqueness($data)
+        );
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
@@ -66,7 +77,12 @@ class AgreementService {
     }
 
     public function updateAgreement(int $agreementId, array $data): array {
-        $errors = AgreementValidator::validateUpdate($data);
+        $data = $this->withDerivedPartnerScope($data);
+        $errors = array_merge(
+            AgreementValidator::validateUpdate($data),
+            $this->validatePartnerSelection($data),
+            $this->validatePartnerAgreementUniqueness($data, $agreementId)
+        );
         $changeSummary = trim((string) ($data['change_summary'] ?? ''));
         $changeSummaryLength = function_exists('mb_strlen')
             ? mb_strlen($changeSummary, 'UTF-8')
@@ -138,6 +154,112 @@ class AgreementService {
         }
     }
 
+    public function administrativelyCorrectLegacyAgreement(
+        int $agreementId,
+        array $data,
+        int $userId
+    ): array {
+        if (!$this->isSystemAdministrator($userId)) {
+            throw new DomainException(
+                'Only a System Administrator may make an administrative correction'
+            );
+        }
+
+        $data = $this->withDerivedPartnerScope($data);
+        $reason = trim((string) ($data['correction_reason'] ?? ''));
+        $reasonLength = function_exists('mb_strlen')
+            ? mb_strlen($reason, 'UTF-8')
+            : strlen($reason);
+        $errors = array_merge(
+            AgreementValidator::validateUpdate($data),
+            $this->validatePartnerSelection($data),
+            $this->validatePartnerAgreementUniqueness($data, $agreementId)
+        );
+
+        if ($reasonLength < 10) {
+            $errors[] = 'Correction reason must contain at least 10 characters';
+        } elseif ($reasonLength > 1000) {
+            $errors[] = 'Correction reason must not exceed 1000 characters';
+        }
+
+        if ($errors !== []) {
+            throw new InvalidArgumentException(implode(', ', $errors));
+        }
+
+        $db = Database::connect();
+        $ownsTransaction = !$db->inTransaction();
+        if ($ownsTransaction) {
+            $db->beginTransaction();
+        }
+
+        try {
+            $existing = $this->agreementRepo->findByIdForUpdate($agreementId);
+            if ($existing === null) {
+                throw new OutOfBoundsException('Agreement not found');
+            }
+
+            if (
+                ($existing['record_origin'] ?? null) !== 'LEGACY_IMPORT'
+                || empty($existing['legacy_source_file'])
+            ) {
+                throw new DomainException(
+                    'Administrative correction is available only for a verified legacy import'
+                );
+            }
+
+            $this->agreementRepo->update(
+                $agreementId,
+                $this->normalizeAgreementContent($data)
+            );
+            $this->replaceAgreementCollections($agreementId, $data);
+
+            $snapshot = $this->agreementRepo->findById($agreementId);
+            if ($snapshot === null) {
+                throw new RuntimeException('Corrected Agreement could not be reloaded');
+            }
+
+            $versionNumber = $this->agreementVersionRepo
+                ->findLatestVersionNumber($agreementId) + 1;
+            $versionId = $this->agreementVersionRepo->create($agreementId, [
+                'version_number' => $versionNumber,
+                'change_summary' => 'Administrative correction: ' . $reason,
+                'agreement_snapshot' => $snapshot,
+                'created_by' => $userId,
+            ]);
+            $correctionId = $this->administrativeCorrectionRepo->create(
+                $agreementId,
+                $versionId,
+                $userId,
+                $reason
+            );
+            $this->auditService->write(
+                'agreements',
+                $agreementId,
+                AuditAction::UPDATE,
+                $userId,
+                $existing,
+                $snapshot,
+                'Administrative correction: ' . $reason
+            );
+
+            if ($ownsTransaction) {
+                $db->commit();
+            }
+
+            return [
+                'success' => true,
+                'correction_id' => $correctionId,
+                'version_number' => $versionNumber,
+                'message' => 'Legacy Agreement corrected with preserved history',
+            ];
+        } catch (Throwable $exception) {
+            if ($ownsTransaction && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function submitAgreement(
     int $agreementId,
     int $userId
@@ -202,6 +324,13 @@ class AgreementService {
         }
 
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (!$this->agreementDocumentRepo->hasDocumentType(
+            $agreementId,
+            'GOVERNANCE_CLAUSES'
+        )) {
+            $submissionErrors[] =
+                'Upload the governance / MOU clauses DOCX file before submission';
+        }
         if (!empty($submissionErrors)) {
             if ($ownsTransaction && $db->inTransaction()) {
                 $db->rollBack();
@@ -321,6 +450,13 @@ class AgreementService {
         }
 
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
+        if (!$this->agreementDocumentRepo->hasDocumentType(
+            $agreementId,
+            'GOVERNANCE_CLAUSES'
+        )) {
+            $submissionErrors[] =
+                'Upload the governance / MOU clauses DOCX file before submission';
+        }
         if (!empty($submissionErrors)) {
             return ['success' => false, 'errors' => $submissionErrors];
         }
@@ -403,11 +539,13 @@ class AgreementService {
         $normalizedType = strtoupper(trim($documentType));
         $allowedTypes = [
             'AGREEMENT_DRAFT',
+            'GOVERNANCE_CLAUSES',
             'SUPPORTING',
             'LEGAL_REVIEW',
             'FINANCE_REVIEW',
             'SIGNED_AGREEMENT',
             'ANNUAL_REPORT',
+            'MEDIA',
             'OTHER',
         ];
 
@@ -456,7 +594,15 @@ class AgreementService {
             );
         }
 
-        $storedFile = $this->documentStorage->store($uploadedFile);
+        $allowedExtensions = match ($normalizedType) {
+            'GOVERNANCE_CLAUSES' => ['docx'],
+            'MEDIA' => ['jpg', 'jpeg', 'png', 'webp', 'mp4'],
+            default => DocumentStorageService::allowedExtensions(),
+        };
+        $storedFile = $this->documentStorage->store(
+            $uploadedFile,
+            $allowedExtensions
+        );
         $db = Database::connect();
 
         try {
@@ -825,6 +971,144 @@ class AgreementService {
         if (array_key_exists('metrics', $data)) {
             $this->agreementRepo->replaceMetrics($agreementId, $data['metrics']);
         }
+    }
+
+    private function withDerivedPartnerScope(array $data): array
+    {
+        $hasPartnerSelection = array_key_exists('partner_ids', $data)
+            || array_key_exists('partner_id', $data);
+        if (!$hasPartnerSelection) {
+            // Scope is owned by the selected partner country, not by API callers.
+            unset($data['geographic_scope']);
+            return $data;
+        }
+
+        $partnerIds = is_array($data['partner_ids'] ?? null)
+            ? $data['partner_ids']
+            : [$data['partner_id'] ?? null];
+        $partnerIds = array_values(array_unique(array_filter(
+            array_map('intval', $partnerIds),
+            static fn (int $partnerId): bool => $partnerId > 0
+        )));
+        $partners = $this->partnerRepo->findActiveByIds($partnerIds);
+        $countries = array_map(
+            static fn (array $partner): string => trim(
+                (string) ($partner['country'] ?? '')
+            ),
+            $partners
+        );
+
+        if (
+            count($partners) !== count($partnerIds)
+            || $countries === []
+            || in_array('', $countries, true)
+        ) {
+            $data['geographic_scope'] = '';
+            return $data;
+        }
+
+        $allPartnersAreLocal = array_reduce(
+            $countries,
+            static fn (bool $local, string $country): bool => $local
+                && preg_match(
+                    '/^(?:kingdom\s+of\s+)?bahrain$/iu',
+                    $country
+                ) === 1,
+            true
+        );
+        $data['geographic_scope'] = $allPartnersAreLocal
+            ? 'LOCAL'
+            : 'INTERNATIONAL';
+
+        return $data;
+    }
+
+    private function validatePartnerSelection(array $data): array
+    {
+        if (
+            !array_key_exists('partner_ids', $data)
+            && !array_key_exists('partner_id', $data)
+        ) {
+            return [];
+        }
+
+        $partnerIds = is_array($data['partner_ids'] ?? null)
+            ? $data['partner_ids']
+            : [$data['partner_id'] ?? null];
+        $partnerIds = array_values(array_unique(array_filter(
+            array_map('intval', $partnerIds),
+            static fn (int $partnerId): bool => $partnerId > 0
+        )));
+
+        if (count($partnerIds) !== 1) {
+            return ['Exactly one partner organization must be selected'];
+        }
+
+        $partners = $this->partnerRepo->findActiveByIds($partnerIds);
+        if (count($partners) !== 1) {
+            return ['The selected partner organization is not active or available'];
+        }
+
+        if (trim((string) ($partners[0]['country'] ?? '')) === '') {
+            return [
+                'Every selected partner must have a country so local or international scope can be determined',
+            ];
+        }
+
+        return [];
+    }
+
+    private function validatePartnerAgreementUniqueness(
+        array $data,
+        ?int $excludeAgreementId = null
+    ): array {
+        if (
+            !array_key_exists('partner_ids', $data)
+            && !array_key_exists('partner_id', $data)
+        ) {
+            return [];
+        }
+
+        $partnerIds = is_array($data['partner_ids'] ?? null)
+            ? $data['partner_ids']
+            : [$data['partner_id'] ?? null];
+        $partnerIds = array_values(array_unique(array_filter(
+            array_map('intval', $partnerIds),
+            static fn (int $partnerId): bool => $partnerId > 0
+        )));
+
+        // Selection validation reports empty, invalid, or multiple partners.
+        if (count($partnerIds) !== 1) {
+            return [];
+        }
+
+        $agreements = $this->partnerRepo->findAgreementContext(
+            $partnerIds[0],
+            $excludeAgreementId
+        );
+        foreach ($agreements as $agreement) {
+            $status = strtoupper(trim((string) ($agreement['status'] ?? '')));
+            if (in_array($status, ['APPROVED', 'ACTIVE'], true)) {
+                return [
+                    'This partner already has a valid Agreement. Create an amendment request instead of a second Agreement.',
+                ];
+            }
+            if (
+                in_array(
+                    $status,
+                    ['DRAFT', 'REVISION_REQUIRED', 'UNDER_REVIEW'],
+                    true
+                )
+            ) {
+                return [
+                    'This partner already has an Agreement in progress. Continue the existing Agreement instead of creating a duplicate.',
+                ];
+            }
+        }
+
+        // EXPIRED, REJECTED, and TERMINATED records are historical and do not
+        // prevent a fresh Agreement from being created for the same partner.
+        return [];
     }
 
     private function normalizeAgreementContent(array $data): array {

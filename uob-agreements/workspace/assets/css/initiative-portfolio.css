@@ -1,0 +1,150 @@
+.workspace-page-header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:1.5rem;
+    margin-bottom:1.4rem;
+}
+.initiative-portfolio-actions{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    gap:.65rem;
+}
+.initiative-portfolio-approved-menu{
+    min-width:21rem;
+    max-width:min(30rem,calc(100vw - 2rem));
+    padding:.45rem;
+    border:1px solid #dce5ef;
+    border-radius:.9rem;
+    box-shadow:0 18px 42px rgba(15,35,65,.16);
+}
+.initiative-approved-option{
+    display:grid;
+    gap:.2rem;
+    padding:.7rem .8rem;
+    border-radius:.65rem;
+    white-space:normal;
+}
+.initiative-approved-option strong{
+    color:#13243d;
+    font-size:.86rem;
+}
+.initiative-approved-option small{
+    color:#718096;
+    font-size:.72rem;
+}
+.initiative-origin-badge{
+    display:inline-flex;
+    margin-top:.35rem;
+    padding:.2rem .5rem;
+    color:#725800;
+    background:#fff6d8;
+    border:1px solid #ead582;
+    border-radius:999px;
+    font-size:.65rem;
+    font-weight:800;
+}
+@media(max-width:767.98px){
+    .workspace-page-header{
+        align-items:stretch;
+        flex-direction:column;
+    }
+    .initiative-portfolio-actions{
+        justify-content:flex-start;
+    }
+    .initiative-portfolio-actions .btn{
+        flex:1 1 auto;
+    }
+}
+
+
+/* Phase 14B: existing-Initiative action. */
+.initiative-existing-action{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.45rem;
+    white-space:nowrap;
+}
+.initiative-action-icon{
+    width:1.05rem;
+    height:1.05rem;
+    flex:0 0 auto;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+
+/* Phase 14D: stable compact action buttons. */
+.initiative-page-actions,
+.initiative-portfolio-actions{
+    align-items:center !important;
+}
+
+.initiative-page-actions > .btn,
+.initiative-page-actions > .dropdown > .btn,
+.initiative-portfolio-actions > .btn,
+.initiative-portfolio-actions > .dropdown > .btn{
+    width:auto;
+    min-height:2.65rem;
+    height:auto;
+    padding:.62rem .9rem;
+    align-items:center;
+    justify-content:center;
+    line-height:1.15;
+}
+
+.initiative-existing-action{
+    display:inline-flex !important;
+    width:auto !important;
+    min-height:2.65rem;
+    height:auto !important;
+    align-items:center;
+    justify-content:center;
+    gap:.45rem;
+    padding:.62rem .9rem;
+    white-space:nowrap;
+}
+
+.initiative-existing-action.d-none{
+    display:none !important;
+}
+
+.initiative-action-plus{
+    display:inline-grid;
+    width:1.15rem;
+    height:1.15rem;
+    flex:0 0 1.15rem;
+    place-items:center;
+    color:currentColor;
+    background:transparent;
+    border:1.6px solid currentColor;
+    border-radius:50%;
+    font-family:Arial,sans-serif;
+    font-size:.95rem;
+    font-weight:700;
+    line-height:1;
+}
+
+@media(max-width:767.98px){
+    .initiative-page-actions,
+    .initiative-portfolio-actions{
+        align-items:stretch !important;
+    }
+
+    .initiative-page-actions > .btn,
+    .initiative-page-actions > .dropdown,
+    .initiative-portfolio-actions > .btn,
+    .initiative-portfolio-actions > .dropdown{
+        flex:1 1 auto;
+    }
+
+    .initiative-page-actions > .dropdown > .btn,
+    .initiative-portfolio-actions > .dropdown > .btn{
+        width:100%;
+    }
+}

@@ -132,8 +132,7 @@ $base = ($isAdmin || $isPartnership) ? '../' : '';
         el.classList.remove('in');
       }
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -10% 0px' });
-
+}, { threshold: 0, rootMargin: '0px' });
   items.forEach(el => io.observe(el));
 })();
 </script>

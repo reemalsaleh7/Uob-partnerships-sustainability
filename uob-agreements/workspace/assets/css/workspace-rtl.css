@@ -1,0 +1,558 @@
+.workspace-language-toggle{
+    display:inline-flex;
+    min-height:2.45rem;
+    align-items:center;
+    justify-content:center;
+    gap:.45rem;
+    padding:.48rem .72rem;
+    color:#17355d;
+    background:#fff;
+    border:1px solid #d8e0ea;
+    border-radius:.75rem;
+    font-size:.74rem;
+    font-weight:850;
+    line-height:1;
+    text-decoration:none;
+    white-space:nowrap;
+    box-shadow:0 5px 15px rgba(2,8,23,.045);
+}
+.workspace-language-toggle:hover,
+.workspace-language-toggle:focus{
+    color:#0d4aa7;
+    background:#f7faff;
+    border-color:#b7c8df;
+}
+.workspace-language-toggle-mark{
+    display:inline-grid;
+    width:1.35rem;
+    height:1.35rem;
+    place-items:center;
+    color:#fff;
+    background:#0d4aa7;
+    border-radius:50%;
+    font-size:.65rem;
+    font-weight:900;
+}
+.login-brandbar-actions{
+    display:flex;
+    align-items:center;
+    gap:.65rem;
+}
+
+html[dir="rtl"] body{
+    direction:rtl;
+    text-align:right;
+}
+html[dir="rtl"] .skip-link{
+    right:.5rem;
+    left:auto;
+}
+html[dir="rtl"] .workspace-sidebar{
+    right:0 !important;
+    left:auto !important;
+    border-right:0 !important;
+    border-left:1px solid rgba(255,255,255,.08) !important;
+    box-shadow:-10px 0 28px rgba(5,19,36,.08) !important;
+}
+html[dir="rtl"] .workspace-stage{
+    margin-right:var(--workspace-sidebar) !important;
+    margin-left:0 !important;
+}
+html[dir="rtl"] .workspace-side-nav{
+    padding-right:0 !important;
+    padding-left:.15rem !important;
+}
+html[dir="rtl"] .workspace-nav-link{
+    padding-right:.82rem;
+    padding-left:.72rem;
+    text-align:right;
+}
+html[dir="rtl"] .workspace-nav-link.active::before{
+    right:0 !important;
+    left:auto !important;
+    border-radius:999px 0 0 999px !important;
+}
+html[dir="rtl"] .workspace-topbar-title,
+html[dir="rtl"] .workspace-sidebar-context,
+html[dir="rtl"] .workspace-sidebar-brand,
+html[dir="rtl"] .workspace-profile-link,
+html[dir="rtl"] .workspace-footer{
+    text-align:right;
+}
+html[dir="rtl"] .workspace-topbar-actions{
+    margin-right:auto;
+    margin-left:0;
+}
+html[dir="rtl"] .dropdown-menu-end{
+    right:auto !important;
+    left:0 !important;
+}
+html[dir="rtl"] .text-end{
+    text-align:left !important;
+}
+html[dir="rtl"] .text-start{
+    text-align:right !important;
+}
+html[dir="rtl"] .ms-auto{
+    margin-right:auto !important;
+    margin-left:0 !important;
+}
+html[dir="rtl"] .me-auto{
+    margin-right:0 !important;
+    margin-left:auto !important;
+}
+html[dir="rtl"] .ms-1{margin-right:.25rem !important;margin-left:0 !important}
+html[dir="rtl"] .ms-2{margin-right:.5rem !important;margin-left:0 !important}
+html[dir="rtl"] .ms-3{margin-right:1rem !important;margin-left:0 !important}
+html[dir="rtl"] .me-1{margin-left:.25rem !important;margin-right:0 !important}
+html[dir="rtl"] .me-2{margin-left:.5rem !important;margin-right:0 !important}
+html[dir="rtl"] .me-3{margin-left:1rem !important;margin-right:0 !important}
+html[dir="rtl"] .form-control,
+html[dir="rtl"] .form-select,
+html[dir="rtl"] textarea{
+    text-align:right;
+}
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="url"],
+html[dir="rtl"] input[type="tel"],
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] input[type="date"],
+html[dir="rtl"] input[placeholder="https://"],
+html[dir="rtl"] .initiative-code,
+html[dir="rtl"] [data-request-code]{
+    direction:ltr;
+    text-align:left;
+}
+html[dir="rtl"] .workspace-table th,
+html[dir="rtl"] .workspace-table td,
+html[dir="rtl"] .table th,
+html[dir="rtl"] .table td{
+    text-align:right;
+}
+html[dir="rtl"] .workspace-sidebar-tooltip{
+    text-align:right;
+}
+html[dir="rtl"] .workspace-sidebar-tooltip.is-right::before{
+    right:-.31rem;
+    left:auto;
+    transform:translateY(-50%) rotate(225deg);
+}
+html[dir="rtl"] .workspace-sidebar-tooltip.is-left::before{
+    right:auto;
+    left:-.31rem;
+    transform:translateY(-50%) rotate(45deg);
+}
+
+/* Initiative request vertical and horizontal steppers. */
+@media(min-width:992px){
+    html[dir="rtl"] body.initiative-form-focus:not(.initiative-form-sidebar-open)
+    .initiative-form-step,
+    html[dir="rtl"] body.initiative-final-focus:not(.initiative-final-sidebar-open)
+    .initiative-final-step{
+        text-align:right !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus:not(.initiative-form-sidebar-open)
+    .initiative-form-step:not(:last-child)::before{
+        right:1.17rem !important;
+        left:auto !important;
+    }
+    html[dir="rtl"] body.initiative-final-focus:not(.initiative-final-sidebar-open)
+    .initiative-final-step:not(:last-child)::before{
+        right:.83rem !important;
+        left:auto !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus:not(.initiative-form-sidebar-open)
+    .initiative-form-actions,
+    html[dir="rtl"] body.initiative-final-focus:not(.initiative-final-sidebar-open)
+    .initiative-final-actions{
+        margin-right:18.75rem !important;
+        margin-left:0 !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus.initiative-form-sidebar-open
+    .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus.initiative-final-sidebar-open
+    .workspace-stage{
+        margin-right:var(--workspace-sidebar) !important;
+        margin-left:0 !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus.initiative-form-sidebar-open
+    .initiative-form-step:not(:last-child)::before,
+    html[dir="rtl"] body.initiative-final-focus.initiative-final-sidebar-open
+    .initiative-final-step:not(:last-child)::before{
+        right:50% !important;
+        left:auto !important;
+    }
+}
+html[dir="rtl"] .initiative-request-hero::after,
+html[dir="rtl"] .initiative-final-hero::after{
+    right:auto !important;
+    left:-3rem !important;
+}
+html[dir="rtl"] .initiative-multi-trigger,
+html[dir="rtl"] .initiative-multi-option,
+html[dir="rtl"] .initiative-multi-option-copy,
+html[dir="rtl"] .initiative-multi-menu .initiative-choice-card,
+html[dir="rtl"] .initiative-multi-menu .initiative-sdg-grid > label,
+html[dir="rtl"] .initiative-multi-menu .initiative-final-check-grid > label{
+    text-align:right !important;
+}
+html[dir="rtl"] .initiative-multi-chip{
+    padding:.3rem .65rem .3rem .48rem;
+}
+html[dir="rtl"] .initiative-request-hero-back span[aria-hidden="true"]{
+    transform:scaleX(-1);
+}
+html[dir="rtl"] .initiative-notification-link .badge{
+    margin-right:.35rem;
+    margin-left:0;
+}
+html[dir="rtl"] .initiative-approved-menu,
+html[dir="rtl"] .initiative-portfolio-approved-menu{
+    text-align:right;
+}
+
+@media(max-width:991.98px){
+    html[dir="rtl"] .workspace-sidebar{
+        transform:translateX(105%) !important;
+    }
+    html[dir="rtl"] .workspace-sidebar.is-open{
+        transform:translateX(0) !important;
+    }
+    html[dir="rtl"] .workspace-stage,
+    html[dir="rtl"] body.initiative-form-focus .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus .workspace-stage{
+        margin-right:0 !important;
+        margin-left:0 !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus .initiative-form-step:not(:last-child)::before,
+    html[dir="rtl"] body.initiative-final-focus .initiative-final-step:not(:last-child)::before{
+        right:50% !important;
+        left:auto !important;
+    }
+    html[dir="rtl"] body.initiative-form-focus .initiative-form-actions,
+    html[dir="rtl"] body.initiative-final-focus .initiative-final-actions{
+        margin-right:0 !important;
+        margin-left:0 !important;
+    }
+}
+
+@media(max-width:575.98px){
+    .workspace-language-toggle{
+        min-width:2.45rem;
+        padding:.45rem;
+    }
+    .workspace-language-toggle-label{
+        display:none;
+    }
+}
+
+
+/* Phase 16C: keep focus-form sidebar off the correct RTL edge. */
+html[dir="rtl"] body.initiative-form-focus,
+html[dir="rtl"] body.initiative-final-focus{
+    overflow-x:hidden;
+}
+
+@media(min-width:992px){
+    /*
+     * The LTR focus-mode rule hides the fixed sidebar with translateX(-105%).
+     * In RTL the sidebar is anchored to the right, so it must move positively
+     * to leave the viewport. Moving negatively places it over the form.
+     */
+    html[dir="rtl"] body.initiative-form-focus
+    .workspace-sidebar,
+    html[dir="rtl"] body.initiative-final-focus
+    .workspace-sidebar{
+        right:0 !important;
+        left:auto !important;
+        transform:translateX(105%) !important;
+    }
+
+    html[dir="rtl"] body.initiative-form-focus
+    .workspace-sidebar.is-open,
+    html[dir="rtl"] body.initiative-final-focus
+    .workspace-sidebar.is-open{
+        transform:translateX(0) !important;
+    }
+
+    html[dir="rtl"] body.initiative-form-focus
+    .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus
+    .workspace-stage{
+        margin-right:0 !important;
+        margin-left:0 !important;
+        transition:margin-right .22s ease !important;
+    }
+
+    html[dir="rtl"] body.initiative-form-focus
+    .initiative-form-actions,
+    html[dir="rtl"] body.initiative-final-focus
+    .initiative-final-actions{
+        transition:margin-right .22s ease !important;
+    }
+
+
+    html[dir="rtl"] body.initiative-form-focus
+    .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus
+    .workspace-stage{
+        margin-left:0 !important;
+    }
+
+    html[dir="rtl"] body.initiative-form-focus
+    .workspace-sidebar.is-open + .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus
+    .workspace-sidebar.is-open + .workspace-stage,
+    html[dir="rtl"] body.initiative-form-focus.initiative-form-sidebar-open
+    .workspace-stage,
+    html[dir="rtl"] body.initiative-final-focus.initiative-final-sidebar-open
+    .workspace-stage{
+        margin-right:var(--workspace-sidebar) !important;
+        margin-left:0 !important;
+    }
+}
+
+
+/* Phase 16F: center the vertical connector through the step circles. */
+@media(min-width:992px){
+    html[dir="rtl"] body.initiative-form-focus:not(.initiative-form-sidebar-open)
+    .initiative-form-step:not(:last-child)::before,
+    html[dir="rtl"] body.initiative-final-focus:not(.initiative-final-sidebar-open)
+    .initiative-final-step:not(:last-child)::before{
+        right:calc(.86rem - 1px) !important;
+        left:auto !important;
+    }
+}
+
+
+/* Phase 16G: stable topbar action alignment in both directions. */
+.workspace-topbar-actions{
+    display:flex;
+    align-items:center;
+    column-gap:1.15rem !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    margin-inline-start:auto !important;
+    margin-inline-end:0 !important;
+}
+
+.workspace-topbar-actions .workspace-language-toggle,
+.workspace-topbar-actions .workspace-profile-link{
+    flex:0 0 auto;
+}
+
+/*
+ * In English, inline-start is the left side, so the actions move right.
+ * In Arabic, inline-start is the right side, so the actions move left.
+ */
+html[dir="rtl"] .workspace-topbar-actions{
+    margin-left:0 !important;
+    margin-right:0 !important;
+    margin-inline-start:auto !important;
+    margin-inline-end:0 !important;
+}
+
+@media(max-width:575.98px){
+    .workspace-topbar-actions{
+        column-gap:.7rem !important;
+    }
+}
+
+
+/* Phase 17: complete Workspace RTL support. */
+html[dir="rtl"] .form-check{
+    padding-right:1.5em;
+    padding-left:0;
+}
+html[dir="rtl"] .form-check .form-check-input{
+    float:right;
+    margin-right:-1.5em;
+    margin-left:0;
+}
+html[dir="rtl"] .form-check-inline{
+    margin-right:0;
+    margin-left:1rem;
+}
+html[dir="rtl"] .input-group > :not(:first-child){
+    margin-right:-1px;
+    margin-left:0;
+}
+html[dir="rtl"] .input-group > :first-child{
+    border-top-right-radius:var(--bs-border-radius);
+    border-bottom-right-radius:var(--bs-border-radius);
+    border-top-left-radius:0;
+    border-bottom-left-radius:0;
+}
+html[dir="rtl"] .input-group > :last-child{
+    border-top-left-radius:var(--bs-border-radius);
+    border-bottom-left-radius:var(--bs-border-radius);
+    border-top-right-radius:0;
+    border-bottom-right-radius:0;
+}
+html[dir="rtl"] .review-actions,
+html[dir="rtl"] .form-actions,
+html[dir="rtl"] .detail-actions,
+html[dir="rtl"] .document-actions{
+    direction:rtl;
+}
+html[dir="rtl"] .agreement-row-actions{
+    justify-content:flex-start;
+}
+html[dir="rtl"] .workspace-table .text-end,
+html[dir="rtl"] .table .text-end{
+    text-align:left !important;
+}
+html[dir="rtl"] .list-group-numbered{
+    padding-right:0;
+    padding-left:0;
+}
+html[dir="rtl"] .ps-3{
+    padding-right:1rem !important;
+    padding-left:0 !important;
+}
+html[dir="rtl"] .pe-3{
+    padding-right:0 !important;
+    padding-left:1rem !important;
+}
+html[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before{
+    float:right;
+    padding-right:0;
+    padding-left:.5rem;
+}
+html[dir="rtl"] .modal-header .btn-close{
+    margin:-.5rem auto -.5rem -.5rem;
+}
+html[dir="rtl"] .offcanvas-header .btn-close{
+    margin-left:0;
+    margin-right:auto;
+}
+html[dir="rtl"] .form-select{
+    background-position:left .75rem center;
+    padding-right:.75rem;
+    padding-left:2.25rem;
+}
+html[dir="rtl"] .btn-close{
+    margin-right:auto;
+    margin-left:0;
+}
+
+
+/* Phase 17B: Agreement register width and wrapping in Arabic. */
+html[dir="rtl"] #agreement-table-wrap{
+    width:100%;
+    max-width:100%;
+}
+
+@media(min-width:992px){
+    html[dir="rtl"] #agreement-table-wrap{
+        overflow-x:clip !important;
+    }
+
+    html[dir="rtl"] #agreement-table{
+        width:100% !important;
+        min-width:0 !important;
+        table-layout:fixed !important;
+    }
+
+    html[dir="rtl"] #agreement-table th,
+    html[dir="rtl"] #agreement-table td{
+        min-width:0 !important;
+        padding:.78rem .48rem !important;
+        white-space:normal !important;
+        overflow-wrap:anywhere;
+        word-break:normal;
+        vertical-align:middle;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(1),
+    html[dir="rtl"] #agreement-table td:nth-child(1){
+        width:5%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(2),
+    html[dir="rtl"] #agreement-table td:nth-child(2){
+        width:23%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(3),
+    html[dir="rtl"] #agreement-table td:nth-child(3){
+        width:16%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(4),
+    html[dir="rtl"] #agreement-table td:nth-child(4){
+        width:8%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(5),
+    html[dir="rtl"] #agreement-table td:nth-child(5){
+        width:10%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(6),
+    html[dir="rtl"] #agreement-table td:nth-child(6){
+        width:17%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(7),
+    html[dir="rtl"] #agreement-table td:nth-child(7){
+        width:12%;
+    }
+
+    html[dir="rtl"] #agreement-table th:nth-child(8),
+    html[dir="rtl"] #agreement-table td:nth-child(8){
+        width:9%;
+    }
+
+    html[dir="rtl"] #agreement-table
+    .agreement-title-cell{
+        line-height:1.45;
+    }
+
+    html[dir="rtl"] #agreement-table
+    .agreement-row-actions{
+        display:grid !important;
+        grid-template-columns:1fr;
+        gap:.35rem;
+        width:100%;
+    }
+
+    html[dir="rtl"] #agreement-table
+    .agreement-row-actions .btn{
+        width:100%;
+        min-width:0;
+        padding:.36rem .4rem;
+        white-space:normal;
+        line-height:1.25;
+    }
+
+    html[dir="rtl"] #agreement-table
+    td:nth-child(2),
+    html[dir="rtl"] #agreement-table
+    td:nth-child(3),
+    html[dir="rtl"] #agreement-table
+    td:nth-child(6){
+        unicode-bidi:plaintext;
+    }
+}
+
+@media(max-width:1199.98px) and (min-width:768px){
+    html[dir="rtl"] #agreement-table-wrap{
+        overflow-x:auto !important;
+        scrollbar-gutter:stable;
+    }
+
+    html[dir="rtl"] #agreement-table{
+        min-width:60rem !important;
+    }
+}
+
+@media(max-width:767.98px){
+    html[dir="rtl"] #agreement-table-wrap{
+        overflow-x:auto !important;
+    }
+
+    html[dir="rtl"] #agreement-table{
+        min-width:54rem !important;
+    }
+}

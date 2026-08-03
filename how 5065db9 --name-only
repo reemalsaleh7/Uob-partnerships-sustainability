@@ -1,0 +1,188 @@
+[33m5065db9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m SDG
+[1mdiff --git a/uob-agreements/sdg-goal.php b/uob-agreements/sdg-goal.php[m
+[1mindex 115049d..339b804 100644[m
+[1m--- a/uob-agreements/sdg-goal.php[m
+[1m+++ b/uob-agreements/sdg-goal.php[m
+[36m@@ -17,47 +17,82 @@[m [mfunction parseDateAnySdg(string $s): int {[m
+   return $ts !== false ? $ts : 0;[m
+ }[m
+ [m
+[32m+[m[32mfunction normalizeSdgDigitsGoal(string $text): string {[m
+[32m+[m[32m  $arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩','۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];[m
+[32m+[m[32m  $latin  = ['0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9'];[m
+[32m+[m
+[32m+[m[32m  return str_replace($arabic, $latin, $text);[m
+[32m+[m[32m}[m
+[32m+[m
+ function extractSdgNumbersFromText(string $text): array {[m
+[32m+[m[32m  $text = normalizeSdgDigitsGoal(trim($text));[m
+[32m+[m
+[32m+[m[32m  if ($text === '') {[m
+[32m+[m[32m    return [];[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  $text = str_replace(['،', ';', '|', '/', '\\'], ',', $text);[m
+[32m+[m
+   $out = [];[m
+[31m-  if (preg_match_all('/(?:SDG\s*)?([1-9]|1[0-7])\b/u', $text, $m)) {[m
+[31m-    foreach ($m[1] as $n) {[m
+[32m+[m
+[32m+[m[32m  if (preg_match_all('/(?:SDG|Goal|الهدف|هدف)?\s*#?\s*(1[0-7]|[1-9])(?=\D|$)/iu', $text, $matches)) {[m
+[32m+[m[32m    foreach ($matches[1] as $n) {[m
+       $v = (int)$n;[m
+[31m-      if ($v >= 1 && $v <= 17) $out[$v] = true;[m
+[32m+[m
+[32m+[m[32m      if ($v >= 1 && $v <= 17) {[m
+[32m+[m[32m        $out[$v] = true;[m
+[32m+[m[32m      }[m
+     }[m
+   }[m
+[32m+[m
+   return array_keys($out);[m
+ }[m
+ [m
+ function extractInitiativeSdgs(array $it): array {[m
+[31m-  $texts = [[m
+[31m-    (string)($it['sdg_primary'] ?? ''),[m
+[31m-    (string)($it['sdg_secondary'] ?? ''),[m
+[31m-    (string)($it['SDGs'] ?? ''),[m
+[32m+[m[32m  $candidateKeys = [[m
+[32m+[m[32m    'sdgs',[m
+[32m+[m[32m    'SDGs',[m
+[32m+[m[32m    'SDG',[m
+[32m+[m[32m    'sdg_primary',[m
+[32m+[m[32m    'sdg_secondary',[m
+[32m+[m[32m    'sdg_goals',[m
+[32m+[m[32m    'SDG الأساسي',[m
+[32m+[m[32m    'SDG ثانوي',[m
+[32m+[m[32m    'الأهداف المرتبطة',[m
+[32m+[m[32m    'الاهداف المرتبطة',[m
+[32m+[m[32m    'أهداف التنمية المستدامة المرتبطة',[m
+   ];[m
+ [m
+   $nums = [];[m
+[31m-  foreach ($texts as $txt) {[m
+[31m-    foreach (extractSdgNumbersFromText($txt) as $n) {[m
+[31m-      $nums[$n] = true;[m
+[32m+[m
+[32m+[m[32m  foreach ($candidateKeys as $key) {[m
+[32m+[m[32m    if (!empty($it[$key])) {[m
+[32m+[m[32m      foreach (extractSdgNumbersFromText((string)$it[$key]) as $n) {[m
+[32m+[m[32m        $nums[$n] = true;[m
+[32m+[m[32m      }[m
+     }[m
+   }[m
+[32m+[m
+   return array_keys($nums);[m
+ }[m
+ [m
+ function extractAgreementSdgs(array $ag): array {[m
+   $candidateKeys = [[m
+[31m-    'أهداف التنمية المستدامة المرتبطة',[m
+[31m-    'الاهداف المرتبطة',[m
+[31m-    'الأهداف المرتبطة',[m
+[32m+[m[32m    'sdgs',[m
+     'SDGs',[m
+     'SDG',[m
+[31m-    'SDG الأساسي',[m
+[31m-    'SDG ثانوي',[m
+     'sdg_primary',[m
+     'sdg_secondary',[m
+[32m+[m[32m    'sdg_goals',[m
+[32m+[m[32m    'SDG الأساسي',[m
+[32m+[m[32m    'SDG ثانوي',[m
+[32m+[m[32m    'الأهداف المرتبطة',[m
+[32m+[m[32m    'الاهداف المرتبطة',[m
+[32m+[m[32m    'أهداف التنمية المستدامة المرتبطة',[m
+   ];[m
+ [m
+   $nums = [];[m
+[32m+[m
+   foreach ($candidateKeys as $key) {[m
+     if (!empty($ag[$key])) {[m
+       foreach (extractSdgNumbersFromText((string)$ag[$key]) as $n) {[m
+[36m@@ -65,9 +100,14 @@[m [mfunction extractAgreementSdgs(array $ag): array {[m
+       }[m
+     }[m
+   }[m
+[32m+[m
+   return array_keys($nums);[m
+ }[m
+ [m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+ function getArrSdg($name): array {[m
+   $v = $_GET[$name] ?? [];[m
+   if (!is_array($v)) $v = [$v];[m
+[36m@@ -109,6 +149,7 @@[m [mif ($selectedSdg < 1 || $selectedSdg > 17) {[m
+ $allInitiatives = loadAllInitiatives();[m
+ $allAgreements  = function_exists('readAgreements') ? readAgreements() : [];[m
+ [m
+[32m+[m
+ $isAdmin = (($_SESSION['role'] ?? '') === 'admin');[m
+ [m
+ if (!$isAdmin) {[m
+[1mdiff --git a/uob-agreements/sdg.php b/uob-agreements/sdg.php[m
+[1mindex c32ce84..daaddd4 100644[m
+[1m--- a/uob-agreements/sdg.php[m
+[1m+++ b/uob-agreements/sdg.php[m
+[36m@@ -10,16 +10,21 @@[m [m$mainContainer = false;[m
+ [m
+ require_once __DIR__ . '/header.php';[m
+ [m
+[32m+[m[32mif (!function_exists('h')) {[m
+[32m+[m[32m  function h($v) {[m
+[32m+[m[32m    return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+ /* =========================[m
+[31m-   language[m
+[32m+[m[32m   Language[m
+    ========================= */[m
+ $lang = $_SESSION['lang'] ?? ($_GET['lang'] ?? 'ar');[m
+ $isArabic = ($lang === 'ar');[m
+ [m
+ $T = [[m
+   'ar' => [[m
+[31m-    'page_title' => 'أهداف التنمية المستدامة في جامعة البحرين',[m
+[31m-    'hero_desc' => 'بوابة تفاعلية لاستعراض أهداف التنمية المستدامة وربطها بمبادرات الجامعة واتفاقياتها ذات الصلة.',[m
+[32m+[m[32m    'page_title' => 'أهداف التنمية المستدامة ',[m
+     'total_initiatives' => 'إجمالي المبادرات',[m
+     'total_agreements' => 'إجمالي الاتفاقيات',[m
+     'undefined_items' => 'غير محدد',[m
+[36m@@ -30,76 +35,43 @@[m [m$T = [[m
+     'filter_undef' => 'غير محدد',[m
+     'about_title' => 'عن أهداف التنمية المستدامة',[m
+     'about_desc' => 'تستعرض هذه الصفحة مساهمة جامعة البحرين في أهداف التنمية المستدامة من خلال المبادرات والاتفاقيات والأنشطة المرتبطة بكل هدف. اضغط على أي هدف لعرض جميع العناصر الداعمة له.',[m
+[31m-    'tag_bilingual' => 'واجهة ثنائية اللغة',[m
+[31m-    'tag_slider' => 'عرض تفاعلي',[m
+[31m-    'tag_related' => 'ربط بالمبادرات والاتفاقيات',[m
+[31m-    'tag_visual' => 'هوية بصرية موحدة',[m
+[31m-    'explore_title' => 'استكشف الأهداف السبعة عشر',[m
+     'goal_label' => 'هدف التنمية المستدامة',[m
+     'goal_items' => 'إجمالي العناصر',[m
+[31m-    'goal_initiatives' => 'مبادرات',[m
+[31m-    'goal_agreements' => 'اتفاقيات',[m
+[32m+[m[32m    'goal_initiatives' => 'المبادرات',[m
+[32m+[m[32m    'goal_agreements' => 'الاتفاقيات',[m
+     'view_details' => 'عرض التفاصيل',[m
+[31m-    'previous' => 'السابق',[m
+[31m-    'next' => 'التالي',[m
+[31m-    'selected_goal' => 'تفاصيل الهدف',[m
+[31m-    'initiatives_for_goal' => 'المبادرات المرتبطة',[m
+[31m-    'agreements_for_goal' => 'الاتفاقيات المرتبطة',[m
+[31m-    'no_initiatives' => 'لا توجد مبادرات مرتبطة بهذا الهدف.',[m
+[31m-    'no_agreements' => 'لا توجد اتفاقيات مرتبطة بهذا الهدف.',[m
+[32m+[m[32m    'no_image' => 'لا توجد صورة',[m
+[32m+[m[32m    'unspecified_title' => 'عناصر غير محددة الهدف',[m
+[32m+[m[32m    'unspecified_desc' => 'هذه العناصر لا تحتوي على هدف SDG واضح في البيانات.',[m
+     'initiative' => 'مبادرة',[m
+     'agreement' => 'اتفاقية',[m
+[31m-    'unit' => 'الجهة',[m
+[31m-    'type' => 'النوع',[m
+[31m-    'date' => 'التاريخ',[m
+[31m-    'status' => 'الحالة',[m
+[

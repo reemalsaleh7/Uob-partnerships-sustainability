@@ -257,6 +257,7 @@ try {
             'signing_link' => $agreement['signing_link'],
             'created_by' => (int) $creator['user_id'],
             'status' => $agreement['status'],
+            'record_origin' => 'LEGACY_IMPORT',
         ]);
 
         $metadata = $db->prepare('UPDATE agreements SET
@@ -426,6 +427,19 @@ function legacyImportRequireTrackingTable(PDO $db): void
     if ($exists === null || $exists === false) {
         throw new RuntimeException(
             'agreement_legacy_imports is missing. Apply 20260721_legacy_agreement_import_tracking.sql first.'
+        );
+    }
+
+    $originAvailable = $db->query("SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'agreements'
+          AND column_name = 'record_origin'
+    )")->fetchColumn();
+    if (!in_array($originAvailable, [true, 1, '1', 't', 'true'], true)) {
+        throw new RuntimeException(
+            'Agreement origin tracking is missing. Run database-manager.cmd option 2 before importing.'
         );
     }
 }

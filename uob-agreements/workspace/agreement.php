@@ -9,7 +9,7 @@ workspaceHeader('Agreement details', 'agreements');
 ?>
 
 <div class="mb-4">
-    <a href="agreements.php" class="back-link">← Back to Agreements</a>
+    <a href="agreements.php" class="back-link" data-context-back>← Back to Agreements</a>
 </div>
 
 <div
@@ -33,15 +33,33 @@ workspaceHeader('Agreement details', 'agreements');
     <span>Loading Agreement…</span>
 </div>
 
-<div id="detail-content" class="d-none">
-    <section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
-        <div>
+<div id="detail-content" class="agreement-detail-page d-none">
+    <section class="page-heading agreement-detail-hero">
+        <div class="agreement-detail-title">
             <p class="eyebrow mb-2">Agreement <span data-agreement-id></span></p>
             <h1 class="display-6 mb-3" data-agreement-title data-annotation-field="title"></h1>
-            <span data-agreement-status></span>
+            <div class="agreement-detail-badges">
+                <span data-agreement-status></span>
+                <span class="record-origin-badge" data-record-origin>Workspace record</span>
+            </div>
         </div>
 
-        <div class="detail-actions align-self-lg-end">
+        <div class="detail-actions">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Download</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" type="button" data-export-agreement="pdf">PDF / print</button></li>
+                    <li><button class="dropdown-item" type="button" data-export-agreement="csv">CSV</button></li>
+                    <li><button class="dropdown-item" type="button" data-export-agreement="json">JSON</button></li>
+                </ul>
+            </div>
+            <a
+                href="#"
+                class="btn btn-outline-primary d-none"
+                data-administrative-correction
+            >
+                Administrative correction
+            </a>
             <a
                 href="#"
                 class="btn btn-outline-primary d-none"
@@ -71,19 +89,6 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </section>
 
-    <section class="workspace-card mt-4 d-none" aria-labelledby="agreement-changes-title" data-change-review>
-        <div class="workspace-card-header">
-            <div>
-                <p class="eyebrow mb-1">Updated since your last visit</p>
-                <h2 id="agreement-changes-title" class="h5 mb-1">What changed—and why</h2>
-                <p class="small text-secondary mb-0" data-change-range></p>
-            </div>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-dismiss-changes>Keep highlights, hide summary</button>
-        </div>
-        <div class="change-reason-banner" data-change-reason></div>
-        <div class="change-review-list" data-change-list></div>
-    </section>
-
     <section class="workspace-card mt-4" aria-labelledby="workflow-timeline-title" data-workflow-timeline-section>
         <div class="workspace-card-header">
             <div>
@@ -111,93 +116,142 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </section>
 
-    <div class="row g-4 mt-1">
-        <div class="col-lg-8">
-            <section class="workspace-card h-100" aria-labelledby="overview-title">
-                <div class="workspace-card-header">
-                    <h2 id="overview-title" class="h5 mb-0">Overview</h2>
-                </div>
-                <dl class="detail-grid">
-                    <div>
-                        <dt>Agreement type</dt>
-                        <dd data-agreement-type data-annotation-field="agreement_type"></dd>
-                    </div>
-                    <div>
-                        <dt>Partner organization</dt>
-                        <dd data-partner-name data-annotation-field="partner_names"></dd>
-                    </div>
-                    <div class="detail-grid-wide">
-                        <dt>Description</dt>
-                        <dd data-agreement-description data-annotation-field="description"></dd>
-                    </div>
-                </dl>
-            </section>
+    <section class="workspace-card mt-4 d-none" aria-labelledby="agreement-changes-title" data-change-review>
+        <div class="workspace-card-header">
+            <div>
+                <p class="eyebrow mb-1">Updated since your last visit</p>
+                <h2 id="agreement-changes-title" class="h5 mb-1">What changed—and why</h2>
+                <p class="small text-secondary mb-0" data-change-range></p>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-dismiss-changes>Keep highlights, hide summary</button>
         </div>
-
-        <div class="col-lg-4">
-            <section class="workspace-card h-100" aria-labelledby="record-title">
-                <div class="workspace-card-header">
-                    <h2 id="record-title" class="h5 mb-0">Record information</h2>
-                </div>
-                <dl class="record-list">
-                    <div>
-                        <dt>Created by</dt>
-                        <dd data-created-by></dd>
-                    </div>
-                    <div>
-                        <dt>Created</dt>
-                        <dd data-created-at></dd>
-                    </div>
-                    <div>
-                        <dt>Last updated</dt>
-                        <dd data-updated-at></dd>
-                    </div>
-                </dl>
-            </section>
-        </div>
-    </div>
-
-    <section class="workspace-card mt-4" aria-labelledby="complete-record-title">
-        <div class="workspace-card-header"><div>
-            <h2 id="complete-record-title" class="h5 mb-1">Complete Agreement record</h2>
-            <p class="small text-secondary mb-0">Official request, MOU, ranking, commitment, and legacy reporting fields.</p>
-        </div></div>
-        <dl class="detail-grid comprehensive-detail-grid">
-            <div><dt>Arabic title</dt><dd data-field="title_ar"></dd></div>
-            <div><dt>Geographic scope</dt><dd data-field="geographic_scope"></dd></div>
-            <div><dt>Start date</dt><dd data-field="start_date"></dd></div>
-            <div><dt>End date</dt><dd data-field="end_date"></dd></div>
-            <div><dt>Signing date</dt><dd data-field="signing_date"></dd></div>
-            <div><dt>Effective date</dt><dd data-field="effective_date"></dd></div>
-            <div><dt>Automatic renewal</dt><dd data-field="auto_renew"></dd></div>
-            <div><dt>Renewal term</dt><dd data-field="renewal_term_months"></dd></div>
-            <div><dt>Non-renewal notice</dt><dd data-field="non_renewal_notice_months"></dd></div>
-            <div><dt>Termination notice</dt><dd data-field="termination_notice_months"></dd></div>
-            <div><dt>Legal effect</dt><dd data-field="legal_binding_status"></dd></div>
-            <div><dt>Responsible unit</dt><dd data-field="responsible_unit_name"></dd></div>
-            <div class="detail-grid-wide"><dt>Need and justification</dt><dd data-field="need_justification"></dd></div>
-            <div class="detail-grid-wide"><dt>Objectives</dt><dd data-field="objectives"></dd></div>
-            <div class="detail-grid-wide"><dt>Expected University value and impact</dt><dd data-field="expected_value"></dd></div>
-            <div class="detail-grid-wide"><dt>Focus areas</dt><dd data-field="focus_areas"></dd></div>
-            <div class="detail-grid-wide"><dt>Fields of cooperation</dt><dd data-field="collaboration_areas"></dd></div>
-            <div class="detail-grid-wide"><dt>Implementation methods</dt><dd data-field="implementation_methods"></dd></div>
-            <div><dt>Financial commitments</dt><dd data-field="financial_summary"></dd></div>
-            <div><dt>Human-resources commitments</dt><dd data-field="human_resources_summary"></dd></div>
-            <div><dt>Training programs</dt><dd data-field="training_programs_summary"></dd></div>
-            <div><dt>Rankings</dt><dd data-field="rankings_summary"></dd></div>
-            <div><dt>SDGs</dt><dd data-field="sdgs_summary"></dd></div>
-            <div><dt>Annual report</dt><dd data-field="annual_report_required"></dd></div>
-            <div class="detail-grid-wide"><dt>Monitoring plan</dt><dd data-field="monitoring_plan"></dd></div>
-            <div class="detail-grid-wide"><dt>Confidentiality terms</dt><dd data-field="confidentiality_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Intellectual-property terms</dt><dd data-field="intellectual_property_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Legal and regulatory compliance</dt><dd data-field="compliance_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Relationship disclaimer</dt><dd data-field="relationship_disclaimer"></dd></div>
-            <div class="detail-grid-wide"><dt>Amendment terms</dt><dd data-field="amendment_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Dispute-resolution terms</dt><dd data-field="dispute_resolution_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Other terms</dt><dd data-field="other_terms"></dd></div>
-            <div class="detail-grid-wide"><dt>Public signing link</dt><dd data-field="signing_link"></dd></div>
-        </dl>
+        <div class="change-reason-banner" data-change-reason></div>
+        <div class="change-review-list" data-change-list></div>
     </section>
+
+    <section class="workspace-card mt-4 d-none" aria-labelledby="administrative-corrections-title" data-administrative-corrections>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="administrative-corrections-title" class="h5 mb-1">Administrative correction history</h2>
+                <p class="small text-secondary mb-0">Corrections repair imported data without changing the legacy source or removing earlier versions.</p>
+            </div>
+        </div>
+        <div class="form-section" data-administrative-correction-list></div>
+    </section>
+
+    <div class="agreement-detail-grid mt-4">
+        <section class="workspace-card agreement-overview-card" aria-labelledby="overview-title">
+            <div class="workspace-card-header"><div>
+                <p class="eyebrow mb-1">Agreement profile</p>
+                <h2 id="overview-title" class="h5 mb-0">Overview</h2>
+            </div></div>
+            <dl class="detail-grid comprehensive-detail-grid">
+                <div><dt>Agreement type</dt><dd data-agreement-type data-annotation-field="agreement_type"></dd></div>
+                <div><dt>Geographic scope</dt><dd data-field="geographic_scope"></dd></div>
+                <div class="detail-grid-wide"><dt>Arabic title</dt><dd data-field="title_ar"></dd></div>
+                <div class="detail-grid-wide"><dt>Description</dt><dd data-agreement-description data-annotation-field="description"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-terms-card" aria-labelledby="terms-title">
+            <div class="workspace-card-header"><h2 id="terms-title" class="h5 mb-0">Terms and duration</h2></div>
+            <dl class="record-list compact-record-list">
+                <div><dt>Project duration</dt><dd><span data-field="start_date"></span> <span aria-hidden="true">→</span> <span data-field="end_date"></span></dd></div>
+                <div><dt>Effective date</dt><dd data-field="effective_date"></dd></div>
+                <div><dt>Automatic renewal</dt><dd data-field="auto_renew"></dd></div>
+                <div><dt>Renewal term</dt><dd data-field="renewal_term_months"></dd></div>
+                <div><dt>Non-renewal notice</dt><dd data-field="non_renewal_notice_months"></dd></div>
+                <div><dt>Termination notice</dt><dd data-field="termination_notice_months"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-coordinators-card" aria-labelledby="contact-summary-title">
+            <div class="workspace-card-header"><h2 id="contact-summary-title" class="h5 mb-0">Coordinators and signatories</h2></div>
+            <div class="form-section" data-contact-summary></div>
+        </section>
+
+        <section class="workspace-card agreement-partner-card" aria-labelledby="partner-title">
+            <div class="workspace-card-header"><div>
+                <p class="eyebrow mb-1">External relationship</p>
+                <h2 id="partner-title" class="h5 mb-0">Partner organization</h2>
+            </div></div>
+            <div class="form-section">
+                <p class="visually-hidden" data-partner-name data-annotation-field="partner_names"></p>
+                <div class="partner-summary-list" data-partner-summary></div>
+            </div>
+        </section>
+
+        <section class="workspace-card agreement-clauses-card" aria-labelledby="clauses-title">
+            <div class="workspace-card-header"><h2 id="clauses-title" class="h5 mb-0">MOU clauses</h2></div>
+            <dl class="record-list compact-record-list comprehensive-detail-grid">
+                <div><dt>Legal effect</dt><dd data-field="legal_binding_status"></dd></div>
+                <div><dt>Confidentiality</dt><dd data-field="confidentiality_terms"></dd></div>
+                <div><dt>Intellectual property</dt><dd data-field="intellectual_property_terms"></dd></div>
+                <div><dt>Legal and regulatory compliance</dt><dd data-field="compliance_terms"></dd></div>
+                <div><dt>Relationship disclaimer</dt><dd data-field="relationship_disclaimer"></dd></div>
+                <div><dt>Amendment terms</dt><dd data-field="amendment_terms"></dd></div>
+                <div><dt>Dispute resolution</dt><dd data-field="dispute_resolution_terms"></dd></div>
+                <div><dt>Other terms</dt><dd data-field="other_terms"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-alignment-card" aria-labelledby="alignment-title">
+            <div class="workspace-card-header"><h2 id="alignment-title" class="h5 mb-0">Commitments and SDGs</h2></div>
+            <dl class="record-list compact-record-list">
+                <div><dt>Financial commitments</dt><dd data-field="financial_summary"></dd></div>
+                <div><dt>Human resources</dt><dd data-field="human_resources_summary"></dd></div>
+                <div><dt>Training programs</dt><dd data-field="training_programs_summary"></dd></div>
+                <div><dt>Rankings</dt><dd data-field="rankings_summary"></dd></div>
+                <div><dt>SDGs</dt><dd data-field="sdgs_summary"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-purpose-card" aria-labelledby="purpose-impact-title">
+            <div class="workspace-card-header"><h2 id="purpose-impact-title" class="h5 mb-0">Purpose, scope, and impact</h2></div>
+            <dl class="detail-grid comprehensive-detail-grid">
+                <div class="detail-grid-wide"><dt>Need and justification</dt><dd data-field="need_justification"></dd></div>
+                <div class="detail-grid-wide"><dt>Objectives</dt><dd data-field="objectives"></dd></div>
+                <div class="detail-grid-wide"><dt>Expected University value and impact</dt><dd data-field="expected_value"></dd></div>
+                <div><dt>Focus areas</dt><dd data-field="focus_areas"></dd></div>
+                <div><dt>Fields of cooperation</dt><dd data-field="collaboration_areas"></dd></div>
+                <div class="detail-grid-wide"><dt>Implementation methods</dt><dd data-field="implementation_methods"></dd></div>
+                <div class="detail-grid-wide"><dt>Monitoring and reporting plan</dt><dd data-field="monitoring_plan"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-program-card" aria-labelledby="program-summary-title">
+            <div class="workspace-card-header"><div>
+                <h2 id="program-summary-title" class="h5 mb-1">Executive programs</h2>
+                <p class="small text-secondary mb-0">Implementation program, objectives, outputs, timeline, and responsible entity.</p>
+            </div></div>
+            <div class="form-section" data-program-summary></div>
+        </section>
+
+        <section class="workspace-card agreement-outcomes-card" aria-labelledby="outcomes-summary-title">
+            <div class="workspace-card-header"><h2 id="outcomes-summary-title" class="h5 mb-0">Exchange outcomes</h2></div>
+            <div class="form-section" data-outcome-summary></div>
+        </section>
+
+        <section class="workspace-card agreement-submission-card" aria-labelledby="submission-title">
+            <div class="workspace-card-header"><h2 id="submission-title" class="h5 mb-0">Form submission</h2></div>
+            <dl class="record-list compact-record-list">
+                <div><dt>Submitted by</dt><dd data-created-by></dd></div>
+                <div><dt>Responsible unit</dt><dd data-field="responsible_unit_name"></dd></div>
+                <div><dt>Annual report required</dt><dd data-field="annual_report_required"></dd></div>
+            </dl>
+        </section>
+
+        <section class="workspace-card agreement-record-card" aria-labelledby="record-title">
+            <div class="workspace-card-header"><h2 id="record-title" class="h5 mb-0">Record information</h2></div>
+            <dl class="record-list compact-record-list">
+                <div><dt>Agreement ID</dt><dd data-agreement-id></dd></div>
+                <div><dt>Created</dt><dd data-created-at></dd></div>
+                <div><dt>Last updated</dt><dd data-updated-at></dd></div>
+                <div><dt>Signing date</dt><dd data-field="signing_date"></dd></div>
+                <div><dt>Public signing link</dt><dd data-field="signing_link"></dd></div>
+            </dl>
+        </section>
+    </div>
 
     <section class="workspace-card mt-4" aria-labelledby="agreement-comments-title" data-annotation-section>
         <div class="workspace-card-header">
@@ -242,21 +296,12 @@ workspaceHeader('Agreement details', 'agreements');
         <div class="annotation-list d-none" data-annotation-list></div>
     </section>
 
-    <div class="row g-4 mt-1">
-        <div class="col-lg-6"><section class="workspace-card h-100" aria-labelledby="contact-summary-title">
-            <div class="workspace-card-header"><h2 id="contact-summary-title" class="h5 mb-0">Coordinators and signatories</h2></div>
-            <div class="form-section" data-contact-summary></div>
-        </section></div>
-        <div class="col-lg-6"><section class="workspace-card h-100" aria-labelledby="program-summary-title">
-            <div class="workspace-card-header"><h2 id="program-summary-title" class="h5 mb-0">Executive program and outcomes</h2></div>
-            <div class="form-section" data-program-summary></div>
-        </section></div>
-    </div>
+    <?php agreementDocumentsPanel('id', 'AGREEMENT_DRAFT'); ?>
 
     <section class="workspace-card mt-4 d-none" data-relationship-section aria-labelledby="relationship-title">
         <div class="workspace-card-header">
             <div>
-                <h2 id="relationship-title" class="h5 mb-1">Agreement lineage</h2>
+                <h2 id="relationship-title" class="h5 mb-1">Approved lifecycle requests</h2>
                 <p class="small text-secondary mb-0">Approved renewals and amendments linked without replacing the original record.</p>
             </div>
         </div>
@@ -268,7 +313,18 @@ workspaceHeader('Agreement details', 'agreements');
         </div>
     </section>
 
-    <?php agreementDocumentsPanel('id', 'AGREEMENT_DRAFT'); ?>
+    <section class="workspace-card mt-4 d-none" aria-labelledby="performance-summary-title" data-performance-summary>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="performance-summary-title" class="h5 mb-1">Performance monitoring</h2>
+                <p class="small text-secondary mb-0">Annual reporting periods, deadlines, review state, and accepted evidence.</p>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="performance-reports.php">Open reporting queue</a>
+        </div>
+        <div class="loading-state compact" data-performance-summary-loading><div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div><span>Loading reporting periods…</span></div>
+        <div class="empty-state compact d-none" data-performance-summary-empty><p class="text-secondary mb-0">No reporting period has been generated for this Agreement.</p></div>
+        <div class="table-responsive d-none" data-performance-summary-table><table class="table workspace-table align-middle mb-0"><thead><tr><th>Period</th><th>Due date</th><th>Status</th><th></th></tr></thead><tbody data-performance-summary-body></tbody></table></div>
+    </section>
 
     <section
         class="workspace-card mt-4"
@@ -375,19 +431,6 @@ workspaceHeader('Agreement details', 'agreements');
                 </button>
             </div>
         </form>
-    </section>
-
-    <section class="workspace-card mt-4 d-none" aria-labelledby="performance-summary-title" data-performance-summary>
-        <div class="workspace-card-header">
-            <div>
-                <h2 id="performance-summary-title" class="h5 mb-1">Performance monitoring</h2>
-                <p class="small text-secondary mb-0">Annual reporting periods, deadlines, review state, and accepted evidence.</p>
-            </div>
-            <a class="btn btn-sm btn-outline-primary" href="performance-reports.php">Open reporting queue</a>
-        </div>
-        <div class="loading-state compact" data-performance-summary-loading><div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div><span>Loading reporting periods…</span></div>
-        <div class="empty-state compact d-none" data-performance-summary-empty><p class="text-secondary mb-0">No reporting period has been generated for this Agreement.</p></div>
-        <div class="table-responsive d-none" data-performance-summary-table><table class="table workspace-table align-middle mb-0"><thead><tr><th>Period</th><th>Due date</th><th>Status</th><th></th></tr></thead><tbody data-performance-summary-body></tbody></table></div>
     </section>
 
     <section class="workspace-card mt-4" aria-labelledby="versions-title">

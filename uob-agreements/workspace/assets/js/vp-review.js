@@ -136,7 +136,9 @@
                 : 'Finance review was not required for this cycle.'
         );
 
-        elements.openAgreement.href = `agreement.php?id=${encodeURIComponent(agreement.agreement_id)}`;
+        elements.openAgreement.href = AgreementApi.agreementReviewUrl(
+            agreement.agreement_id
+        );
         elements.taskLabel.textContent = state.mode === 'VP_MEDIATION'
             ? 'VP mediation'
             : 'Final VP review';
@@ -267,7 +269,7 @@
             return;
         }
 
-        if (!window.confirm('Approve the Final VP review and send this Agreement to the President?')) {
+        if (!await WorkspaceDialog.confirm('Approve the Final VP review and send this Agreement to the President?', { confirmLabel: 'Send to President' })) {
             return;
         }
 
@@ -303,7 +305,7 @@
             ? 'Reject this Agreement and permanently end the workflow?'
             : 'Return this Agreement to its creator for a revised version?';
 
-        if (!window.confirm(prompt)) {
+        if (!await WorkspaceDialog.confirm(prompt, { confirmLabel: isReject ? 'Reject Agreement' : 'Return to creator', danger: isReject })) {
             return;
         }
 
@@ -356,7 +358,7 @@
             REJECT: 'terminal rejection'
         };
 
-        if (!window.confirm(`Route this change request to ${destinationLabels[destination]}?`)) {
+        if (!await WorkspaceDialog.confirm(`Route this change request to ${destinationLabels[destination]}?`, { confirmLabel: 'Route request' })) {
             return;
         }
 

@@ -16,7 +16,15 @@ class AuditService {
         $this->write('users', $userId, 'LOGOUT', $userId, null, $context);
     }
 
-    public function write(string $tableName, int $recordId, string $action, ?int $userId, mixed $oldData = null, mixed $newData = null): void {
+    public function write(
+        string $tableName,
+        int $recordId,
+        string $action,
+        ?int $userId,
+        mixed $oldData = null,
+        mixed $newData = null,
+        ?string $reason = null
+    ): void {
         $this->auditRepo->create([
             'table_name' => $tableName,
             'record_id' => $recordId,
@@ -24,7 +32,7 @@ class AuditService {
             'user_id' => $userId,
             'old_data' => $oldData,
             'new_data' => $newData,
-            'reason' => null,
+            'reason' => $reason,
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
         ]);
     }

@@ -82,6 +82,7 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/agreements`                         | `VIEW_AGREEMENT`   | List Agreements visible to the authenticated user.                     |
 | `GET`    | `/agreements/{id}`                    | `VIEW_AGREEMENT`   | Get one Agreement when the authenticated user may view it.             |
 | `POST`   | `/agreements`                         | `CREATE_AGREEMENT` | Create a draft Agreement and version 1.                                |
+| `POST`   | `/agreement-document-extraction`       | Create, edit, or administrative-correction permission | Validate a DOCX upload and return reviewable clause/contact suggestions without storing the temporary extraction copy. |
 | `PUT`    | `/agreements/{id}`                    | `EDIT_AGREEMENT`   | Update a draft/returned Agreement and create a snapshot version.       |
 | `POST`   | `/agreements/{id}/submit`             | `SUBMIT_AGREEMENT` | Start the approval workflow and move the Agreement to`UNDER_REVIEW`. |
 | `POST`   | `/agreements/{id}/resubmit`           | `SUBMIT_AGREEMENT` | Resubmit a newly versioned returned Agreement to Initial VP.           |
@@ -93,6 +94,7 @@ Returns the authenticated user's identity, roles, permissions, and active positi
 | `GET`    | `/documents/{id}/download`            | `VIEW_AGREEMENT`   | Re-authorize and stream one private document.                           |
 | `DELETE` | `/documents/{id}`                     | `VIEW_AGREEMENT`   | Delete the actor's own still-manageable document.                       |
 | `GET`    | `/partners`                           | `VIEW_AGREEMENT`   | List active partners for Agreement forms.                              |
+| `GET`    | `/partners/lookup?name=...`           | `CREATE_AGREEMENT` or `EDIT_AGREEMENT` | Suggest missing partner details from a public structured record. |
 | `GET`    | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | List shared comments plus only the caller's private notes.              |
 | `POST`   | `/agreements/{id}/annotations`        | `VIEW_AGREEMENT`   | Add a field- or selected-text comment to the latest immutable version.  |
 | `PATCH`  | `/agreements/{id}/annotations/{annotation}/resolve` | `VIEW_AGREEMENT` | Resolve an authorized comment.                         |
@@ -109,11 +111,34 @@ only when `author_user_id` equals the authenticated user, including when the
 requesting account has the System Administrator role. Audit entries record
 private-note metadata but never copy the comment text.
 
+### Extract governance clauses
+
+`POST /agreement-document-extraction` uses multipart form data with the DOCX
+file in `file`. The endpoint requires an authenticated Agreement creator/editor,
+enforces the 10 MB limit, checks extension, detected media type, ZIP signature,
+required DOCX parts, and rejects macro-enabled content. It returns suggested
+Article 1/2 fields and labeled coordinator/signatory names, titles, email
+addresses, and phone numbers for review; it does not save
+the temporary extraction upload. The selected DOCX is stored only after the
+Agreement draft/version exists, through
+`POST /agreements/{id}/documents` with
+`document_type=GOVERNANCE_CLAUSES`.
+
+Agreement document uploads use type-specific extension rules:
+
+- `GOVERNANCE_CLAUSES`: DOCX only.
+- `MEDIA`: JPG, JPEG, PNG, WebP, or MP4 only.
+- Other Agreement document types: PDF, DOC, or DOCX only.
+
+Every stored file is limited to 10 MB and is validated by detected MIME type,
+binary signature, private generated storage key, and SHA-256 checksum. Submission
+and resubmission require a securely stored `GOVERNANCE_CLAUSES` document.
+
 ### List active partners
 
 `GET /partners`
 
-Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, `partner_type`, and `country`; inactive partner records are excluded from new Agreement forms.
+Returns active partners ordered by organization name. The response contains `partner_id`, `organization_name`, normalized `partner_type`, `country`, `website`, and `profile`; inactive partner records are excluded from new Agreement forms. `GET /partners/lookup?name=...` may suggest missing values from a public structured record but does not persist them.
 
 ### Create Agreement
 
@@ -282,7 +307,7 @@ Each update creates an immutable row in `agreement_versions` containing a JSON s
 
 Only a `DRAFT` Agreement can start a new workflow. Eligible initiators are a Dean, VP Office member, or President Office member.
 
-Before starting the workflow, the service enforces formal-request completeness: partner(s), geographic scope, start/end dates, description, need and justification, objectives, expected value, collaboration areas, and implementation methods. Conditional commitment descriptions are validated when their flags are enabled.
+Before starting the workflow, the service enforces formal-request completeness: Arabic name; exactly one partner; geographic scope; project start/end dates; description; need and justification; objectives; expected value; four complete coordinator/signatory records; at least one complete executive programme; every planned-outcome field; and a governance/MOU DOCX document. Signing and effective dates are recorded later through the final-signing operation. Extracted Article 1/2 clause fields are optional. Conditional commitment descriptions are validated when their flags are enabled.
 
 Example response:
 

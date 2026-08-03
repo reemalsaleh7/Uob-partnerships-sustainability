@@ -5,7 +5,11 @@
         feedback: document.getElementById('lifecycle-detail-feedback'),
         loading: document.getElementById('lifecycle-detail-loading'),
         content: document.getElementById('lifecycle-detail-content'),
-        fields: document.querySelector('[data-request-fields]'),
+        fieldGroups: {
+            request: document.querySelector('[data-request-fields="request"]'),
+            change: document.querySelector('[data-request-fields="change"]'),
+            financial: document.querySelector('[data-request-fields="financial"]')
+        },
         versions: document.querySelector('[data-version-rows]'),
         edit: document.querySelector('[data-edit-request]'),
         submit: document.querySelector('[data-submit-request]'),
@@ -16,6 +20,17 @@
     };
     const id = new URLSearchParams(window.location.search).get('id');
     let request = null;
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-export-lifecycle]');
+        if (!button || !request) return;
+        WorkspaceExport.download(
+            `lifecycle-request-${request.lifecycle_request_id}`,
+            request,
+            button.dataset.exportLifecycle,
+            `${String(request.request_type || 'Lifecycle').replaceAll('_', ' ')} request`
+        );
+    });
 
     function item(label, value) {
         const wrap = document.createElement('div');
@@ -32,21 +47,41 @@
         document.querySelector('[data-agreement-title]').textContent = value.agreement_title;
         document.querySelector('[data-request-status]').replaceChildren(AgreementApi.createStatusBadge(value.status));
         const labels = {
-            justification: 'Justification', activities_summary: 'Activities summary', achieved_value: 'Achieved value',
-            proposed_start_date: 'Proposed start date', proposed_end_date: 'Proposed end date',
-            financial_amount: 'Financial amount', financial_currency: 'Currency', financial_description: 'Financial description',
-            amendment_type: 'Amendment type', amendment_reason: 'Amendment reason', terms_to_amend: 'Terms to amend',
-            termination_reason: 'Termination reason', proposed_termination_date: 'Proposed termination date',
-            previous_initiatives: 'Previous initiatives', requester_name: 'Requested by', submitted_at: 'Submitted', decided_at: 'Decided', decision_comments: 'Final comments'
+            justification: ['Justification', 'request'],
+            requester_name: ['Requested by', 'request'],
+            submitted_at: ['Submitted', 'request'],
+            decided_at: ['Decided', 'request'],
+            decision_comments: ['Final comments', 'request'],
+            activities_summary: ['Activities summary', 'change'],
+            achieved_value: ['Achieved value', 'change'],
+            proposed_start_date: ['Proposed start date', 'change'],
+            proposed_end_date: ['Proposed end date', 'change'],
+            amendment_type: ['Amendment type', 'change'],
+            amendment_reason: ['Amendment reason', 'change'],
+            terms_to_amend: ['Terms to amend', 'change'],
+            termination_reason: ['Termination reason', 'change'],
+            proposed_termination_date: ['Proposed termination date', 'change'],
+            previous_initiatives: ['Previous initiatives', 'change'],
+            financial_amount: ['Financial amount', 'financial'],
+            financial_currency: ['Currency', 'financial'],
+            financial_description: ['Financial description', 'financial']
         };
-        elements.fields.replaceChildren();
-        Object.entries(labels).forEach(([field, label]) => {
+        Object.values(elements.fieldGroups).forEach((group) => group.replaceChildren());
+        Object.entries(labels).forEach(([field, [label, group]]) => {
             let display = value[field];
             if (field === 'previous_initiatives' && display != null) {
                 display = display === true || display === 't' || display === 'true' ? 'Yes' : 'No';
             }
             if (['created_at', 'submitted_at', 'decided_at'].includes(field)) display = AgreementApi.formatDate(display);
-            elements.fields.append(item(label, display));
+            if (display === null || display === '' || display === undefined) return;
+            elements.fieldGroups[group].append(item(label, display));
+        });
+        Object.values(elements.fieldGroups).forEach((group) => {
+            if (group.children.length) return;
+            const empty = document.createElement('p');
+            empty.className = 'text-secondary mb-0';
+            empty.textContent = 'No information recorded for this group.';
+            group.append(empty);
         });
         elements.versions.replaceChildren();
         versions.forEach((version) => {
@@ -93,7 +128,7 @@
         }
     }
     elements.submit.addEventListener('click', async () => {
-        if (!request || !window.confirm('Submit this lifecycle request for formal review?')) return;
+        if (!request || !await WorkspaceDialog.confirm('Submit this lifecycle request for formal review?', { confirmLabel: 'Submit request' })) return;
         elements.submit.disabled = true;
         elements.spinner.classList.remove('d-none');
         try {

@@ -57,6 +57,8 @@ try {
         $agreementRepository->create([
             'title' =>
                 'Temporary Submission Workflow Test',
+            'title_ar' =>
+                'اختبار مؤقت لمسار تقديم الاتفاقية',
             'agreement_type' => 'MOU',
             'description' =>
                 'Rolled back after verification',
@@ -65,6 +67,11 @@ try {
                 date('Y-m-d', strtotime('+30 days')),
             'end_date' =>
                 date('Y-m-d', strtotime('+395 days')),
+            'signing_date' => date('Y-m-d'),
+            'effective_date' =>
+                date('Y-m-d', strtotime('+30 days')),
+            'auto_renew' => true,
+            'renewal_term_months' => 12,
             'need_justification' =>
                 'Required for submission workflow verification',
             'expected_value' =>
@@ -83,6 +90,100 @@ try {
     $agreementRepository->replacePartners(
         $agreementId,
         [(int) $partnerId]
+    );
+
+    $agreementRepository->replaceContacts(
+        $agreementId,
+        [
+            [
+                'party_type' => 'UOB',
+                'contact_role' => 'COORDINATOR',
+                'full_name' => 'UOB Test Coordinator',
+                'job_title' => 'Partnership Coordinator',
+                'email' => 'submission.coordinator@uob.test',
+                'phone' => '+973 1700 0001',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'PARTNER',
+                'contact_role' => 'COORDINATOR',
+                'partner_id' => (int) $partnerId,
+                'full_name' => 'Partner Test Coordinator',
+                'job_title' => 'International Relations Coordinator',
+                'email' => 'coordinator@example.test',
+                'phone' => '+973 1700 0002',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'UOB',
+                'contact_role' => 'SIGNATORY',
+                'full_name' => 'UOB Test Signatory',
+                'job_title' => 'Authorized University Signatory',
+                'email' => 'submission.signatory@uob.test',
+                'phone' => '+973 1700 0003',
+                'is_primary' => true,
+            ],
+            [
+                'party_type' => 'PARTNER',
+                'contact_role' => 'SIGNATORY',
+                'partner_id' => (int) $partnerId,
+                'full_name' => 'Partner Test Signatory',
+                'job_title' => 'Authorized Partner Signatory',
+                'email' => 'signatory@example.test',
+                'phone' => '+973 1700 0004',
+                'is_primary' => true,
+            ],
+        ]
+    );
+
+    $agreementRepository->replaceExecutivePrograms(
+        $agreementId,
+        [[
+            'title' => 'Submission Workflow Test Programme',
+            'description' =>
+                'Temporary programme used only to verify submission.',
+            'objectives' =>
+                'Verify complete programme validation and workflow routing.',
+            'expected_outputs' =>
+                'A successfully created Agreement approval workflow.',
+            'start_date' =>
+                date('Y-m-d', strtotime('+45 days')),
+            'end_date' =>
+                date('Y-m-d', strtotime('+180 days')),
+            'responsible_entity' =>
+                'University of Bahrain and test partner',
+            'applicant_name' => 'Development Dean',
+        ]]
+    );
+
+    $agreementRepository->replaceMetrics(
+        $agreementId,
+        [
+            [
+                'metric_code' => 'STUDENTS_EXCHANGED',
+                'planned_value' => 10,
+                'actual_value' => 0,
+                'notes' => 'Planned student exchange participants',
+            ],
+            [
+                'metric_code' => 'FACULTY_EXCHANGED',
+                'planned_value' => 4,
+                'actual_value' => 0,
+                'notes' => 'Planned faculty exchange participants',
+            ],
+            [
+                'metric_code' => 'JOINT_PROGRAMS',
+                'planned_value' => 1,
+                'actual_value' => 0,
+                'notes' => 'Planned joint programme',
+            ],
+            [
+                'metric_code' => 'TRAINED_STUDENTS',
+                'planned_value' => 20,
+                'actual_value' => 0,
+                'notes' => 'Planned trained students',
+            ],
+        ]
     );
 
     $result =
