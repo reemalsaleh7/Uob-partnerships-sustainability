@@ -247,6 +247,12 @@ final class InitiativeFinalFormRepository
                     expected_budget,
                     planned_start_date,
                     planned_end_date,
+                    proposed_venue,
+                    proposed_venue_place_id,
+                    proposed_venue_name,
+                    proposed_venue_latitude,
+                    proposed_venue_longitude,
+                    proposed_venue_country_code,
                     status,
                     created_by,
                     submitted_at,
@@ -264,6 +270,12 @@ final class InitiativeFinalFormRepository
                     CAST(:expected_budget AS NUMERIC),
                     CAST(:planned_start_date AS DATE),
                     CAST(:planned_end_date AS DATE),
+                    :proposed_venue,
+                    :proposed_venue_place_id,
+                    :proposed_venue_name,
+                    CAST(:proposed_venue_latitude AS NUMERIC),
+                    CAST(:proposed_venue_longitude AS NUMERIC),
+                    :proposed_venue_country_code,
                     'APPROVED',
                     CAST(:created_by AS BIGINT),
                     :submitted_at,
@@ -284,6 +296,26 @@ final class InitiativeFinalFormRepository
                 'expected_budget' => $expectedBudget,
                 'planned_start_date' => $data['start_date'],
                 'planned_end_date' => $data['end_date'],
+                'proposed_venue' =>
+                    $data['proposed_venue']
+                    ?? $data['outside_location']
+                    ?? null,
+                'proposed_venue_place_id' =>
+                    $data['proposed_venue_place_id'] ?? null,
+                'proposed_venue_name' =>
+                    $data['proposed_venue_name'] ?? null,
+                'proposed_venue_latitude' =>
+                    $data['proposed_venue_latitude'] ?? null,
+                'proposed_venue_longitude' =>
+                    $data['proposed_venue_longitude'] ?? null,
+                'proposed_venue_country_code' =>
+                    isset($data['proposed_venue_country_code'])
+                        ? strtoupper(
+                            (string) $data[
+                                'proposed_venue_country_code'
+                            ]
+                        )
+                        : null,
                 'created_by' => (int) $request['requester_id'],
                 'submitted_at' => $request['submitted_at'],
                 'final_decision_at' => $request['approved_at'],
@@ -646,6 +678,12 @@ final class InitiativeFinalFormRepository
                     expected_budget,
                     planned_start_date,
                     planned_end_date,
+                    proposed_venue,
+                    proposed_venue_place_id,
+                    proposed_venue_name,
+                    proposed_venue_latitude,
+                    proposed_venue_longitude,
+                    proposed_venue_country_code,
                     status,
                     created_by,
                     submitted_at,
@@ -668,6 +706,12 @@ final class InitiativeFinalFormRepository
                     CAST(:expected_budget AS NUMERIC),
                     CAST(:planned_start_date AS DATE),
                     CAST(:planned_end_date AS DATE),
+                    :proposed_venue,
+                    :proposed_venue_place_id,
+                    :proposed_venue_name,
+                    CAST(:proposed_venue_latitude AS NUMERIC),
+                    CAST(:proposed_venue_longitude AS NUMERIC),
+                    :proposed_venue_country_code,
                     'APPROVED',
                     CAST(:created_by AS BIGINT),
                     CAST(:submitted_at AS TIMESTAMP),
@@ -692,6 +736,26 @@ final class InitiativeFinalFormRepository
                 'expected_budget' => $expectedBudget,
                 'planned_start_date' => $data['start_date'],
                 'planned_end_date' => $data['end_date'],
+                'proposed_venue' =>
+                    $data['proposed_venue']
+                    ?? $data['outside_location']
+                    ?? null,
+                'proposed_venue_place_id' =>
+                    $data['proposed_venue_place_id'] ?? null,
+                'proposed_venue_name' =>
+                    $data['proposed_venue_name'] ?? null,
+                'proposed_venue_latitude' =>
+                    $data['proposed_venue_latitude'] ?? null,
+                'proposed_venue_longitude' =>
+                    $data['proposed_venue_longitude'] ?? null,
+                'proposed_venue_country_code' =>
+                    isset($data['proposed_venue_country_code'])
+                        ? strtoupper(
+                            (string) $data[
+                                'proposed_venue_country_code'
+                            ]
+                        )
+                        : null,
                 'created_by' => $userId,
                 'submitted_at' => $recordDate,
                 'final_decision_at' => $recordDate,
