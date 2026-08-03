@@ -221,7 +221,6 @@ workspaceHeader('Agreement details', 'agreements');
                 <div><dt>Financial commitments</dt><dd data-field="financial_summary"></dd></div>
                 <div><dt>Human resources</dt><dd data-field="human_resources_summary"></dd></div>
                 <div><dt>Training programs</dt><dd data-field="training_programs_summary"></dd></div>
-                <div><dt>Rankings</dt><dd data-field="rankings_summary"></dd></div>
                 <div><dt>SDGs</dt><dd data-field="sdgs_summary"></dd></div>
             </dl>
         </section>
@@ -233,9 +232,6 @@ workspaceHeader('Agreement details', 'agreements');
                 <div class="detail-grid-wide"><dt>Objectives</dt><dd data-field="objectives"></dd></div>
                 <div class="detail-grid-wide"><dt>Expected University value and impact</dt><dd data-field="expected_value"></dd></div>
                 <div><dt>Focus areas</dt><dd data-field="focus_areas"></dd></div>
-                <div><dt>Fields of cooperation</dt><dd data-field="collaboration_areas"></dd></div>
-                <div class="detail-grid-wide"><dt>Implementation methods</dt><dd data-field="implementation_methods"></dd></div>
-                <div class="detail-grid-wide"><dt>Monitoring and reporting plan</dt><dd data-field="monitoring_plan"></dd></div>
             </dl>
         </section>
 

@@ -54,6 +54,28 @@ agreementDetailAssert(
     'Fields removed from the Agreement form are still exposed on Agreement details'
 );
 
+foreach (
+    [
+        'data-field="rankings_summary"',
+        'data-field="collaboration_areas"',
+        'data-field="implementation_methods"',
+        'data-field="monitoring_plan"',
+    ] as $retiredDetailField
+) {
+    agreementDetailAssert(
+        !str_contains($page, $retiredDetailField),
+        "Retired Agreement detail field is still rendered: {$retiredDetailField}"
+    );
+}
+
+agreementDetailAssert(
+    !str_contains($detailJavascript, "setField('rankings_summary'")
+        && !str_contains($detailJavascript, "'collaboration_areas'")
+        && !str_contains($detailJavascript, "'implementation_methods'")
+        && !str_contains($detailJavascript, "'monitoring_plan'"),
+    'Retired Agreement detail fields are still populated by JavaScript'
+);
+
 agreementDetailAssert(
     !str_contains($operationJavascript, 'elements.signingDate')
         && !str_contains($operationJavascript, 'elements.effectiveDate')

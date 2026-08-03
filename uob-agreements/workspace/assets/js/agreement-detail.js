@@ -381,8 +381,7 @@
             'title_ar', 'geographic_scope', 'start_date', 'end_date',
             'legal_binding_status',
             'responsible_unit_name', 'need_justification', 'objectives',
-            'expected_value', 'focus_areas', 'collaboration_areas',
-            'implementation_methods', 'monitoring_plan', 'confidentiality_terms',
+            'expected_value', 'focus_areas', 'confidentiality_terms',
             'intellectual_property_terms', 'compliance_terms',
             'relationship_disclaimer', 'amendment_terms',
             'dispute_resolution_terms', 'other_terms', 'signing_link'
@@ -400,7 +399,6 @@
         );
         setField('human_resources_summary', yesNo(agreement.human_resources_commitments) === 'Yes' ? (agreement.human_resources_description || 'Yes') : 'None');
         setField('training_programs_summary', yesNo(agreement.training_programs) === 'Yes' ? (agreement.training_programs_description || 'Yes') : 'None');
-        setField('rankings_summary', (agreement.rankings || []).map((value) => value.replaceAll('_', ' ')).join(', ') || 'Not applicable');
         setField('sdgs_summary', (agreement.sdgs || []).map((value) => `SDG ${value}`).join(', ') || 'None selected');
         renderRelatedRecords(agreement);
 
