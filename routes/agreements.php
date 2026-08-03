@@ -72,6 +72,8 @@ if ($method === 'POST' && $uri === '/agreement-document-extraction') {
     $controller->uploadDocument((int) $matches[1]);
 } elseif ($method === 'GET' && preg_match('#^/documents/([0-9]+)/download$#', $uri, $matches)) {
     $controller->downloadDocument((int) $matches[1]);
+} elseif ($method === 'GET' && preg_match('#^/documents/([0-9]+)/preview$#', $uri, $matches)) {
+    $controller->previewDocument((int) $matches[1]);
 } elseif ($method === 'DELETE' && preg_match('#^/documents/([0-9]+)$#', $uri, $matches)) {
     $controller->deleteDocument((int) $matches[1]);
 } else {

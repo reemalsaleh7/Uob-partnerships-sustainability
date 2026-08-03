@@ -265,8 +265,11 @@ class AgreementOperationService
         int $userId,
         array $input
     ): array {
-        $signingDate = $this->date($input['signing_date'] ?? null, 'Signing date');
-        $effectiveDate = $this->date($input['effective_date'] ?? null, 'Effective date');
+        $signingDate = new DateTimeImmutable('today');
+        $projectStart = trim((string) ($agreement['start_date'] ?? ''));
+        $effectiveDate = $projectStart === ''
+            ? $signingDate
+            : $this->date($projectStart, 'Project start date');
         $expiryDate = $this->date($input['expiry_date'] ?? null, 'Expiry date');
         if ($expiryDate < $effectiveDate) {
             throw new InvalidArgumentException(

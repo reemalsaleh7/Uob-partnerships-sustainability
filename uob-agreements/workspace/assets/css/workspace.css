@@ -73,7 +73,8 @@
     grid-template-areas:
         "overview overview overview overview overview overview overview overview terms terms terms terms"
         "overview overview overview overview overview overview overview overview coordinators coordinators coordinators coordinators"
-        "partner partner partner partner partner partner partner partner clauses clauses clauses clauses"
+        "partner partner partner partner partner partner partner partner partner partner partner partner"
+        "mou mou mou mou mou mou mou mou mou mou mou mou"
         "alignment alignment alignment alignment purpose purpose purpose purpose purpose purpose purpose purpose"
         "program program program program program program program program program program program program"
         "outcomes outcomes outcomes outcomes submission submission submission submission record record record record";
@@ -88,7 +89,7 @@
 .agreement-terms-card { grid-area: terms; }
 .agreement-coordinators-card { grid-area: coordinators; }
 .agreement-partner-card { grid-area: partner; }
-.agreement-clauses-card { grid-area: clauses; }
+.agreement-mou-card { grid-area: mou; }
 .agreement-alignment-card { grid-area: alignment; }
 .agreement-purpose-card { grid-area: purpose; }
 .agreement-program-card { grid-area: program; }
@@ -127,6 +128,28 @@
     font-weight: 800;
 }
 
+.partner-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.partner-summary-header h3 {
+    margin: 0 !important;
+}
+
+.partner-summary-logo {
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 3rem;
+    object-fit: contain;
+    padding: 0.25rem;
+    background: #fff;
+    border: 1px solid var(--uob-border);
+    border-radius: 0.75rem;
+}
+
 .partner-summary-details > div {
     display: grid;
     grid-template-columns: minmax(5rem, 0.35fr) minmax(0, 1fr);
@@ -147,6 +170,90 @@
     overflow-wrap: anywhere;
 }
 
+.partner-summary-details dd {
+    white-space: pre-line;
+}
+
+.partner-directory-contacts {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.partner-directory-contacts > div {
+    padding: 0.65rem 0.75rem;
+    background: #fff;
+    border: 1px solid var(--uob-border);
+    border-radius: 0.7rem;
+}
+
+.partner-directory-contacts strong,
+.partner-directory-contacts span {
+    display: block;
+}
+
+.partner-directory-contacts span {
+    margin-top: 0.15rem;
+    color: var(--uob-muted);
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+}
+
+.mou-preview-panel {
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.mou-preview-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.mou-preview-meta strong {
+    color: var(--uob-navy);
+    overflow-wrap: anywhere;
+}
+
+.mou-preview-meta span {
+    color: var(--uob-muted);
+    font-size: 0.75rem;
+    text-align: end;
+}
+
+.mou-text-preview,
+.mou-file-preview,
+.mou-image-preview,
+.mou-video-preview {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--uob-border);
+    border-radius: 0.9rem;
+}
+
+.mou-text-preview {
+    max-height: 42rem;
+    min-height: 24rem;
+    margin: 0;
+    overflow: auto;
+    padding: 1.5rem;
+    color: var(--uob-text);
+    font: inherit;
+    line-height: 1.9;
+    white-space: pre-wrap;
+}
+
+.mou-file-preview {
+    min-height: 42rem;
+}
+
+.mou-image-preview,
+.mou-video-preview {
+    display: block;
+    max-height: 42rem;
+    object-fit: contain;
+}
+
 @media (max-width: 991.98px) {
     .agreement-detail-hero {
         align-items: flex-start;
@@ -160,13 +267,27 @@
             "terms"
             "coordinators"
             "partner"
-            "clauses"
+            "mou"
             "alignment"
             "purpose"
             "program"
             "outcomes"
             "submission"
             "record";
+    }
+
+    .mou-preview-meta {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .mou-preview-meta span {
+        text-align: start;
+    }
+
+    .mou-text-preview,
+    .mou-file-preview {
+        min-height: 28rem;
     }
 }
 

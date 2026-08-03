@@ -198,8 +198,9 @@ Termination requests never show a successor link.
 
 The Agreement detail page includes a post-approval operational panel. The
 creator uploads the executed file as **Final signed Agreement**, selects it,
-records actual dates and final UOB/partner signatories, and confirms permanent
-finalization. The panel then becomes read-only and displays the signing record,
+records the expiry date and final UOB/partner signatories, and confirms permanent
+finalization. The signing date is the finalization day and the effective date is
+the Agreement's project start date. The panel then becomes read-only and displays the signing record,
 signatories, scheduled/active/expired state, and status-event history.
 
 ## Agreement performance monitoring

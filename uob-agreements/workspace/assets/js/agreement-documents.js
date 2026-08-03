@@ -19,13 +19,27 @@
         loading: root.querySelector('[data-documents-loading]'),
         empty: root.querySelector('[data-documents-empty]'),
         tableWrap: root.querySelector('[data-documents-table-wrap]'),
-        body: root.querySelector('[data-documents-body]')
+        body: root.querySelector('[data-documents-body]'),
+        mou: document.querySelector('[data-mou-preview]'),
+        mouLoading: document.querySelector('[data-mou-preview-loading]'),
+        mouEmpty: document.querySelector('[data-mou-preview-empty]'),
+        mouError: document.querySelector('[data-mou-preview-error]'),
+        mouContent: document.querySelector('[data-mou-preview-content]'),
+        mouFileName: document.querySelector('[data-mou-file-name]'),
+        mouFileMeta: document.querySelector('[data-mou-file-meta]'),
+        mouText: document.querySelector('[data-mou-text-preview]'),
+        mouFile: document.querySelector('[data-mou-file-preview]'),
+        mouImage: document.querySelector('[data-mou-image-preview]'),
+        mouVideo: document.querySelector('[data-mou-video-preview]'),
+        mouDownload: document.querySelector('[data-mou-download]')
     };
 
     const state = {
         agreementId: null,
         constraints: null,
-        busy: false
+        busy: false,
+        mouDocument: null,
+        mouObjectUrl: null
     };
 
     const typeLabels = {
@@ -140,6 +154,105 @@
         });
     }
 
+    function clearMouObjectUrl() {
+        if (state.mouObjectUrl) {
+            URL.revokeObjectURL(state.mouObjectUrl);
+            state.mouObjectUrl = null;
+        }
+    }
+
+    function clearMouPreview() {
+        clearMouObjectUrl();
+        [elements.mouText, elements.mouFile, elements.mouImage, elements.mouVideo]
+            .filter(Boolean)
+            .forEach((element) => {
+                element.classList.add('d-none');
+                if ('src' in element) element.removeAttribute('src');
+            });
+        if (elements.mouText) elements.mouText.textContent = '';
+        elements.mouError?.classList.add('d-none');
+        elements.mouContent?.classList.add('d-none');
+    }
+
+    function latestMouDocument(documents) {
+        const available = documents.filter((document) => document.available === true);
+        for (const type of ['GOVERNANCE_CLAUSES', 'SIGNED_AGREEMENT', 'AGREEMENT_DRAFT']) {
+            const match = available.find((document) => document.document_type === type);
+            if (match) return match;
+        }
+        return null;
+    }
+
+    async function renderMouPreview(documents) {
+        if (!elements.mou) return;
+
+        clearMouPreview();
+        elements.mouLoading.classList.remove('d-none');
+        elements.mouEmpty.classList.add('d-none');
+        elements.mouDownload.classList.add('d-none');
+        state.mouDocument = latestMouDocument(documents);
+
+        if (!state.mouDocument) {
+            elements.mouLoading.classList.add('d-none');
+            elements.mouEmpty.classList.remove('d-none');
+            return;
+        }
+
+        const documentRecord = state.mouDocument;
+        elements.mouFileName.textContent = documentRecord.file_name || 'MOU document';
+        elements.mouFileMeta.textContent = [
+            typeLabels[documentRecord.document_type]
+                || String(documentRecord.document_type || '').replaceAll('_', ' '),
+            documentRecord.version_number ? `Agreement version ${documentRecord.version_number}` : '',
+            formatSize(documentRecord.file_size_bytes)
+        ].filter(Boolean).join(' · ');
+        elements.mouDownload.classList.remove('d-none');
+
+        const extension = String(documentRecord.file_name || '')
+            .split('.')
+            .pop()
+            .toLowerCase();
+        const mimeType = String(documentRecord.mime_type || '').toLowerCase();
+
+        try {
+            if (extension === 'docx') {
+                const preview = await AgreementApi.previewDocument(documentRecord.document_id);
+                elements.mouText.textContent = preview.text || '';
+                elements.mouText.dir = preview.direction === 'rtl' ? 'rtl' : 'ltr';
+                elements.mouText.lang = preview.language || '';
+                elements.mouText.classList.remove('d-none');
+            } else {
+                const blob = await AgreementApi.downloadDocument(documentRecord.document_id);
+                state.mouObjectUrl = URL.createObjectURL(blob);
+                if (mimeType === 'application/pdf' || extension === 'pdf') {
+                    elements.mouFile.src = state.mouObjectUrl;
+                    elements.mouFile.classList.remove('d-none');
+                } else if (mimeType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+                    elements.mouImage.src = state.mouObjectUrl;
+                    elements.mouImage.classList.remove('d-none');
+                } else if (mimeType === 'video/mp4' || extension === 'mp4') {
+                    elements.mouVideo.src = state.mouObjectUrl;
+                    elements.mouVideo.classList.remove('d-none');
+                } else {
+                    clearMouObjectUrl();
+                    throw new AgreementApi.ApiError(
+                        'This file format cannot be shown in the browser. Download the original to view it.',
+                        422,
+                        null
+                    );
+                }
+            }
+
+            elements.mouContent.classList.remove('d-none');
+        } catch (error) {
+            elements.mouError.textContent = error.message
+                || 'The MOU preview could not be prepared.';
+            elements.mouError.classList.remove('d-none');
+        } finally {
+            elements.mouLoading.classList.add('d-none');
+        }
+    }
+
     function documentNode(document) {
         const row = window.document.createElement('tr');
         const nameCell = window.document.createElement('td');
@@ -220,6 +333,9 @@
     async function reloadDocuments() {
         const payload = await AgreementApi.documents(state.agreementId);
         renderDocuments(payload);
+        await renderMouPreview(
+            Array.isArray(payload?.documents) ? payload.documents : []
+        );
         window.dispatchEvent(new CustomEvent('agreement-documents-changed', {
             detail: { agreementId: state.agreementId }
         }));
@@ -293,6 +409,31 @@
     elements.file.addEventListener('change', () => {
         elements.file.classList.remove('is-invalid');
     });
+
+    elements.mouDownload?.addEventListener('click', async () => {
+        if (!state.mouDocument || state.busy) return;
+        clearMessages();
+        elements.mouDownload.disabled = true;
+        try {
+            const blob = await AgreementApi.downloadDocument(
+                state.mouDocument.document_id
+            );
+            const url = URL.createObjectURL(blob);
+            const link = window.document.createElement('a');
+            link.href = url;
+            link.download = state.mouDocument.file_name || 'mou-document';
+            window.document.body.append(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (error) {
+            showError(error);
+        } finally {
+            elements.mouDownload.disabled = false;
+        }
+    });
+
+    window.addEventListener('pagehide', clearMouObjectUrl, { once: true });
 
     elements.body.addEventListener('click', async (event) => {
         const button = event.target.closest('[data-document-action]');

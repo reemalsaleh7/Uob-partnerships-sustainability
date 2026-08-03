@@ -25,6 +25,12 @@ $dashboardInitiatives = workspaceSource(
 );
 $agreementPage = workspaceSource('uob-agreements/workspace/agreement.php');
 $agreementJs = workspaceSource('uob-agreements/workspace/assets/js/agreement-detail.js');
+$agreementOperationsJs = workspaceSource(
+    'uob-agreements/workspace/assets/js/agreement-operations.js'
+);
+$agreementOperationService = workspaceSource(
+    'services/AgreementOperationService.php'
+);
 $agreementForm = workspaceSource('uob-agreements/workspace/agreement-form.php');
 $routes = workspaceSource('routes/agreements.php');
 $authRoutes = workspaceSource('routes/auth.php');
@@ -74,6 +80,17 @@ $migration = workspaceSource(
     'uob-agreements/data/sql/migrations/20260721_functional_workspace_redesign.sql'
 );
 
+workspaceAssert(
+    substr_count($layout, "'apiClientScript' => 'assets/js/api-client.js'") === 1
+        && substr_count(
+            $layout,
+            'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'
+        ) === 1
+        && !str_contains($layout, 'api-client.js?v=20260722-showcase-data')
+        && !str_contains($layout, 'api-client.js?v=20260802-agreement-detail-v2'),
+    'Workspace shared scripts are duplicated or use stale fixed cache keys'
+);
+
 foreach (['index.php', 'profile.php', 'initiative-hub.php'] as $destination) {
     workspaceAssert(
         str_contains($layout, 'href="' . $destination . '"'),
@@ -108,6 +125,47 @@ workspaceAssert(
     str_contains($agreementPage, 'data-record-origin')
         && str_contains($apiClient, 'createRecordOriginBadge'),
     'Agreement detail page is missing a supported record-origin badge'
+);
+workspaceAssert(
+    !str_contains($agreementPage, 'data-field="effective_date"')
+        && !str_contains($agreementPage, 'data-field="signing_date"')
+        && !str_contains($agreementPage, 'data-signing-field="effective_date"')
+        && !str_contains($agreementPage, 'data-signing-field="signing_date"')
+        && !str_contains($agreementPage, 'data-final-effective-date')
+        && !str_contains($agreementPage, 'data-final-signing-date'),
+    'Fields removed from the Agreement form still appear on Agreement details'
+);
+workspaceAssert(
+    !str_contains($agreementOperationsJs, 'elements.signingDate')
+        && !str_contains($agreementOperationsJs, 'elements.effectiveDate')
+        && !str_contains($agreementOperationsJs, 'signing_date:')
+        && !str_contains($agreementOperationsJs, 'effective_date:')
+        && str_contains($agreementOperationService, "new DateTimeImmutable('today')")
+        && str_contains($agreementOperationService, '$agreement[\'start_date\']')
+        && !str_contains($agreementOperationService, '$input[\'signing_date\']')
+        && !str_contains($agreementOperationService, '$input[\'effective_date\']')
+        && str_contains($layout, 'workspaceVersionedAsset')
+        && str_contains($layout, 'filemtime($absolutePath)'),
+    'Signing operations still depend on removed date fields or stale asset URLs'
+);
+workspaceAssert(
+    substr_count($agreementPage, ' data-mou-preview>') === 1
+        && str_contains($agreementPage, 'agreement-mou-card')
+        && !str_contains($agreementPage, '>MOU clauses<')
+        && str_contains($agreementPage, 'data-mou-text-preview')
+        && str_contains($agreementPage, 'data-lifecycle-history-section')
+        && str_contains($agreementPage, 'data-lifecycle-history-empty')
+        && str_contains($agreementPage, 'data-lifecycle-history-table')
+        && str_contains($agreementJs, 'lifecycleRequestsForAgreement')
+        && str_contains($apiClient, 'previewDocument(id)')
+        && str_contains($apiClient, 'lifecycleRequestsForAgreement(agreementId)'),
+    'Agreement details are missing the protected MOU preview or lifecycle history integration'
+);
+workspaceAssert(
+    str_contains($agreementJs, "addDetail('Brief profile', partner.profile)")
+        && str_contains($agreementJs, "addDetail('Address', partner.address)")
+        && str_contains($agreementJs, 'partner.contacts'),
+    'Agreement details do not render the complete partner profile and contacts'
 );
 workspaceAssert(
     str_contains($agreementJs, 'agreement-form.php?id=')

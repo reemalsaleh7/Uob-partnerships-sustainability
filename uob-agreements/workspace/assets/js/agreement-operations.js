@@ -12,8 +12,6 @@
         summary: root.querySelector('[data-signing-summary]'),
         empty: root.querySelector('[data-signing-empty]'),
         form: root.querySelector('[data-signing-form]'),
-        signingDate: root.querySelector('[data-final-signing-date]'),
-        effectiveDate: root.querySelector('[data-final-effective-date]'),
         expiryDate: root.querySelector('[data-final-expiry-date]'),
         document: root.querySelector('[data-final-signed-document]'),
         venue: root.querySelector('[data-final-signing-venue]'),
@@ -84,13 +82,11 @@
 
         renderDocuments(payload.eligible_documents || []);
         if (!record) {
-            prefillDates();
+            prefillOperationalFields();
             ensureInitialSignatories();
             return;
         }
 
-        textField('signing_date', record.signing_date);
-        textField('effective_date', record.effective_date);
         textField('expiry_date', record.expiry_date);
         textField('venue', record.venue);
         textField('finalized_by', record.finalized_by_name || record.finalized_by_email);
@@ -152,11 +148,8 @@
         }
     }
 
-    function prefillDates() {
-        elements.signingDate.value ||= state.agreement.signing_date || '';
-        elements.effectiveDate.value ||= state.agreement.effective_date || state.agreement.start_date || '';
+    function prefillOperationalFields() {
         elements.expiryDate.value ||= state.agreement.end_date || '';
-        elements.announcement.value ||= state.agreement.signing_link || '';
     }
 
     function partnerOptions(select, selected = '') {
@@ -256,8 +249,6 @@
         setBusy(true);
         try {
             const result = await AgreementApi.finalizeAgreementSigning(state.agreementId, {
-                signing_date: elements.signingDate.value,
-                effective_date: elements.effectiveDate.value,
                 expiry_date: elements.expiryDate.value,
                 signed_document_id: elements.document.value,
                 venue: elements.venue.value.trim(),

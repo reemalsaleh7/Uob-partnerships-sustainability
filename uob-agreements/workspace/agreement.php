@@ -157,11 +157,9 @@ workspaceHeader('Agreement details', 'agreements');
             <div class="workspace-card-header"><h2 id="terms-title" class="h5 mb-0">Terms and duration</h2></div>
             <dl class="record-list compact-record-list">
                 <div><dt>Project duration</dt><dd><span data-field="start_date"></span> <span aria-hidden="true">→</span> <span data-field="end_date"></span></dd></div>
-                <div><dt>Effective date</dt><dd data-field="effective_date"></dd></div>
                 <div><dt>Automatic renewal</dt><dd data-field="auto_renew"></dd></div>
                 <div><dt>Renewal term</dt><dd data-field="renewal_term_months"></dd></div>
                 <div><dt>Non-renewal notice</dt><dd data-field="non_renewal_notice_months"></dd></div>
-                <div><dt>Termination notice</dt><dd data-field="termination_notice_months"></dd></div>
             </dl>
         </section>
 
@@ -181,18 +179,37 @@ workspaceHeader('Agreement details', 'agreements');
             </div>
         </section>
 
-        <section class="workspace-card agreement-clauses-card" aria-labelledby="clauses-title">
-            <div class="workspace-card-header"><h2 id="clauses-title" class="h5 mb-0">MOU clauses</h2></div>
-            <dl class="record-list compact-record-list comprehensive-detail-grid">
-                <div><dt>Legal effect</dt><dd data-field="legal_binding_status"></dd></div>
-                <div><dt>Confidentiality</dt><dd data-field="confidentiality_terms"></dd></div>
-                <div><dt>Intellectual property</dt><dd data-field="intellectual_property_terms"></dd></div>
-                <div><dt>Legal and regulatory compliance</dt><dd data-field="compliance_terms"></dd></div>
-                <div><dt>Relationship disclaimer</dt><dd data-field="relationship_disclaimer"></dd></div>
-                <div><dt>Amendment terms</dt><dd data-field="amendment_terms"></dd></div>
-                <div><dt>Dispute resolution</dt><dd data-field="dispute_resolution_terms"></dd></div>
-                <div><dt>Other terms</dt><dd data-field="other_terms"></dd></div>
-            </dl>
+        <section class="workspace-card agreement-mou-card" aria-labelledby="mou-preview-title" data-mou-preview>
+            <div class="workspace-card-header">
+                <div>
+                    <p class="eyebrow mb-1">Agreement source document</p>
+                    <h2 id="mou-preview-title" class="h5 mb-1">MOU / MOE document</h2>
+                    <p class="small text-secondary mb-0">
+                        Read the source document here. The same file remains available in Documents below.
+                    </p>
+                </div>
+                <button class="btn btn-sm btn-outline-primary d-none" type="button" data-mou-download>
+                    Download original
+                </button>
+            </div>
+            <div class="loading-state compact" data-mou-preview-loading>
+                <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+                <span>Loading MOU / MOE document…</span>
+            </div>
+            <div class="empty-state compact d-none" data-mou-preview-empty>
+                <p class="text-secondary mb-0">No viewable MOU / MOE document has been uploaded for this Agreement.</p>
+            </div>
+            <div class="alert alert-danger m-3 mb-0 d-none" role="alert" data-mou-preview-error></div>
+            <div class="mou-preview-panel d-none" data-mou-preview-content>
+                <div class="mou-preview-meta">
+                    <strong data-mou-file-name></strong>
+                    <span data-mou-file-meta></span>
+                </div>
+                <pre class="mou-text-preview d-none" tabindex="0" data-mou-text-preview></pre>
+                <iframe class="mou-file-preview d-none" title="MOU / MOE document preview" data-mou-file-preview></iframe>
+                <img class="mou-image-preview d-none" alt="MOU / MOE document preview" data-mou-image-preview>
+                <video class="mou-video-preview d-none" controls preload="metadata" data-mou-video-preview></video>
+            </div>
         </section>
 
         <section class="workspace-card agreement-alignment-card" aria-labelledby="alignment-title">
@@ -247,11 +264,46 @@ workspaceHeader('Agreement details', 'agreements');
                 <div><dt>Agreement ID</dt><dd data-agreement-id></dd></div>
                 <div><dt>Created</dt><dd data-created-at></dd></div>
                 <div><dt>Last updated</dt><dd data-updated-at></dd></div>
-                <div><dt>Signing date</dt><dd data-field="signing_date"></dd></div>
-                <div><dt>Public signing link</dt><dd data-field="signing_link"></dd></div>
             </dl>
         </section>
     </div>
+
+    <section class="workspace-card mt-4" aria-labelledby="lifecycle-history-title" data-lifecycle-history-section>
+        <div class="workspace-card-header">
+            <div>
+                <h2 id="lifecycle-history-title" class="h5 mb-1">Past lifecycle requests</h2>
+                <p class="small text-secondary mb-0">
+                    Renewal, amendment, and termination requests made against this Agreement.
+                </p>
+            </div>
+            <a class="btn btn-sm btn-outline-primary d-none" href="#" data-lifecycle-request>
+                Start lifecycle request
+            </a>
+        </div>
+        <div class="loading-state compact" data-lifecycle-history-loading>
+            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <span>Loading lifecycle requests…</span>
+        </div>
+        <div class="empty-state compact d-none" data-lifecycle-history-empty>
+            <p class="text-secondary mb-0">No amendment, renewal, or termination request has been made for this Agreement.</p>
+        </div>
+        <div class="alert alert-danger m-3 mb-0 d-none" role="alert" data-lifecycle-history-error></div>
+        <div class="table-responsive d-none" data-lifecycle-history-table>
+            <table class="table workspace-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Request</th>
+                        <th>Status</th>
+                        <th>Requested by</th>
+                        <th>Reason or outcome</th>
+                        <th>Last updated</th>
+                        <th><span class="visually-hidden">Open request</span></th>
+                    </tr>
+                </thead>
+                <tbody data-lifecycle-history-rows></tbody>
+            </table>
+        </div>
+    </section>
 
     <section class="workspace-card mt-4" aria-labelledby="agreement-comments-title" data-annotation-section>
         <div class="workspace-card-header">
@@ -301,8 +353,8 @@ workspaceHeader('Agreement details', 'agreements');
     <section class="workspace-card mt-4 d-none" data-relationship-section aria-labelledby="relationship-title">
         <div class="workspace-card-header">
             <div>
-                <h2 id="relationship-title" class="h5 mb-1">Approved lifecycle requests</h2>
-                <p class="small text-secondary mb-0">Approved renewals and amendments linked without replacing the original record.</p>
+                <h2 id="relationship-title" class="h5 mb-1">Related successor Agreements</h2>
+                <p class="small text-secondary mb-0">Agreements created by approved renewals or amendments without replacing this original record.</p>
             </div>
         </div>
         <div class="table-responsive">
@@ -353,8 +405,6 @@ workspaceHeader('Agreement details', 'agreements');
 
         <div class="form-section d-none" data-signing-summary>
             <dl class="detail-grid mb-0">
-                <div><dt>Signing date</dt><dd data-signing-field="signing_date"></dd></div>
-                <div><dt>Effective date</dt><dd data-signing-field="effective_date"></dd></div>
                 <div><dt>Expiry date</dt><dd data-signing-field="expiry_date"></dd></div>
                 <div><dt>Venue</dt><dd data-signing-field="venue"></dd></div>
                 <div><dt>Finalized by</dt><dd data-signing-field="finalized_by"></dd></div>
@@ -383,17 +433,9 @@ workspaceHeader('Agreement details', 'agreements');
         <form class="form-section border-top d-none" data-signing-form novalidate>
             <div class="alert alert-info">
                 Upload the executed file above as <strong>Final signed Agreement</strong>, then select it here.
-                Finalization is permanent.
+                Finalization is permanent. Signing is recorded when this action is completed, and the Agreement's project start date is used for activation.
             </div>
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold" for="final-signing-date">Signing date</label>
-                    <input id="final-signing-date" class="form-control" type="date" required data-final-signing-date>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold" for="final-effective-date">Effective date</label>
-                    <input id="final-effective-date" class="form-control" type="date" required data-final-effective-date>
-                </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold" for="final-expiry-date">Expiry date</label>
                     <input id="final-expiry-date" class="form-control" type="date" required data-final-expiry-date>

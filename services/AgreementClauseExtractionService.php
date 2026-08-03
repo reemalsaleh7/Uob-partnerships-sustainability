@@ -78,6 +78,48 @@ final class AgreementClauseExtractionService
         ];
     }
 
+    /**
+     * Build a safe, readable preview of a DOCX that has already passed secure
+     * Agreement-document storage and authorization checks.
+     */
+    public function previewStoredDocx(string $path): array
+    {
+        if ($path === '' || !is_file($path) || !is_readable($path)) {
+            throw new InvalidArgumentException(
+                'The stored MOU document is not available for preview'
+            );
+        }
+
+        $size = filesize($path);
+        if (
+            $size === false
+            || $size <= 0
+            || $size > self::MAX_FILE_SIZE_BYTES
+        ) {
+            throw new InvalidArgumentException(
+                'The stored MOU document cannot be previewed securely'
+            );
+        }
+
+        $this->validateDocxMediaTypeAndSignature($path);
+        $content = $this->extractDocxContent($path);
+        $text = trim((string) ($content['text'] ?? ''));
+        if ($text === '') {
+            throw new InvalidArgumentException(
+                'No readable text was found in the MOU document'
+            );
+        }
+
+        $language = $this->detectLanguage($text);
+
+        return [
+            'preview_type' => 'TEXT',
+            'language' => $language,
+            'direction' => $language === 'ar' ? 'rtl' : 'ltr',
+            'text' => $text,
+        ];
+    }
+
     private function validateDocxMediaTypeAndSignature(string $path): void
     {
         if (!class_exists('finfo')) {

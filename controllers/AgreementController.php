@@ -420,6 +420,42 @@ class AgreementController {
         exit;
     }
 
+    public function previewDocument(int $documentId): void
+    {
+        AuthMiddleware::handle();
+        PermissionMiddleware::require('VIEW_AGREEMENT');
+
+        $document = $this->agreementService->downloadDocument(
+            $documentId,
+            (int) $_SESSION['user_id']
+        );
+        if (!$document) {
+            Response::error('Document not found', 404);
+        }
+
+        $extension = strtolower(pathinfo(
+            (string) ($document['file_name'] ?? ''),
+            PATHINFO_EXTENSION
+        ));
+        if ($extension !== 'docx') {
+            Response::error(
+                'A text preview is available only for DOCX MOU documents',
+                422
+            );
+        }
+
+        try {
+            $preview = (new AgreementClauseExtractionService())
+                ->previewStoredDocx((string) $document['absolute_path']);
+        } catch (InvalidArgumentException $exception) {
+            Response::error($exception->getMessage(), 422);
+        } catch (RuntimeException $exception) {
+            Response::error($exception->getMessage(), 500);
+        }
+
+        Response::success($preview);
+    }
+
     public function deleteDocument(int $documentId): void {
         AuthMiddleware::handle();
         PermissionMiddleware::require('VIEW_AGREEMENT');
