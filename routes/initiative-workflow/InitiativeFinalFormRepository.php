@@ -145,6 +145,11 @@ final class InitiativeFinalFormRepository
             $data['approval_request_id'] =
                 (string) $request['request_code'];
 
+            $data = $this->withApprovedLocationData(
+                $data,
+                $request
+            );
+
             $this->upsertDraft(
                 $requestId,
                 $userId,
@@ -201,6 +206,11 @@ final class InitiativeFinalFormRepository
             $previousStatus = (string) $request['status'];
             $data['approval_request_id'] =
                 (string) $request['request_code'];
+
+            $data = $this->withApprovedLocationData(
+                $data,
+                $request
+            );
 
             $this->upsertDraft(
                 $requestId,
@@ -1518,6 +1528,16 @@ final class InitiativeFinalFormRepository
                 $request['implementation_scope_other'] ?? null,
             'proposed_venue' =>
                 $request['proposed_venue'] ?? null,
+            'proposed_venue_place_id' =>
+                $request['proposed_venue_place_id'] ?? null,
+            'proposed_venue_name' =>
+                $request['proposed_venue_name'] ?? null,
+            'proposed_venue_latitude' =>
+                $request['proposed_venue_latitude'] ?? null,
+            'proposed_venue_longitude' =>
+                $request['proposed_venue_longitude'] ?? null,
+            'proposed_venue_country_code' =>
+                $request['proposed_venue_country_code'] ?? null,
             'outside_location' =>
                 $request['proposed_venue'] ?? null,
             'has_external_partner' =>
@@ -1971,6 +1991,29 @@ final class InitiativeFinalFormRepository
                     . '.'
                 );
             }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Preserve the verified Google Maps location captured
+     * in the approved Initiative request.
+     */
+    private function withApprovedLocationData(
+        array $data,
+        array $request
+    ): array {
+        foreach (
+            [
+                'proposed_venue_place_id',
+                'proposed_venue_name',
+                'proposed_venue_latitude',
+                'proposed_venue_longitude',
+                'proposed_venue_country_code',
+            ] as $field
+        ) {
+            $data[$field] = $request[$field] ?? null;
         }
 
         return $data;
