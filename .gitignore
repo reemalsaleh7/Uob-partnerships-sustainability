@@ -5,3 +5,5 @@
 !/storage/private/web.config
 !/storage/private/**/.gitkeep
 
+/uob-agreements/workspace/config/google-maps.local.php
+/uob-agreements/workspace/includes/config/google-maps.local.php
