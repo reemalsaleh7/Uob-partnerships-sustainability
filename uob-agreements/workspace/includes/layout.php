@@ -43,6 +43,11 @@ function workspaceHeader(
         $safeStyle = htmlspecialchars((string) $style, ENT_QUOTES, 'UTF-8');
         $extraStyles .= "    <link href=\"{$safeStyle}\" rel=\"stylesheet\">\n";
     }
+    $workspaceStyle = htmlspecialchars(
+        workspaceVersionedAsset('assets/css/workspace.css'),
+        ENT_QUOTES,
+        'UTF-8'
+    );
     if ($language === 'ar') {
         $bodyClass .= ' workspace-rtl';
     }
@@ -76,7 +81,7 @@ function workspaceHeader(
         rel="stylesheet"
     >
 {$extraStyles}
-    <link href="assets/css/workspace.css?v=20260803-shared-forms-v2" rel="stylesheet">
+    <link href="{$workspaceStyle}" rel="stylesheet">
     <link href="assets/css/workspace-sidebar-polish.css?v=20260802-phase14g" rel="stylesheet">
     <link href="assets/css/workspace-rtl.css?v=20260802-phase17b" rel="stylesheet">
 </head>

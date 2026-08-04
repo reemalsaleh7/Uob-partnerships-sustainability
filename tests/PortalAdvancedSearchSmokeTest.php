@@ -65,6 +65,14 @@ foreach ([$agreementPage, $lifecyclePage, $reportPage] as $page) {
             && str_contains($page, 'Clear filters'),
         'A searchable portal register is missing its advanced filter controls'
     );
+    portalSearchAssert(
+        str_contains($page, 'data-advanced-search-toggle')
+            && str_contains($page, 'data-advanced-search-panel')
+            && str_contains($page, 'data-search-rule-builder')
+            && str_contains($page, 'Add condition')
+            && str_contains($page, 'no search commands required'),
+        'Search does not use progressive disclosure and a plain-language rule builder'
+    );
 }
 
 portalSearchAssert(
@@ -74,12 +82,26 @@ portalSearchAssert(
         && str_contains($search, 'const comparison = token.match'),
     'Advanced query syntax does not support phrases, exclusions, OR, and comparisons'
 );
+portalSearchAssert(
+    str_contains($search, 'function matchesRules')
+        && str_contains($search, 'function createFilterController')
+        && str_contains($search, "mode === 'any'")
+        && str_contains($search, 'data-rule-field')
+        && str_contains($search, 'data-advanced-filter-count'),
+    'The accessible visual query builder or all/any condition matching is missing'
+);
 
 foreach ([$agreementScript, $lifecycleScript, $reportScript] as $script) {
     portalSearchAssert(
         str_contains($script, 'UobAdvancedSearch.matches')
             && str_contains($script, 'UobAdvancedSearch.inDateRange'),
         'A portal register is not using both structured query and date filtering'
+    );
+    portalSearchAssert(
+        str_contains($script, 'UobAdvancedSearch.createFilterController')
+            && str_contains($script, 'advancedFilters.matchesRules')
+            && str_contains($script, 'advancedFilters.clearRules'),
+        'A portal register is not connected to the visual search-rule builder'
     );
 }
 
@@ -100,11 +122,11 @@ portalSearchAssert(
     'The shared Agreement API does not expose the record-origin badge helper'
 );
 portalSearchAssert(
-    str_contains($workspaceLayout, 'function workspaceAssetUrl')
+    str_contains($workspaceLayout, 'function workspaceVersionedAsset')
         && str_contains($workspaceLayout, 'filemtime($absolutePath)')
         && str_contains(
             $workspaceLayout,
-            "workspaceAssetUrl('assets/js/api-client.js')"
+            "workspaceVersionedAsset('assets/css/workspace.css')"
         ),
     'Workspace assets are missing automatic cache-version URLs'
 );

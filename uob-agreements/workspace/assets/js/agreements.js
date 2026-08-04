@@ -81,6 +81,25 @@
         updated: 'updated_at'
     };
 
+    const advancedFilters = UobAdvancedSearch.createFilterController({
+        root: '[data-agreement-search-filters]',
+        schema: searchSchema,
+        fields: [
+            { key: 'title', label: 'Title', placeholder: 'For example, Student Exchange' },
+            { key: 'code', label: 'Agreement code', placeholder: 'For example, UOB-MOU-2026' },
+            { key: 'partner', label: 'Partner', placeholder: 'Enter a partner name' },
+            { key: 'creator', label: 'Creator', placeholder: 'Enter a person’s name' },
+            { key: 'unit', label: 'Responsible unit', placeholder: 'Enter a college or office' },
+            { key: 'type', label: 'Agreement type', placeholder: 'Enter an Agreement type' },
+            { key: 'status', label: 'Status', placeholder: 'For example, Active' },
+            { key: 'origin', label: 'Record origin', placeholder: 'For example, New system' },
+            { key: 'start', label: 'Start date', type: 'date' },
+            { key: 'end', label: 'End date', type: 'date' },
+            { key: 'updated', label: 'Last updated', type: 'date' }
+        ],
+        onChange: render
+    });
+
     function normalizeRows(rows) {
         const byId = new Map();
 
@@ -143,7 +162,8 @@
                     agreement,
                     state.query,
                     searchSchema
-                );
+                )
+                && advancedFilters.matchesRules(agreement);
         });
     }
 
@@ -196,6 +216,7 @@
 
         elements.empty.classList.toggle('d-none', rows.length !== 0);
         elements.tableWrap.classList.toggle('d-none', rows.length === 0);
+        advancedFilters.refresh();
 
         rows.forEach((agreement) => {
             const tr = document.createElement('tr');
@@ -313,6 +334,7 @@
         elements.partner.value = '';
         elements.updatedFrom.value = '';
         elements.updatedTo.value = '';
+        advancedFilters.clearRules();
         render();
     }
 

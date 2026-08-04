@@ -68,62 +68,108 @@ workspaceHeader('Agreements', 'agreements');
         <a class="btn btn-sm btn-outline-primary" href="initiative-hub.php">Initiative guidance</a>
     </div>
 
-    <div class="filter-bar">
-        <div class="row g-3">
-            <div class="col-lg-6">
-                <label for="agreement-search" class="form-label">Advanced search</label>
-                <input
-                    id="agreement-search"
-                    type="search"
-                    class="form-control"
-                    placeholder='Try partner:"Bahrain Polytechnic" status:active'
-                    aria-describedby="agreement-search-help"
-                    disabled
-                >
-                <div id="agreement-search-help" class="form-text">
-                    Use several words, quoted phrases, <code>field:value</code>,
-                    <code>a|b</code>, <code>-term</code>, or <code>updated&gt;=2026-01-01</code>.
-                    Fields: title, code,
-                    type, status, origin, partner, creator, unit, start, end, updated.
+    <div class="filter-bar progressive-search" data-agreement-search-filters aria-label="Advanced search">
+        <div class="progressive-search-primary">
+            <div class="progressive-search-field">
+                <label for="agreement-search" class="form-label">Search Agreements</label>
+                <div class="progressive-search-input-wrap">
+                    <span class="progressive-search-icon" aria-hidden="true"></span>
+                    <input
+                        id="agreement-search"
+                        type="search"
+                        class="form-control"
+                        placeholder="Search by title, partner, code, or keyword"
+                        autocomplete="off"
+                        data-search-input
+                        disabled
+                    >
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="progressive-search-status">
                 <label for="agreement-status" class="form-label">Status</label>
                 <select id="agreement-status" class="form-select" disabled>
                     <option value="">All statuses</option>
                 </select>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label for="agreement-type" class="form-label">Agreement type</label>
-                <select id="agreement-type" class="form-select" disabled>
-                    <option value="">All types</option>
-                </select>
+            <div class="progressive-search-action">
+                <button
+                    class="btn btn-outline-primary progressive-search-toggle"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="agreement-more-filters"
+                    data-advanced-search-toggle
+                >
+                    <span>More filters</span>
+                    <span class="progressive-search-count d-none" data-advanced-filter-count></span>
+                    <span class="progressive-search-chevron" aria-hidden="true"></span>
+                </button>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label for="agreement-origin" class="form-label">Record origin</label>
-                <select id="agreement-origin" class="form-select" disabled>
-                    <option value="">All origins</option>
-                    <option value="LEGACY_IMPORT">Legacy system — real records</option>
-                    <option value="DEVELOPMENT">Development / demo</option>
-                    <option value="NEW_SYSTEM">New system</option>
-                </select>
+        </div>
+
+        <p class="progressive-search-summary d-none" data-advanced-filter-summary aria-live="polite"></p>
+
+        <div id="agreement-more-filters" class="progressive-search-panel" data-advanced-search-panel hidden>
+            <div class="progressive-search-panel-heading">
+                <div>
+                    <h3 class="h6 mb-1">Refine your results</h3>
+                    <p class="small text-secondary mb-0">Choose only the filters you need. You can also add precise conditions below.</p>
+                </div>
             </div>
-            <div class="col-md-6 col-lg-4">
-                <label for="agreement-partner" class="form-label">Partner</label>
-                <select id="agreement-partner" class="form-select" disabled>
-                    <option value="">All partners</option>
-                </select>
+
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <label for="agreement-type" class="form-label">Agreement type</label>
+                    <select id="agreement-type" class="form-select" data-advanced-filter data-filter-label="type" disabled>
+                        <option value="">All types</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label for="agreement-origin" class="form-label">Record origin</label>
+                    <select id="agreement-origin" class="form-select" data-advanced-filter data-filter-label="origin" disabled>
+                        <option value="">All origins</option>
+                        <option value="LEGACY_IMPORT">Legacy system — real records</option>
+                        <option value="DEVELOPMENT">Development / demo</option>
+                        <option value="NEW_SYSTEM">New system</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label for="agreement-partner" class="form-label">Partner</label>
+                    <select id="agreement-partner" class="form-select" data-advanced-filter data-filter-label="partner" disabled>
+                        <option value="">All partners</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label for="agreement-updated-from" class="form-label">Updated from</label>
+                    <input id="agreement-updated-from" type="date" class="form-control" data-advanced-filter data-filter-label="updated date" disabled>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <label for="agreement-updated-to" class="form-label">Updated to</label>
+                    <input id="agreement-updated-to" type="date" class="form-control" data-advanced-filter data-filter-label="updated date" disabled>
+                </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label for="agreement-updated-from" class="form-label">Updated from</label>
-                <input id="agreement-updated-from" type="date" class="form-control" disabled>
+
+            <div class="search-rule-builder" data-search-rule-builder>
+                <div class="search-rule-builder-header">
+                    <div>
+                        <h4 class="h6 mb-1">Build a precise search</h4>
+                        <p class="small text-secondary mb-0">Add conditions in plain language—no search commands required.</p>
+                    </div>
+                    <label class="search-match-mode d-none" data-search-match-mode-wrap>
+                        <span>Match</span>
+                        <select class="form-select form-select-sm" data-search-match-mode>
+                            <option value="all">all conditions</option>
+                            <option value="any">any condition</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="search-rule-list" data-search-rule-list></div>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-add-search-rule>
+                    <span aria-hidden="true">+</span> Add condition
+                </button>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label for="agreement-updated-to" class="form-label">Updated to</label>
-                <input id="agreement-updated-to" type="date" class="form-control" disabled>
-            </div>
-            <div class="col-md-6 col-lg-2 d-flex align-items-end">
-                <button class="btn btn-outline-secondary w-100" type="button" data-clear-agreement-filters disabled>
+
+            <div class="progressive-search-footer">
+                <button class="btn btn-link text-secondary p-0" type="button" data-clear-agreement-filters disabled>
                     Clear filters
                 </button>
             </div>
@@ -168,6 +214,6 @@ workspaceHeader('Agreements', 'agreements');
 </section>
 
 <?php workspaceFooter([
-    'assets/js/advanced-search.js?v=20260802-advanced-search',
-    'assets/js/agreements.js?v=20260802-advanced-search',
+    'assets/js/advanced-search.js',
+    'assets/js/agreements.js',
 ]); ?>
