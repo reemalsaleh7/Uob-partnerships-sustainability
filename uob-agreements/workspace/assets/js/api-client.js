@@ -349,31 +349,57 @@
 
         if (sidebar && sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
             sidebarToggle.dataset.bound = 'true';
+
+            const usesOverlaySidebar = () => (
+                window.innerWidth < 992
+                || document.body.classList.contains(
+                    'initiative-form-focus'
+                )
+                || document.body.classList.contains(
+                    'initiative-final-focus'
+                )
+            );
+
             sidebarToggle.addEventListener('click', () => {
-                const isMobile = window.innerWidth < 992;
-                const isOpen = isMobile
+                const isOpen = usesOverlaySidebar()
                     ? sidebar.classList.toggle('is-open')
-                    : !workspaceApp.classList.toggle('sidebar-collapsed');
-                sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+                    : !workspaceApp.classList.toggle(
+                        'sidebar-collapsed'
+                    );
+
+                sidebarToggle.setAttribute(
+                    'aria-expanded',
+                    String(isOpen)
+                );
             });
 
             document.addEventListener('click', (event) => {
                 if (
-                    window.innerWidth < 992
+                    usesOverlaySidebar()
                     && sidebar.classList.contains('is-open')
                     && !sidebar.contains(event.target)
                     && !sidebarToggle.contains(event.target)
                 ) {
                     sidebar.classList.remove('is-open');
-                    sidebarToggle.setAttribute('aria-expanded', 'false');
+                    sidebarToggle.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
                 }
             });
 
             document.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape') return;
+                if (event.key !== 'Escape') {
+                    return;
+                }
+
                 sidebar.classList.remove('is-open');
-                if (window.innerWidth < 992) {
-                    sidebarToggle.setAttribute('aria-expanded', 'false');
+
+                if (usesOverlaySidebar()) {
+                    sidebarToggle.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
                 }
             });
         }
@@ -658,6 +684,11 @@
                 `/documents/${encodeURIComponent(id)}/download`
             );
         },
+        previewDocument(id) {
+            return request(
+                `/documents/${encodeURIComponent(id)}/preview`
+            );
+        },
         deleteDocument(id) {
             return request(`/documents/${encodeURIComponent(id)}`, {
                 method: 'DELETE'
@@ -703,6 +734,13 @@
         },
         lifecycleRequests() {
             return request('/agreement-lifecycle-requests');
+        },
+        lifecycleRequestsForAgreement(agreementId) {
+            return request('/agreement-lifecycle-requests').then((rows) => (
+                (Array.isArray(rows) ? rows : []).filter(
+                    (row) => Number(row.agreement_id) === Number(agreementId)
+                )
+            ));
         },
         lifecycleRequest(id) {
             return request(`/agreement-lifecycle-requests/${encodeURIComponent(id)}`);

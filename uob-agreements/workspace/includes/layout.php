@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/i18n.php';
 
+function workspaceVersionedAsset(string $asset): string
+{
+    $parts = explode('?', $asset, 2);
+    $relativePath = ltrim($parts[0], '/');
+    $absolutePath = dirname(__DIR__) . '/' . $relativePath;
+    $version = is_file($absolutePath) ? filemtime($absolutePath) : false;
+    $separator = isset($parts[1]) ? '&' : '?';
+
+    return $asset . $separator . 'v=' . ($version === false ? 'workspace' : $version);
+}
+
 function workspaceHeader(
     string $title,
     string $activePage = '',
@@ -283,6 +294,25 @@ HTML;
         | JSON_HEX_QUOT
     );
 
+    $versionedCoreScripts = [];
+    foreach (
+        [
+            'apiClientScript' => 'assets/js/api-client.js',
+            'exportUtilsScript' => 'assets/js/export-utils.js',
+            'uiDialogScript' => 'assets/js/ui-dialog.js',
+            'workspaceI18nScript' => 'assets/js/workspace-i18n.js',
+            'sidebarInitiativeScript' => 'assets/js/sidebar-initiative.js',
+            'sidebarPolishScript' => 'assets/js/workspace-sidebar-polish.js',
+        ] as $key => $asset
+    ) {
+        $versionedCoreScripts[$key] = htmlspecialchars(
+            workspaceVersionedAsset($asset),
+            ENT_QUOTES,
+            'UTF-8'
+        );
+    }
+    extract($versionedCoreScripts, EXTR_SKIP);
+
     echo <<<HTML
     <div class="modal fade workspace-confirm-modal" id="workspace-confirm-modal" tabindex="-1" aria-labelledby="workspace-confirm-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -303,24 +333,27 @@ HTML;
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260802-agreement-detail-v2"></script>
-    <script src="assets/js/export-utils.js?v=20260802-agreement-detail-v2"></script>
-    <script src="assets/js/ui-dialog.js?v=20260802-agreement-detail-v2"></script>
+    <script src="{$apiClientScript}"></script>
+    <script src="{$exportUtilsScript}"></script>
+    <script src="{$uiDialogScript}"></script>
     <script>window.WorkspaceI18nConfig = {$i18nConfig};</script>
-    <script src="assets/js/workspace-i18n.js?v=20260802-phase17b"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/api-client.js?v=20260722-showcase-data"></script>
-    <script src="assets/js/sidebar-initiative.js?v=20260801-phase11c"></script>
-    <script src="assets/js/workspace-sidebar-polish.js?v=20260802-phase16"></script>
+    <script src="{$workspaceI18nScript}"></script>
+    <script src="{$sidebarInitiativeScript}"></script>
+    <script src="{$sidebarPolishScript}"></script>
 HTML;
 
     foreach ($scripts as $script) {
-        $safeScript = htmlspecialchars((string) $script, ENT_QUOTES, 'UTF-8');
-        $separator = str_contains($safeScript, '?') ? '&amp;' : '?';
-        echo "    <script src=\"{$safeScript}{$separator}v=20260802-agreement-detail-v2\"></script>\n";
+        $versionedScript = workspaceVersionedAsset((string) $script);
+        $safeScript = htmlspecialchars($versionedScript, ENT_QUOTES, 'UTF-8');
+        echo "    <script src=\"{$safeScript}\"></script>\n";
     }
 
-    echo "    <script src=\"assets/js/agreement-initiative-link.js?v=20260802-phase17d\"></script>\n";
+    $initiativeLinkScript = htmlspecialchars(
+        workspaceVersionedAsset('assets/js/agreement-initiative-link.js'),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+    echo "    <script src=\"{$initiativeLinkScript}\"></script>\n";
     echo "</body>\n</html>\n";
     workspaceEndTranslationBuffer();
 }

@@ -474,7 +474,8 @@ class AgreementRepository {
         $partnerStatement = $this->db->prepare('
             SELECT
                 p.partner_id, p.organization_name, p.partner_type, p.country,
-                p.city, p.website, p.logo_url, p.latitude, p.longitude
+                p.city, p.address, p.profile, p.website, p.email, p.phone,
+                p.logo_url, p.latitude, p.longitude, p.is_active
             FROM agreement_partners ap
             JOIN partners p ON p.partner_id = ap.partner_id
             WHERE ap.agreement_id = :agreement_id
@@ -482,6 +483,32 @@ class AgreementRepository {
         ');
         $partnerStatement->execute(['agreement_id' => $agreementId]);
         $partners = $partnerStatement->fetchAll();
+
+        $partnerContactStatement = $this->db->prepare('
+            SELECT
+                pc.contact_id,
+                pc.partner_id,
+                pc.full_name,
+                pc.job_title,
+                pc.email,
+                pc.phone
+            FROM partner_contacts pc
+            JOIN agreement_partners ap ON ap.partner_id = pc.partner_id
+            WHERE ap.agreement_id = :agreement_id
+            ORDER BY pc.partner_id, pc.created_at, pc.contact_id
+        ');
+        $partnerContactStatement->execute(['agreement_id' => $agreementId]);
+        $partnerContacts = [];
+        foreach ($partnerContactStatement->fetchAll() as $contact) {
+            $partnerContacts[(int) $contact['partner_id']][] = $contact;
+        }
+        foreach ($partners as &$partner) {
+            $partner['contacts'] = $partnerContacts[
+                (int) $partner['partner_id']
+            ] ?? [];
+        }
+        unset($partner);
+
         $agreement['partners'] = $partners;
         $agreement['partner_ids'] = array_map('intval', array_column($partners, 'partner_id'));
         $agreement['partner_names'] = array_column($partners, 'organization_name');
