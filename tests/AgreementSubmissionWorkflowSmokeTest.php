@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
 require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
+require_once __DIR__ . '/../repositories/AgreementDocumentRepository.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
 require_once __DIR__ . '/../services/AgreementService.php';
 
@@ -24,6 +25,8 @@ $userRepository = new UserRepository();
 $agreementRepository = new AgreementRepository();
 $versionRepository =
     new AgreementVersionRepository();
+$documentRepository =
+    new AgreementDocumentRepository();
 $workflowRepository =
     new WorkflowRepository();
 $agreementService = new AgreementService();
@@ -70,8 +73,9 @@ try {
             'signing_date' => date('Y-m-d'),
             'effective_date' =>
                 date('Y-m-d', strtotime('+30 days')),
-            'auto_renew' => true,
-            'renewal_term_months' => 12,
+            // Simulate an older draft saved while fixed_term_months was
+            // accidentally omitted from the API/repository allow-lists.
+            'auto_renew' => false,
             'need_justification' =>
                 'Required for submission workflow verification',
             'expected_value' =>
@@ -186,6 +190,31 @@ try {
         ]
     );
 
+    $governanceContents =
+        'Rollback-only governance clauses fixture';
+    $documentRepository->create(
+        $agreementId,
+        [
+            'agreement_version_id' => null,
+            'file_name' =>
+                'submission-workflow-governance.docx',
+            'storage_key' =>
+                date('Y/m') . '/'
+                . bin2hex(random_bytes(32))
+                . '.docx',
+            'mime_type' =>
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'file_size_bytes' =>
+                strlen($governanceContents),
+            'sha256_checksum' =>
+                hash('sha256', $governanceContents),
+            'document_type' =>
+                'GOVERNANCE_CLAUSES',
+            'uploaded_by' =>
+                (int) $dean['user_id'],
+        ]
+    );
+
     $result =
         $agreementService->submitAgreement(
             $agreementId,
@@ -212,6 +241,11 @@ try {
         && $agreement['status'] ===
             'UNDER_REVIEW',
         'Agreement was not moved to UNDER_REVIEW'
+    );
+
+    submissionAssert(
+        (int) ($agreement['fixed_term_months'] ?? 0) > 0,
+        'Missing fixed-term months were not recovered before submission'
     );
 
     $workflow =

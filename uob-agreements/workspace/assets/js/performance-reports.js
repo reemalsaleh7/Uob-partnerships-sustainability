@@ -52,6 +52,25 @@
         overdue: (report) => isOverdue(report) ? 'yes true overdue' : 'no false'
     };
 
+    const advancedFilters = UobAdvancedSearch.createFilterController({
+        root: '[data-report-search-filters]',
+        schema: searchSchema,
+        fields: [
+            { key: 'agreement', label: 'Agreement', placeholder: 'Enter an Agreement title or ID' },
+            { key: 'code', label: 'Agreement code', placeholder: 'Enter an Agreement code' },
+            { key: 'status', label: 'Status', placeholder: 'For example, Submitted' },
+            { key: 'creator', label: 'Created by', placeholder: 'Enter a person’s name' },
+            { key: 'reviewer', label: 'Reviewed by', placeholder: 'Enter a person’s name' },
+            { key: 'year', label: 'Reporting year', type: 'number', placeholder: 'For example, 2026' },
+            { key: 'start', label: 'Period start', type: 'date' },
+            { key: 'end', label: 'Period end', type: 'date' },
+            { key: 'due', label: 'Due date', type: 'date' },
+            { key: 'updated', label: 'Last updated', type: 'date' },
+            { key: 'overdue', label: 'Overdue', placeholder: 'Enter yes or no' }
+        ],
+        onChange: render
+    });
+
     function isOverdue(report) {
         return report.is_overdue === true
             || report.is_overdue === 1
@@ -86,9 +105,11 @@
                     report,
                     elements.search.value.trim(),
                     searchSchema
-                );
+                )
+                && advancedFilters.matchesRules(report);
         });
         elements.count.textContent = `${filtered.length} of ${reports.length} ${reports.length === 1 ? 'report' : 'reports'}`;
+        advancedFilters.refresh();
         elements.body.replaceChildren();
         filtered.forEach((report) => {
             const row = document.createElement('tr');
@@ -162,6 +183,7 @@
         elements.year.value = '';
         elements.dueFrom.value = '';
         elements.dueTo.value = '';
+        advancedFilters.clearRules();
         render();
     }
 

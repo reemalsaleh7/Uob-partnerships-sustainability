@@ -29,21 +29,18 @@ workspaceHeader('Performance reports', 'performance');
             <p class="small text-secondary mb-0" data-report-result-count>Draft, due, returned, submitted, and accepted reporting periods.</p>
         </div>
     </div>
-    <div class="filter-bar">
-        <div class="row g-3">
-            <div class="col-lg-6">
-                <label class="form-label" for="report-search">Advanced search</label>
-                <input id="report-search" class="form-control" type="search"
-                    placeholder='Try agreement:"Student Exchange" status:submitted'
-                    aria-describedby="report-search-help" disabled data-report-search>
-                <div id="report-search-help" class="form-text">
-                    Use words, quoted phrases, <code>field:value</code>, <code>a|b</code>,
-                    <code>-term</code>, or <code>due&lt;2026-09-01</code>.
-                    Fields: id, agreement, code, status, creator,
-                    reviewer, year, start, end, due, updated, overdue.
+    <div class="filter-bar progressive-search" data-report-search-filters aria-label="Advanced search">
+        <div class="progressive-search-primary">
+            <div class="progressive-search-field">
+                <label class="form-label" for="report-search">Search reports</label>
+                <div class="progressive-search-input-wrap">
+                    <span class="progressive-search-icon" aria-hidden="true"></span>
+                    <input id="report-search" class="form-control" type="search"
+                        placeholder="Search by Agreement, code, or person"
+                        autocomplete="off" disabled data-search-input data-report-search>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="progressive-search-status">
                 <label class="form-label" for="report-status">Status</label>
                 <select id="report-status" class="form-select" disabled data-report-status-filter>
                     <option value="">All statuses</option>
@@ -54,22 +51,54 @@ workspaceHeader('Performance reports', 'performance');
                     <option value="OVERDUE">Overdue</option>
                 </select>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label" for="report-year">Reporting year</label>
-                <select id="report-year" class="form-select" disabled data-report-year-filter>
-                    <option value="">All years</option>
-                </select>
+            <div class="progressive-search-action">
+                <button class="btn btn-outline-primary progressive-search-toggle" type="button"
+                    aria-expanded="false" aria-controls="report-more-filters" data-advanced-search-toggle>
+                    <span>More filters</span>
+                    <span class="progressive-search-count d-none" data-advanced-filter-count></span>
+                    <span class="progressive-search-chevron" aria-hidden="true"></span>
+                </button>
             </div>
-            <div class="col-md-6 col-lg-4">
-                <label class="form-label" for="report-due-from">Due from</label>
-                <input id="report-due-from" class="form-control" type="date" disabled data-report-due-from>
+        </div>
+        <p class="progressive-search-summary d-none" data-advanced-filter-summary aria-live="polite"></p>
+        <div id="report-more-filters" class="progressive-search-panel" data-advanced-search-panel hidden>
+            <div class="progressive-search-panel-heading">
+                <div>
+                    <h3 class="h6 mb-1">Refine your results</h3>
+                    <p class="small text-secondary mb-0">Choose only the filters you need, or add precise conditions.</p>
+                </div>
             </div>
-            <div class="col-md-6 col-lg-4">
-                <label class="form-label" for="report-due-to">Due to</label>
-                <input id="report-due-to" class="form-control" type="date" disabled data-report-due-to>
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label" for="report-year">Reporting year</label>
+                    <select id="report-year" class="form-select" disabled data-advanced-filter data-filter-label="year" data-report-year-filter>
+                        <option value="">All years</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label" for="report-due-from">Due from</label>
+                    <input id="report-due-from" class="form-control" type="date" disabled data-advanced-filter data-filter-label="due date" data-report-due-from>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <label class="form-label" for="report-due-to">Due to</label>
+                    <input id="report-due-to" class="form-control" type="date" disabled data-advanced-filter data-filter-label="due date" data-report-due-to>
+                </div>
             </div>
-            <div class="col-lg-4 d-flex align-items-end">
-                <button class="btn btn-outline-secondary w-100" type="button"
+            <div class="search-rule-builder" data-search-rule-builder>
+                <div class="search-rule-builder-header">
+                    <div>
+                        <h4 class="h6 mb-1">Build a precise search</h4>
+                        <p class="small text-secondary mb-0">Add conditions in plain language—no search commands required.</p>
+                    </div>
+                    <label class="search-match-mode d-none" data-search-match-mode-wrap><span>Match</span>
+                        <select class="form-select form-select-sm" data-search-match-mode><option value="all">all conditions</option><option value="any">any condition</option></select>
+                    </label>
+                </div>
+                <div class="search-rule-list" data-search-rule-list></div>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-add-search-rule><span aria-hidden="true">+</span> Add condition</button>
+            </div>
+            <div class="progressive-search-footer">
+                <button class="btn btn-link text-secondary p-0" type="button"
                     disabled data-clear-report-filters>Clear filters</button>
             </div>
         </div>
@@ -90,6 +119,6 @@ workspaceHeader('Performance reports', 'performance');
 </section>
 
 <?php workspaceFooter([
-    'assets/js/advanced-search.js?v=20260802-advanced-search',
-    'assets/js/performance-reports.js?v=20260802-advanced-search',
+    'assets/js/advanced-search.js',
+    'assets/js/performance-reports.js',
 ]); ?>

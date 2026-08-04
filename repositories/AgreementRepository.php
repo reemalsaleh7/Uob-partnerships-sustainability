@@ -15,6 +15,7 @@ class AgreementRepository {
         'effective_date',
         'signing_date',
         'auto_renew',
+        'fixed_term_months',
         'renewal_term_months',
         'non_renewal_notice_months',
         'termination_notice_months',
@@ -169,6 +170,30 @@ class AgreementRepository {
                 a.*,
                 ap.partner_id,
                 p.organization_name AS partner_name,
+                p.partner_type,
+                p.country AS partner_country,
+                p.website AS partner_website,
+                p.profile AS partner_profile,
+                COALESCE((
+                    SELECT jsonb_agg(ags.sdg_number ORDER BY ags.sdg_number)
+                    FROM agreement_sdgs ags
+                    WHERE ags.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS sdgs,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(ac) ORDER BY ac.display_order, ac.agreement_contact_id)
+                    FROM agreement_contacts ac
+                    WHERE ac.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS contacts,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(aep) ORDER BY aep.display_order, aep.executive_program_id)
+                    FROM agreement_executive_programs aep
+                    WHERE aep.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS executive_programs,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(am) ORDER BY am.agreement_metric_id)
+                    FROM agreement_metrics am
+                    WHERE am.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS metrics,
                 NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
                     AS creator_name,
                 COALESCE(
@@ -198,6 +223,30 @@ class AgreementRepository {
                 a.*,
                 ap.partner_id,
                 p.organization_name AS partner_name,
+                p.partner_type,
+                p.country AS partner_country,
+                p.website AS partner_website,
+                p.profile AS partner_profile,
+                COALESCE((
+                    SELECT jsonb_agg(ags.sdg_number ORDER BY ags.sdg_number)
+                    FROM agreement_sdgs ags
+                    WHERE ags.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS sdgs,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(ac) ORDER BY ac.display_order, ac.agreement_contact_id)
+                    FROM agreement_contacts ac
+                    WHERE ac.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS contacts,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(aep) ORDER BY aep.display_order, aep.executive_program_id)
+                    FROM agreement_executive_programs aep
+                    WHERE aep.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS executive_programs,
+                COALESCE((
+                    SELECT jsonb_agg(to_jsonb(am) ORDER BY am.agreement_metric_id)
+                    FROM agreement_metrics am
+                    WHERE am.agreement_id = a.agreement_id
+                ), \'[]\'::jsonb) AS metrics,
                 NULLIF(TRIM(CONCAT(cu.first_name, \' \', cu.last_name)), \'\')
                     AS creator_name,
                 COALESCE(

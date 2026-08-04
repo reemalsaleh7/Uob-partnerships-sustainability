@@ -65,6 +65,14 @@ foreach ([$agreementPage, $lifecyclePage, $reportPage] as $page) {
             && str_contains($page, 'Clear filters'),
         'A searchable portal register is missing its advanced filter controls'
     );
+    portalSearchAssert(
+        str_contains($page, 'data-advanced-search-toggle')
+            && str_contains($page, 'data-advanced-search-panel')
+            && str_contains($page, 'data-search-rule-builder')
+            && str_contains($page, 'Add condition')
+            && str_contains($page, 'no search commands required'),
+        'Search does not use progressive disclosure and a plain-language rule builder'
+    );
 }
 
 portalSearchAssert(
@@ -74,6 +82,14 @@ portalSearchAssert(
         && str_contains($search, 'const comparison = token.match'),
     'Advanced query syntax does not support phrases, exclusions, OR, and comparisons'
 );
+portalSearchAssert(
+    str_contains($search, 'function matchesRules')
+        && str_contains($search, 'function createFilterController')
+        && str_contains($search, "mode === 'any'")
+        && str_contains($search, 'data-rule-field')
+        && str_contains($search, 'data-advanced-filter-count'),
+    'The accessible visual query builder or all/any condition matching is missing'
+);
 
 foreach ([$agreementScript, $lifecycleScript, $reportScript] as $script) {
     portalSearchAssert(
@@ -81,14 +97,112 @@ foreach ([$agreementScript, $lifecycleScript, $reportScript] as $script) {
             && str_contains($script, 'UobAdvancedSearch.inDateRange'),
         'A portal register is not using both structured query and date filtering'
     );
+    portalSearchAssert(
+        str_contains($script, 'UobAdvancedSearch.createFilterController')
+            && str_contains($script, 'advancedFilters.matchesRules')
+            && str_contains($script, 'advancedFilters.clearRules'),
+        'A portal register is not connected to the visual search-rule builder'
+    );
 }
 
 portalSearchAssert(
     str_contains($agreementScript, "partner: (agreement)")
-        && str_contains($agreementScript, "creator: (agreement)")
-        && str_contains($agreementScript, "origin: (agreement)")
-        && str_contains($agreementScript, "updated: 'updated_at'"),
-    'Agreement search is missing partner, creator, origin, or updated-date fields'
+        && str_contains($agreementScript, "description: 'description'")
+        && str_contains($agreementScript, "objectives: 'objectives'")
+        && str_contains($agreementScript, "impact: 'expected_value'")
+        && str_contains($agreementScript, "contact_email: (agreement)")
+        && str_contains($agreementScript, "programme_outputs: (agreement)")
+        && str_contains($agreementScript, "metric_planned: (agreement)"),
+    'Agreement search is missing fields that are present in the Agreement form'
+);
+portalSearchAssert(
+    str_contains($agreementPage, 'agreement-title')
+        && str_contains($agreementPage, 'agreement-title-ar')
+        && str_contains($agreementPage, 'agreement-type')
+        && str_contains($agreementPage, 'agreement-partner')
+        && str_contains($agreementPage, 'agreement-partner-type')
+        && str_contains($agreementPage, 'agreement-partner-country')
+        && str_contains($agreementPage, 'agreement-description')
+        && str_contains($agreementPage, 'agreement-objectives')
+        && str_contains($agreementPage, 'agreement-start-from')
+        && str_contains($agreementPage, 'agreement-end-to')
+        && str_contains($agreementPage, 'agreement-fixed-term-min')
+        && str_contains($agreementPage, 'agreement-renewal-term-max')
+        && str_contains($agreementPage, 'agreement-financial')
+        && str_contains($agreementPage, 'agreement-financial-min')
+        && str_contains($agreementPage, 'agreement-human-resources')
+        && str_contains($agreementPage, 'agreement-training')
+        && str_contains($agreementPage, 'agreement-annual-report')
+        && str_contains($agreementPage, 'agreement-auto-renew')
+        && str_contains($agreementPage, 'agreement-sdg'),
+    'The Agreement register is missing form-aligned precision filters'
+);
+portalSearchAssert(
+    // Match actual form controls, not similarly named workflow/view attributes
+    // such as data-agreement-scope on the register's navigation buttons.
+    !str_contains($agreementPage, 'id="agreement-status"')
+        && !str_contains($agreementPage, 'id="agreement-code"')
+        && !str_contains($agreementPage, 'id="agreement-origin"')
+        && !str_contains($agreementPage, 'id="agreement-creator"')
+        && !str_contains($agreementPage, 'id="agreement-unit"')
+        && !str_contains($agreementPage, 'id="agreement-scope"')
+        && !str_contains($agreementPage, 'id="agreement-updated-from"')
+        && !str_contains($agreementPage, 'id="agreement-legal-status"')
+        && !str_contains($agreementScript, "{ key: 'status'")
+        && !str_contains($agreementScript, "{ key: 'code'")
+        && !str_contains($agreementScript, "{ key: 'origin'")
+        && !str_contains($agreementScript, "{ key: 'creator'")
+        && !str_contains($agreementScript, "{ key: 'unit'")
+        && !str_contains($agreementScript, "{ key: 'scope'")
+        && !str_contains($agreementScript, "{ key: 'effective'")
+        && !str_contains($agreementScript, "{ key: 'signing'")
+        && !str_contains($agreementScript, "{ key: 'updated'"),
+    'Retired or system-only fields remain exposed as Agreement form filters'
+);
+portalSearchAssert(
+    str_contains($agreementPage, 'agreement-register-wrap')
+        && str_contains($agreementPage, 'agreement-register-table')
+        && str_contains($agreementPage, 'Project type')
+        && str_contains($agreementPage, 'Project period')
+        && !str_contains($agreementPage, '<th scope="col">Relationship</th>')
+        && !str_contains($agreementPage, '<th scope="col">Status</th>')
+        && !str_contains($agreementPage, '<th scope="col">Updated</th>')
+        && !str_contains($agreementScript, 'createStatusBadge')
+        && !str_contains($agreementScript, 'createRecordOriginBadge')
+        && !str_contains($agreementScript, 'agreement-owner-badge')
+        && str_contains($agreementScript, 'agreement-primary-cell')
+        && str_contains($agreementScript, 'agreement-register-title'),
+    'The Agreement register does not use the approved redesign style or still exposes removed fields'
+);
+portalSearchAssert(
+    str_contains($agreementScript, 'booleanFilterMatches')
+        && str_contains($agreementScript, 'numberRangeMatches')
+        && str_contains($agreementScript, 'state.startFrom')
+        && str_contains($agreementScript, 'state.endTo')
+        && str_contains($agreementScript, 'state.description')
+        && str_contains($agreementScript, "financial_amount: 'financial_amount'"),
+    'The new Agreement precision fields are not connected to search behavior'
+);
+portalSearchAssert(
+    str_contains($search, "type === 'select'")
+        && str_contains($search, "type === 'boolean'")
+        && str_contains($search, "type === 'number'")
+        && str_contains($search, "type === 'date'")
+        && str_contains($search, 'createRuleValueControl')
+        && str_contains($agreementScript, "type: 'boolean'")
+        && str_contains($agreementScript, "type: 'select'")
+        && str_contains($agreementScript, "type: 'number'")
+        && str_contains($agreementScript, "type: 'date'"),
+    'The precise search builder does not preserve form field types'
+);
+portalSearchAssert(
+    str_contains($agreementRepository, 'AS partner_country')
+        && str_contains($agreementRepository, 'AS sdgs')
+        && str_contains($agreementRepository, 'AS contacts')
+        && str_contains($agreementRepository, 'AS executive_programs')
+        && str_contains($agreementRepository, 'AS metrics')
+        && str_contains($agreementRepository, "'fixed_term_months'"),
+    'The Agreement register API is missing searchable current-form data'
 );
 portalSearchAssert(
     str_contains($apiClient, 'function createRecordOriginBadge')
@@ -100,11 +214,11 @@ portalSearchAssert(
     'The shared Agreement API does not expose the record-origin badge helper'
 );
 portalSearchAssert(
-    str_contains($workspaceLayout, 'function workspaceAssetUrl')
+    str_contains($workspaceLayout, 'function workspaceVersionedAsset')
         && str_contains($workspaceLayout, 'filemtime($absolutePath)')
         && str_contains(
             $workspaceLayout,
-            "workspaceAssetUrl('assets/js/api-client.js')"
+            "workspaceVersionedAsset('assets/css/workspace.css')"
         ),
     'Workspace assets are missing automatic cache-version URLs'
 );
