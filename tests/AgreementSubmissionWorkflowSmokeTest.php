@@ -188,6 +188,43 @@ try {
 
     $result =
         $agreementService->submitAgreement(
+            $documentStmt = $db->prepare("
+    INSERT INTO agreement_documents (
+        agreement_id,
+        agreement_version_id,
+        file_name,
+        file_path,
+        storage_key,
+        mime_type,
+        file_size_bytes,
+        sha256_checksum,
+        document_type,
+        uploaded_by,
+        uploaded_at
+    ) VALUES (
+        :agreement_id,
+        NULL,
+        :file_name,
+        NULL,
+        :storage_key,
+        :mime_type,
+        :file_size_bytes,
+        :sha256_checksum,
+        'GOVERNANCE_CLAUSES',
+        :uploaded_by,
+        NOW()
+    )
+");
+
+$documentStmt->execute([
+    'agreement_id' => $agreementId,
+    'file_name' => 'submission-workflow-governance-clauses.docx',
+    'storage_key' => 'smoke-tests/submission-workflow-governance-clauses-' . $agreementId . '.docx',
+    'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'file_size_bytes' => 128,
+    'sha256_checksum' => hash('sha256', 'submission workflow governance clauses placeholder'),
+    'uploaded_by' => (int) $dean['user_id'],
+]);
             $agreementId,
             (int) $dean['user_id']
         );
