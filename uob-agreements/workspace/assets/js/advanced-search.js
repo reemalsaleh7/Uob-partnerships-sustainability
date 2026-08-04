@@ -147,6 +147,19 @@
         ['on_or_after', 'is on or after']
     ];
 
+    const numberOperators = [
+        ['equals', 'is'],
+        ['before', 'is less than'],
+        ['on_or_before', 'is at most'],
+        ['after', 'is greater than'],
+        ['on_or_after', 'is at least']
+    ];
+
+    const exactOperators = [
+        ['equals', 'is'],
+        ['not_equals', 'is not']
+    ];
+
     function compareRuleValue(candidate, expected, operator, type) {
         const leftNormalized = normalize(candidate);
         const rightNormalized = normalize(expected);
@@ -199,6 +212,23 @@
         select.append(option);
     }
 
+    function appendFieldOptions(select, fields) {
+        const groups = new Map();
+        fields.forEach((field) => {
+            if (!field.group) {
+                appendOption(select, field.key, field.label);
+                return;
+            }
+            if (!groups.has(field.group)) {
+                const group = document.createElement('optgroup');
+                group.label = field.group;
+                groups.set(field.group, group);
+                select.append(group);
+            }
+            appendOption(groups.get(field.group), field.key, field.label);
+        });
+    }
+
     function createFilterController(options) {
         const root = typeof options.root === 'string'
             ? document.querySelector(options.root)
@@ -233,17 +263,61 @@
         }
 
         function operatorsFor(type) {
-            return type === 'date' || type === 'number'
-                ? orderedOperators
-                : textOperators;
+            if (type === 'date') return orderedOperators;
+            if (type === 'number') return numberOperators;
+            if (type === 'select' || type === 'boolean') return exactOperators;
+            return textOperators;
+        }
+
+        function optionEntries(field) {
+            return (Array.isArray(field?.options) ? field.options : []).map((option) =>
+                Array.isArray(option) ? option : [option, option]
+            );
+        }
+
+        function createRuleValueControl(field, currentValue = '') {
+            const type = field?.type || 'text';
+            let control;
+
+            if (type === 'select' || type === 'boolean') {
+                control = document.createElement('select');
+                appendOption(control, '', field?.placeholder || 'Choose a value');
+                optionEntries(field).forEach(([value, label]) =>
+                    appendOption(control, String(value), label)
+                );
+            } else {
+                control = document.createElement('input');
+                control.type = type === 'date' ? 'date'
+                    : type === 'number' ? 'number'
+                        : 'text';
+                control.placeholder = field?.placeholder || 'Enter a value';
+                if (type === 'number') {
+                    if (field?.min !== undefined) control.min = String(field.min);
+                    if (field?.max !== undefined) control.max = String(field.max);
+                    control.step = String(field?.step ?? 'any');
+                }
+            }
+
+            control.className = 'form-control form-control-sm';
+            if (control.tagName === 'SELECT') {
+                control.className = 'form-select form-select-sm';
+            }
+            control.dataset.ruleValue = '';
+            control.value = String(currentValue ?? '');
+            control.setAttribute('aria-label', `${field?.label || 'Condition'} value`);
+            control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', () => {
+                refresh();
+                onChange();
+            });
+            return control;
         }
 
         function syncRule(row) {
             const fieldSelect = row.querySelector('[data-rule-field]');
             const operatorSelect = row.querySelector('[data-rule-operator]');
-            const valueInput = row.querySelector('[data-rule-value]');
             const field = fields.find((item) => item.key === fieldSelect.value) || fields[0];
             const previousOperator = operatorSelect.value;
+            const previousValue = row.querySelector('[data-rule-value]')?.value || '';
             operatorSelect.replaceChildren();
             operatorsFor(field?.type || 'text').forEach(([value, label]) =>
                 appendOption(operatorSelect, value, label)
@@ -251,11 +325,8 @@
             if ([...operatorSelect.options].some((item) => item.value === previousOperator)) {
                 operatorSelect.value = previousOperator;
             }
-            valueInput.type = field?.type === 'date' ? 'date'
-                : field?.type === 'number' ? 'number'
-                    : 'text';
-            valueInput.placeholder = field?.placeholder || 'Enter a value';
-            valueInput.setAttribute('aria-label', `${field?.label || 'Condition'} value`);
+            const valueControl = createRuleValueControl(field, previousValue);
+            row.querySelector('[data-rule-value]')?.replaceWith(valueControl);
         }
 
         function addRule(initial = {}) {
@@ -267,7 +338,7 @@
             fieldSelect.className = 'form-select form-select-sm';
             fieldSelect.dataset.ruleField = '';
             fieldSelect.setAttribute('aria-label', 'Search field');
-            fields.forEach((field) => appendOption(fieldSelect, field.key, field.label));
+            appendFieldOptions(fieldSelect, fields);
             if (initial.field) fieldSelect.value = initial.field;
 
             const operatorSelect = document.createElement('select');
@@ -299,10 +370,6 @@
                 refresh();
                 onChange();
             });
-            valueInput.addEventListener('input', () => {
-                refresh();
-                onChange();
-            });
             remove.addEventListener('click', () => {
                 row.remove();
                 refresh();
@@ -310,7 +377,7 @@
                 add?.focus();
             });
             refresh();
-            valueInput.focus();
+            row.querySelector('[data-rule-value]')?.focus();
         }
 
         function readRules() {
