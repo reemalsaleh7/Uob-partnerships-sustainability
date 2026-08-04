@@ -911,6 +911,349 @@ html[dir="ltr"] body .ag-news-next{
     right:6px !important;
   }
 }
+/* =========================================
+   Agreements Modal – Modern Formal Design
+========================================= */
+
+#agreementModal .backdrop {
+  background: rgba(3, 15, 30, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+/* نافذة كبيرة بحواف عصرية خفيفة */
+#agreementModal .panel {
+  width: calc(100vw - 36px);
+  height: calc(100vh - 36px);
+  max-width: 1600px;
+  max-height: none;
+  border: 1px solid rgba(209, 219, 230, 0.9);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(4, 20, 40, 0.34);
+  overflow: hidden;
+}
+
+/* رأس النافذة */
+#agreementModal .head {
+  min-height: 86px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f2f6fa 100%);
+  border-bottom: 1px solid #dce4ec;
+}
+
+#agreementModal .title {
+  color: #0b2748;
+  font-size: 23px;
+  font-weight: 950;
+}
+
+#agreementModal .sub {
+  margin-top: 4px;
+  color: #6a788a;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* أزرار الأعلى */
+#agreementModal .iconBtn {
+  width: 45px;
+  height: 45px;
+  border: 1px solid #d3dde7;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0b2748;
+  box-shadow: 0 4px 14px rgba(11, 39, 72, 0.07);
+  transition: 0.2s ease;
+}
+
+#agreementModal .iconBtn:hover {
+  border-color: #315b85;
+  background: #edf3f8;
+  transform: translateY(-2px);
+}
+
+#agreementModal .closeBtn:hover {
+  border-color: #d5a6a6;
+  background: #fff2f2;
+  color: #9e3030;
+}
+
+/* البحث */
+#agreementModal .tools {
+  min-height: 76px;
+  padding: 13px 24px;
+  gap: 12px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #dce4ec;
+}
+
+#agreementModal .search {
+  min-height: 50px;
+  padding: 11px 17px;
+  border: 1px solid #d0dae5;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172b43;
+  font-size: 15px;
+  font-weight: 750;
+  box-shadow: 0 3px 10px rgba(11, 39, 72, 0.04);
+  transition: 0.2s ease;
+}
+
+#agreementModal .search:focus {
+  border-color: #315b85;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(49, 91, 133, 0.12);
+}
+
+/* زر مسح الفلاتر */
+#agreementModal #clearAgreementFilters {
+  min-height: 50px;
+  padding: 10px 19px;
+  border: 1px solid #234b73;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #163b61;
+  font-weight: 900;
+  transition: 0.2s ease;
+}
+
+#agreementModal #clearAgreementFilters:hover {
+  background: #0b2748;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* الفلاتر */
+#agreementModal .filterDrawer {
+  padding: 16px 24px 18px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #dce4ec;
+}
+
+#agreementModal .fgrid {
+  gap: 14px;
+}
+
+#agreementModal .fbox {
+  padding: 14px;
+  border: 1px solid #d8e1ea;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(11, 39, 72, 0.05);
+}
+
+#agreementModal .fbox .lbl {
+  margin-bottom: 10px;
+  color: #0b2748;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+#agreementModal .chk {
+  padding: 7px 11px;
+  border: 1px solid #d5dee7;
+  border-radius: 9px;
+  background: #f9fbfc;
+  transition: 0.18s ease;
+}
+
+#agreementModal .chk:hover {
+  border-color: #6c8dab;
+  background: #edf3f8;
+}
+
+#agreementModal .chk input {
+  accent-color: #0b2748;
+}
+
+/* منطقة الجدول */
+#agreementModal .body {
+  flex: 1;
+  overflow: auto;
+  background: #f4f7fa;
+  padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: #94a6b8 #e8edf2;
+}
+
+/* الجدول كتلة عصرية واحدة */
+#agreementModal table {
+  width: 100%;
+  min-width: 1200px;
+  table-layout: fixed;
+  border: 1px solid #d7e0e9;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #25364a;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(11, 39, 72, 0.06);
+}
+
+/* رأس الجدول */
+#agreementModal thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 16px 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.13);
+  border-bottom: 0;
+  background: linear-gradient(135deg, #0b2748, #163e66);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: right;
+  box-shadow: none;
+}
+
+[dir="ltr"] #agreementModal thead th {
+  text-align: left;
+}
+
+/* تقسيمات واضحة لكن غير حادة */
+#agreementModal tbody td {
+  padding: 17px 14px;
+  border-left: 1px solid #e0e6ec;
+  border-bottom: 1px solid #e0e6ec;
+  background: #ffffff;
+  color: #2b3a4c;
+  line-height: 1.65;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+#agreementModal th:last-child,
+#agreementModal td:last-child {
+  border-left: 0;
+}
+
+#agreementModal tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+#agreementModal tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+#agreementModal tbody tr {
+  transition: 0.18s ease;
+}
+
+#agreementModal tbody tr:hover td {
+  background: #edf3f8;
+}
+
+/* كود الاتفاقية */
+#agreementModal .pill {
+  padding: 7px 11px;
+  border: 1px solid #c5d2de;
+  border-radius: 9px;
+  background: #eef3f7;
+  color: #0b2748;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* الحالة */
+#agreementModal .agreement-status {
+  min-width: 76px;
+  padding: 7px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccd6df;
+  border-radius: 10px;
+  background: #f0f3f6;
+  color: #596979;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* حالة سارية */
+#agreementModal tr[data-status="سارية"] .agreement-status,
+#agreementModal tr[data-status="Active"] .agreement-status {
+  border-color: #87c3a4;
+  background: linear-gradient(135deg, #e7f7ee, #d8f1e4);
+  color: #17613e;
+  box-shadow: 0 4px 12px rgba(31, 126, 79, 0.1);
+}
+
+/* زر التفاصيل */
+#agreementModal tbody .btn-primary {
+  min-width: 92px;
+  padding: 9px 15px;
+  border: 1px solid #0b2748;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0b2748, #174b78);
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 5px 14px rgba(11, 39, 72, 0.16);
+  transition: 0.2s ease;
+}
+
+#agreementModal tbody .btn-primary:hover {
+  border-color: #1e527f;
+  background: linear-gradient(135deg, #143b62, #216092);
+  transform: translateY(-2px);
+}
+
+/* الجوال */
+@media (max-width: 800px) {
+  #agreementModal .panel {
+    width: 100vw;
+    height: 100svh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  #agreementModal .head {
+    min-height: 76px;
+    padding: 13px 15px;
+  }
+
+  #agreementModal .title {
+    font-size: 19px;
+  }
+
+  #agreementModal .sub {
+    display: none;
+  }
+
+  #agreementModal .tools {
+    min-height: auto;
+    padding: 12px 14px;
+  }
+
+  #agreementModal .search {
+    min-width: 100%;
+  }
+
+  #agreementModal .filterDrawer {
+    padding: 12px 14px;
+  }
+
+  #agreementModal .fgrid {
+    grid-template-columns: 1fr;
+  }
+
+  #agreementModal .body {
+    padding: 8px;
+  }
+}
+/* توحيد حجم مربعات أكواد الاتفاقيات */
+#agreementModal .pill {
+  width: 165px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
 </style>
 
 
@@ -1701,8 +2044,11 @@ html[dir="ltr"] body .ag-news-next{
               <td><?= h($type ?: '—') ?></td>
               <td><?= h($partner ?: '—') ?></td>
               <td><?= h($country ?: '—') ?></td>
-              <td><?= h($status ?: '—') ?></td>
-              <td>
+<td>
+  <span class="agreement-status">
+    <?= h($status ?: '—') ?>
+  </span>
+</td>              <td>
                 <a class="btn btn-primary btn-sm"
                    href="agreement-details.php?code=<?= urlencode($code) ?>&lang=<?= urlencode($lang) ?>">
                   <?= h(tt('details')) ?>

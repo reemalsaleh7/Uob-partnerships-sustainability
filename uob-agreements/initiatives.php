@@ -806,6 +806,67 @@ html body .landing-actions .hero-main-btn{
   border:0 !important;
   color:#b89a68 !important;
 }
+/* اللون الذهبي المعتمد للمبادرات */
+
+/* رأس الجدول فوق */
+.initModal thead th {
+  background: #b89a68 !important;
+  color: #ffffff !important;
+}
+
+/* زر التفاصيل */
+.initModal tbody .btn-primary {
+  border-color: #b89a68 !important;
+  background: #b89a68 !important;
+  color: #ffffff !important;
+  box-shadow: 0 5px 14px rgba(184, 154, 104, 0.25);
+}
+
+/* مرور الماوس على زر التفاصيل */
+.initModal tbody .btn-primary:hover,
+.initModal tbody .btn-primary:focus {
+  border-color: #a3875b !important;
+  background: #a3875b !important;
+  color: #ffffff !important;
+}
+
+/* مرور الماوس على أي صف: ذهبي خفيف */
+.initModal tbody tr:hover td {
+  background: rgba(184, 154, 104, 0.16) !important;
+}
+/* جعل نافذة المبادرات تغطي حجم الشاشة مثل الاتفاقيات */
+.initModal .panel {
+  width: calc(100vw - 28px) !important;
+  height: calc(100dvh - 40px) !important;
+  max-width: none !important;
+  max-height: none !important;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+/* الجدول يأخذ كل المساحة المتبقية */
+.initModal .body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* على الهاتف تغطي الشاشة كاملة */
+@media (max-width: 800px) {
+  .initModal .panel {
+    width: 100vw !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+}
 </style>
 
 <section class="sdg-heroX">
