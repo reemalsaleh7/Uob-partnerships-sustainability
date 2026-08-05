@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../repositories/AgreementRepository.php';
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
+require_once __DIR__ . '/ConfigurableAgreementWorkflowService.php';
 require_once __DIR__ . '/HierarchyResolver.php';
 require_once __DIR__ . '/../repositories/AgreementVersionRepository.php';
 class ApprovalService
@@ -31,6 +32,18 @@ class ApprovalService
         int $agreementId,
         int $startedBy
     ): array {
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1: active published templates
+        // are used only when a new Agreement Workflow starts.
+        $configurableWorkflow =
+            new ConfigurableAgreementWorkflowService($this->db);
+
+        if ($configurableWorkflow->shouldStartConfigurable()) {
+            return $configurableWorkflow->start(
+                $agreementId,
+                $startedBy
+            );
+        }
+
         $ownsTransaction = !$this->db->inTransaction();
 
         if ($ownsTransaction) {

@@ -27,12 +27,17 @@ $titles = [
 
 workspaceHeader($titles[$view], 'initiatives');
 
-echo '<link href="initiative-workflow/assets/module.css?v=20260802-phase17q" rel="stylesheet">';
+echo '<link href="initiative-workflow/assets/module.css?v=20260804-final-conditional-v2" rel="stylesheet">';
+
+// INITIATIVE_REVISION_AUDIENCE_ASSETS_V1
+echo '<link href="initiative-workflow/assets/revision-audience.css?v=20260805-audience2" rel="stylesheet">';
 
 require __DIR__ . '/views.php';
 
 $initiativeScripts = [
-    'initiative-workflow/assets/module.js?v=20260802-phase17q',
+    'initiative-workflow/assets/module.js?v=20260805-audience-runtime2',
+    // INITIATIVE_REVISION_AUDIENCE_ASSETS_V1
+    'initiative-workflow/assets/revision-audience.js?v=20260805-audience-runtime2',
 ];
 
 if ($view === 'form') {

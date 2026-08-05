@@ -3,21 +3,21 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../repositories/WorkflowRepository.php';
+require_once __DIR__ . '/PermissionService.php';
 
 class HierarchyResolver
 {
-    private const AGREEMENT_CREATOR_OFFICES = [
-        'VP',
-        'PRES',
-    ];
-
     private WorkflowRepository $workflowRepository;
+    private PermissionService $permissionService;
 
     public function __construct(
-        ?WorkflowRepository $workflowRepository = null
+        ?WorkflowRepository $workflowRepository = null,
+        ?PermissionService $permissionService = null
     ) {
         $this->workflowRepository =
             $workflowRepository ?? new WorkflowRepository();
+        $this->permissionService =
+            $permissionService ?? new PermissionService();
     }
 
     public function resolveUnit(string $unitCode): array
@@ -95,26 +95,10 @@ class HierarchyResolver
 
     public function canStartAgreement(int $userId): bool
     {
-        $memberships = $this->workflowRepository
-            ->findActiveMembershipsForUser($userId);
-
-        foreach ($memberships as $membership) {
-            if ($membership['position_name'] === 'Dean') {
-                return true;
-            }
-
-            if (
-                in_array(
-                    $membership['unit_code'],
-                    self::AGREEMENT_CREATOR_OFFICES,
-                    true
-                )
-            ) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->permissionService->hasPermission(
+            $userId,
+            'CREATE_AGREEMENT'
+        );
     }
 
     public function assertCanStartAgreement(
@@ -122,7 +106,7 @@ class HierarchyResolver
     ): void {
         if (!$this->canStartAgreement($userId)) {
             throw new DomainException(
-                'Only a Dean, VP Office member, or President Office member may start an Agreement workflow'
+                'Your account is not authorized to start an Agreement workflow'
             );
         }
     }

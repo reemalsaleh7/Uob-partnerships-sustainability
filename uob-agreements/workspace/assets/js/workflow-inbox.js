@@ -66,10 +66,16 @@
             label.className = 'workflow-task-label';
             label.textContent = assignment.task_mode === 'VP_MEDIATION'
                 ? 'VP mediation'
-                : (stepLabels[assignment.step_key] || 'Workflow review');
+                : (
+                    assignment.step_label
+                    || stepLabels[assignment.step_key]
+                    || 'Workflow review'
+                );
             const key = document.createElement('span');
             key.className = 'workflow-task-key';
-            key.textContent = assignment.step_key || 'Unknown step';
+            key.textContent = assignment.engine_version === 'CONFIGURABLE'
+                ? `Phase ${assignment.phase_order} · template v${assignment.template_version_number}`
+                : (assignment.step_key || 'Unknown step');
             taskCell.append(label, key);
             tr.appendChild(taskCell);
 
@@ -92,15 +98,22 @@
             const actionCell = document.createElement('td');
             actionCell.className = 'text-end';
 
-            if (
+            if (assignment.engine_version === 'CONFIGURABLE') {
+                const link = document.createElement('a');
+                link.className = 'btn btn-sm btn-primary';
+                link.href = `workflow-generic-review.php?instance_id=${encodeURIComponent(
+                    assignment.workflow_instance_id
+                )}`;
+                link.textContent = 'Review';
+                actionCell.appendChild(link);
+            } else if (
                 [
                     'VP_INITIAL',
                     'LEGAL_REVIEW',
                     'FINANCE_REVIEW',
                     'VP_FINAL',
                     'PRESIDENT_APPROVAL'
-                ]
-                    .includes(assignment.step_key)
+                ].includes(assignment.step_key)
             ) {
                 const link = document.createElement('a');
                 link.className = 'btn btn-sm btn-primary';
@@ -185,10 +198,27 @@
                 );
             }
 
-            const assignments = await AgreementApi.workflowInbox();
-            const rows = await addAgreementDetails(
-                Array.isArray(assignments) ? assignments : []
+            const [legacyAssignments, configurableAssignments] = await Promise.all([
+                AgreementApi.workflowInbox(),
+                AgreementApi.request('/configurable-workflows/inbox')
+            ]);
+            const configurable = Array.isArray(configurableAssignments)
+                ? configurableAssignments
+                : [];
+            const configurableStepIds = new Set(
+                configurable.map((assignment) => Number(assignment.instance_step_id))
             );
+            const legacy = (Array.isArray(legacyAssignments)
+                ? legacyAssignments
+                : []).filter(
+                (assignment) => !configurableStepIds.has(
+                    Number(assignment.instance_step_id)
+                )
+            );
+            const rows = await addAgreementDetails([
+                ...configurable,
+                ...legacy
+            ]);
             render(rows);
         } catch (error) {
             showError(error);

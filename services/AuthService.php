@@ -3,6 +3,7 @@ require_once __DIR__ . '/../repositories/UserRepository.php';
 require_once __DIR__ . '/../services/PermissionService.php';
 require_once __DIR__ . '/../services/AuditService.php';
 require_once __DIR__ . '/../helpers/ApiSession.php';
+
 class AuthService {
     private UserRepository $userRepo;
     private PermissionService $permissionService;
@@ -15,36 +16,49 @@ class AuthService {
     }
 
     public function login(string $email, string $password): array {
-        $user = $this->userRepo->findByEmail($email);
-
-        if (!$user) {
-            return ['success' => false, 'error' => 'Invalid credentials'];
-        }
-
-        $userId = (int) ($user['user_id'] ?? 0);
-        $failedAttempts = (int) ($user['failed_login_attempts'] ?? 0);
-
-        if ($failedAttempts >= 5) {
-            return ['success' => false, 'error' => 'Account temporarily locked.'];
-        }
-
         $this->userRepo->beginTransaction();
 
         try {
+            $user = $this->userRepo->findByEmailForUpdate($email);
+
+            if (!$user) {
+                $this->userRepo->rollBack();
+                return ['success' => false, 'error' => 'Invalid credentials'];
+            }
+
+            $userId = (int) ($user['user_id'] ?? 0);
+            $failedAttempts = (int) ($user['failed_login_attempts'] ?? 0);
+            $lockedUntil = trim((string) ($user['locked_until'] ?? ''));
+            $lockedUntilTimestamp = $lockedUntil === ''
+                ? false
+                : strtotime($lockedUntil);
+
+            if (
+                $failedAttempts >= 5
+                && $lockedUntilTimestamp !== false
+                && $lockedUntilTimestamp > time()
+            ) {
+                $this->userRepo->rollBack();
+                return [
+                    'success' => false,
+                    'error' => 'Account temporarily locked.',
+                ];
+            }
+
+            if ($failedAttempts >= 5) {
+                $this->userRepo->resetFailedAttempts($userId);
+            }
+
             if (!password_verify($password, $user['password_hash'])) {
-                $this->userRepo->incrementFailedAttempts($userId);
+                $this->userRepo->recordFailedLogin($userId);
                 $this->userRepo->commit();
                 return ['success' => false, 'error' => 'Invalid credentials'];
             }
 
-            if (isset($user['is_active']) && $user['is_active'] === false) {
+            if (!$this->userRepo->isActive($userId)) {
                 $this->userRepo->rollBack();
                 return ['success' => false, 'error' => 'Account is inactive'];
             }
-
-            $roles = $this->permissionService->getRoleNames($userId);
-            $permissions = $this->permissionService->getPermissionCodes($userId);
-            $positions = $this->userRepo->getActivePositions($userId);
 
             $this->userRepo->resetFailedAttempts($userId);
             $this->userRepo->updateLastLogin($userId);
@@ -105,13 +119,12 @@ class AuthService {
         }
 
         $userId = (int) ($_SESSION['user_id'] ?? 0);
-        $roles = $this->permissionService->getRoleNames($userId);
-        $canCreateInitiative = in_array('Initiative Creator', $roles, true)
-            || in_array('System Administrator', $roles, true);
-
-        if (!$canCreateInitiative) {
+        if (!$this->permissionService->hasPermission(
+            $userId,
+            'CREATE_INITIATIVE'
+        )) {
             throw new DomainException(
-                'Your role is not authorized to create Initiatives.'
+                'Your account is not authorized to create Initiatives.'
             );
         }
 

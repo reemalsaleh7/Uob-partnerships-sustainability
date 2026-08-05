@@ -29,6 +29,82 @@
         return;
     }
 
+    function installAdministrationNavigation() {
+        const navigation = sidebar.querySelector('.workspace-side-nav');
+        const profileLink = navigation?.querySelector('a[href="profile.php"]');
+        const accountLabel = profileLink?.previousElementSibling;
+
+        if (!navigation || !profileLink || !accountLabel) {
+            return;
+        }
+
+        const isArabic = document.documentElement.lang === 'ar';
+        const label = document.createElement('p');
+        label.className = 'workspace-nav-label mt-4 d-none';
+        label.dataset.adminUsersGroup = '';
+        label.textContent = isArabic ? 'الإدارة' : 'Administration';
+
+        const userLink = document.createElement('a');
+        const usersActive = window.location.pathname.endsWith('/admin-users.php');
+        userLink.className = `workspace-nav-link d-none${usersActive ? ' active' : ''}`;
+        userLink.href = 'admin-users.php';
+        userLink.dataset.adminUsersNav = '';
+
+        const userTitle = document.createElement('span');
+        userTitle.textContent = isArabic ? 'إدارة المستخدمين' : 'User management';
+        const userDescription = document.createElement('small');
+        userDescription.textContent = isArabic
+            ? 'الهوية والأدوار والجهة التنظيمية'
+            : 'Identity, roles, and organization';
+        userLink.append(userTitle, userDescription);
+
+        const workflowLink = document.createElement('a');
+        const workflowsActive = window.location.pathname.endsWith(
+            '/admin-workflows.php'
+        );
+        workflowLink.className = `workspace-nav-link d-none${workflowsActive ? ' active' : ''}`;
+        workflowLink.href = 'admin-workflows.php';
+        workflowLink.dataset.adminWorkflowsNav = '';
+
+        const workflowTitle = document.createElement('span');
+        workflowTitle.textContent = isArabic
+            ? 'قوالب سير العمل'
+            : 'Workflow templates';
+        const workflowDescription = document.createElement('small');
+        workflowDescription.textContent = isArabic
+            ? 'المراحل والترتيب والمسؤوليات'
+            : 'Stages, ordering, and responsibility';
+        workflowLink.append(workflowTitle, workflowDescription);
+
+        navigation.insertBefore(label, accountLabel);
+        navigation.insertBefore(userLink, accountLabel);
+        navigation.insertBefore(workflowLink, accountLabel);
+
+        AgreementApi.request('/me')
+            .then((user) => {
+                const canManageUsers = AgreementApi.hasPermission(
+                    user,
+                    'MANAGE_USERS'
+                );
+                const canManageWorkflows = AgreementApi.hasPermission(
+                    user,
+                    'MANAGE_WORKFLOW_TEMPLATES'
+                );
+
+                userLink.classList.toggle('d-none', !canManageUsers);
+                workflowLink.classList.toggle('d-none', !canManageWorkflows);
+                label.classList.toggle(
+                    'd-none',
+                    !canManageUsers && !canManageWorkflows
+                );
+            })
+            .catch(() => {
+                // The normal page-level session guard handles authentication.
+            });
+    }
+
+    installAdministrationNavigation();
+
     const tooltip = document.createElement('div');
     tooltip.className = 'workspace-sidebar-tooltip';
     tooltip.setAttribute('role', 'tooltip');

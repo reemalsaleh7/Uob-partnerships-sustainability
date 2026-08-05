@@ -96,6 +96,7 @@
     const enhancedMultiPlaceholders = {
         secondary_types: 'Select secondary types',
         target_groups: 'Select target audiences',
+        related_agreement_ids: 'Select one or more Agreements',
         required_resources: 'Select required resources',
         sdg_goals: 'Select Sustainable Development Goals',
         secondary_initiative_types:
@@ -1680,11 +1681,6 @@
         );
         const isEditing = Boolean(requestId);
 
-        initializeEnhancedMultiControls(form, [
-            'secondary_types',
-            'target_groups',
-            'required_resources'
-        ]);
         const preselectedAgreementId = Number(
             params.get('agreement_id')
         );
@@ -1758,6 +1754,38 @@
             refreshEnhancedMultiByName(form, name);
         }
 
+
+        function selectedOptionValues(name) {
+            const select = formField(name);
+
+            if (!(select instanceof HTMLSelectElement)) {
+                return [];
+            }
+
+            return Array.from(select.selectedOptions)
+                .map((option) => String(option.value))
+                .filter(Boolean);
+        }
+
+        function setSelectedOptionValues(name, values) {
+            const select = formField(name);
+
+            if (!(select instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            const selected = new Set(
+                Array.isArray(values)
+                    ? values.map((value) => String(value))
+                    : []
+            );
+
+            Array.from(select.options).forEach((option) => {
+                option.selected = selected.has(String(option.value));
+            });
+
+            refreshEnhancedMultiByName(form, name);
+        }
         function nullableBoolean(name) {
             const value = radioValue(name);
 
@@ -2024,16 +2052,6 @@
             updateProgress();
         }
 
-        function syncInternalInitiativeType() {
-            const selectedTypes = checkedValues('secondary_types');
-            const internalType = formField('initiative_type');
-
-            if (selectedTypes.length > 0) {
-                internalType.value = selectedTypes[0];
-            } else if (!internalType.value) {
-                internalType.value = 'ACADEMIC';
-            }
-        }
 
         function locationRequirements(
             scope = radioValue('implementation_scope')
@@ -2100,11 +2118,20 @@
             const resourceOther = form.querySelector(
                 '[data-conditional-field="resource-other"]'
             );
+            const relationshipType = String(
+                formField('relationship_type')?.value || ''
+            );
             const agreementWrap = document.querySelector(
                 '[data-related-agreement-wrap]'
             );
             const partnerWrap = document.querySelector(
                 '[data-external-partner-wrap]'
+            );
+            const internationalWrap = document.querySelector(
+                '[data-international-participation-wrap]'
+            );
+            const primaryTypeOtherWrap = document.querySelector(
+                '[data-primary-type-other-wrap]'
             );
             const sdgWrap = document.querySelector(
                 '[data-sdg-wrap]'
@@ -2126,19 +2153,29 @@
                 'd-none',
                 !checkedValues('target_groups').includes('OTHER')
             );
-            resourceOther.classList.toggle(
+            resourceOther?.classList.toggle(
                 'd-none',
                 !checkedValues('required_resources').includes('OTHER')
             );
             agreementWrap.classList.toggle(
                 'd-none',
-                radioValue('has_related_agreement') !== 'true'
+                relationshipType !== 'LINKED_AGREEMENTS'
             );
             partnerWrap.classList.toggle(
                 'd-none',
-                radioValue('has_external_partner') !== 'true'
+                relationshipType !== 'EXTERNAL_WITHOUT_AGREEMENT'
             );
-            sdgWrap.classList.toggle(
+            internationalWrap.classList.toggle(
+                'd-none',
+                radioValue('international_participation') !== 'true'
+            );
+            primaryTypeOtherWrap.classList.toggle(
+                'd-none',
+                formField('initiative_type').value !== 'OTHER'
+            );
+            formField('primary_type_other').required =
+                formField('initiative_type').value === 'OTHER';
+            sdgWrap?.classList.toggle(
                 'd-none',
                 radioValue('supports_sdg') !== 'true'
             );
@@ -2159,7 +2196,21 @@
                 }
             });
 
-            syncInternalInitiativeType();
+            if (relationshipType !== 'LINKED_AGREEMENTS') {
+                setSelectedOptionValues('related_agreement_ids', []);
+            }
+            if (relationshipType !== 'EXTERNAL_WITHOUT_AGREEMENT') {
+                formField('external_partner_name').value = '';
+                formField('external_partner_country').value = '';
+                formField('external_partner_role').value = '';
+            }
+            if (radioValue('international_participation') !== 'true') {
+                formField('international_countries_text').value = '';
+                formField('international_partner').value = '';
+            }
+            if (formField('initiative_type').value !== 'OTHER') {
+                formField('primary_type_other').value = '';
+            }
         }
 
         function enforceNoResourceCombination(changedInput = null) {
@@ -2186,6 +2237,34 @@
             });
         }
 
+        function relationshipDetailsComplete() {
+            const relationshipType = String(
+                formField('relationship_type')?.value || ''
+            );
+
+            if (relationshipType === '') {
+                return false;
+            }
+
+            if (relationshipType === 'LINKED_AGREEMENTS') {
+                return selectedOptionValues(
+                    'related_agreement_ids'
+                ).length > 0;
+            }
+
+            if (relationshipType === 'EXTERNAL_WITHOUT_AGREEMENT') {
+                return (
+                    String(
+                        formField('external_partner_name')?.value || ''
+                    ).trim() !== ''
+                    && String(
+                        formField('external_partner_country')?.value || ''
+                    ).trim() !== ''
+                );
+            }
+
+            return true;
+        }
         function sectionCompletion() {
             const has = (name) => String(
                 formField(name)?.value || ''
@@ -2195,13 +2274,13 @@
 
             return [
                 radio('requester_type'),
-                has('title') && checked('secondary_types'),
+                has('title') && has('initiative_type'),
                 has('proposed_start_date')
                     && has('proposed_end_date')
                     && radio('implementation_scope')
                     && locationDetailsComplete(),
-                radio('has_related_agreement')
-                    && radio('has_external_partner'),
+                relationshipDetailsComplete()
+                    && radio('international_participation'),
                 checked('required_resources'),
                 radio('supports_sdg')
                     && formField('declaration_confirmed').checked
@@ -2212,7 +2291,7 @@
             const units = [
                 radioValue('requester_type') !== '',
                 String(formField('title').value).trim() !== '',
-                checkedValues('secondary_types').length > 0,
+                String(formField('initiative_type').value).trim() !== '',
                 String(formField('description').value).trim() !== '',
                 String(formField('objective').value).trim() !== '',
                 checkedValues('target_groups').length > 0,
@@ -2221,8 +2300,8 @@
                 String(formField('proposed_end_date').value).trim() !== '',
                 radioValue('implementation_scope') !== '',
                 locationDetailsComplete(),
-                radioValue('has_related_agreement') !== '',
-                radioValue('has_external_partner') !== '',
+                relationshipDetailsComplete(),
+                radioValue('international_participation') !== '',
                 checkedValues('required_resources').length > 0,
                 radioValue('supports_sdg') !== '',
                 formField('declaration_confirmed').checked
@@ -2344,11 +2423,21 @@
             if (String(field('title').value).trim() === '') {
                 return problem(1, field('title'), 'Enter the Initiative title.');
             }
-            if (checkedValues('secondary_types').length === 0) {
+            if (String(field('initiative_type').value).trim() === '') {
                 return problem(
                     1,
-                    first('input[name="secondary_types"]'),
-                    'Select at least one Initiative or Activity type.'
+                    field('initiative_type'),
+                    'Select the Initiative or Activity type.'
+                );
+            }
+            if (
+                field('initiative_type').value === 'OTHER'
+                && String(field('primary_type_other').value).trim() === ''
+            ) {
+                return problem(
+                    1,
+                    field('primary_type_other'),
+                    'Specify the other Initiative or Activity type.'
                 );
             }
             if (String(field('description').value).trim() === '') {
@@ -2485,41 +2574,63 @@
                     'Enter the online platform name.'
                 );
             }
-            if (radioValue('has_related_agreement') === '') {
+            const relationshipType = String(
+                field('relationship_type').value || ''
+            );
+            if (relationshipType === '') {
                 return problem(
                     3,
-                    first('input[name="has_related_agreement"]'),
-                    'Specify whether the Initiative is linked to an Agreement.'
+                    field('relationship_type'),
+                    'Select how the Initiative is connected to external entities or Agreements.'
                 );
             }
             if (
-                radioValue('has_related_agreement') === 'true'
-                && field('related_agreement_id').value === ''
+                relationshipType === 'LINKED_AGREEMENTS'
+                && selectedOptionValues('related_agreement_ids').length === 0
             ) {
                 return problem(
                     3,
-                    field('related_agreement_id'),
-                    'Select the related Agreement.'
-                );
-            }
-            if (radioValue('has_external_partner') === '') {
-                return problem(
-                    3,
-                    first('input[name="has_external_partner"]'),
-                    'Specify whether an external partner is involved.'
+                    field('related_agreement_ids'),
+                    'Select at least one related Agreement.'
                 );
             }
             if (
-                radioValue('has_external_partner') === 'true'
+                relationshipType === 'EXTERNAL_WITHOUT_AGREEMENT'
                 && String(field('external_partner_name').value).trim() === ''
             ) {
                 return problem(
                     3,
                     field('external_partner_name'),
-                    'Enter the external partner name.'
+                    'Enter the external entity name.'
                 );
             }
-            if (checkedValues('required_resources').length === 0) {
+            if (
+                relationshipType === 'EXTERNAL_WITHOUT_AGREEMENT'
+                && String(field('external_partner_country').value).trim() === ''
+            ) {
+                return problem(
+                    3,
+                    field('external_partner_country'),
+                    'Enter the external entity country.'
+                );
+            }
+            if (radioValue('international_participation') === '') {
+                return problem(
+                    3,
+                    first('input[name="international_participation"]'),
+                    'Specify whether additional international participation is included.'
+                );
+            }
+            if (
+                radioValue('international_participation') === 'true'
+                && String(field('international_countries_text').value).trim() === ''
+            ) {
+                return problem(
+                    3,
+                    field('international_countries_text'),
+                    'Enter at least one country of international participation.'
+                );
+            }            if (checkedValues('required_resources').length === 0) {
                 return problem(
                     4,
                     first('input[name="required_resources"]'),
@@ -2626,11 +2737,12 @@
             return {
                 title: formField('title').value.trim(),
                 initiative_type:
-                    checkedValues('secondary_types')[0]
-                    || formField('initiative_type').value
-                    || 'ACADEMIC',
-                primary_type_other: '',
-                secondary_types: checkedValues('secondary_types'),
+                    formField('initiative_type').value || null,
+                primary_type_other:
+                    formField('initiative_type').value === 'OTHER'
+                        ? formField('primary_type_other').value.trim()
+                        : '',
+                secondary_types: [],
                 description: formField('description').value.trim(),
                 objective: formField('objective').value.trim(),
                 expected_impact:
@@ -2669,18 +2781,43 @@
                     ).trim(),
                 online_platform_name:
                     formField('online_platform_name').value.trim(),
-                has_related_agreement:
-                    nullableBoolean('has_related_agreement'),
+                relationship_type:
+                    formField('relationship_type').value || null,
+                related_agreement_ids:
+                    selectedOptionValues('related_agreement_ids')
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isInteger(value) && value > 0),
                 related_agreement_id:
-                    radioValue('has_related_agreement') === 'true'
-                        ? numericOrNull('related_agreement_id')
+                    selectedOptionValues('related_agreement_ids').length > 0
+                        ? Number(selectedOptionValues('related_agreement_ids')[0])
                         : null,
+                has_related_agreement:
+                    formField('relationship_type').value === ''
+                        ? null
+                        : formField('relationship_type').value
+                            === 'LINKED_AGREEMENTS',
                 has_external_partner:
-                    nullableBoolean('has_external_partner'),
+                    formField('relationship_type').value === ''
+                        ? null
+                        : [
+                            'EXTERNAL_WITHOUT_AGREEMENT',
+                            'LINKED_AGREEMENTS'
+                        ].includes(formField('relationship_type').value),
                 external_partner_name:
                     formField('external_partner_name').value.trim(),
+                external_partner_country:
+                    formField('external_partner_country').value.trim(),
                 external_partner_role:
                     formField('external_partner_role').value.trim(),
+                international_participation:
+                    nullableBoolean('international_participation'),
+                international_countries:
+                    formField('international_countries_text').value
+                        .split(',')
+                        .map((value) => value.trim())
+                        .filter(Boolean),
+                international_partner:
+                    formField('international_partner').value.trim(),
                 requester_mobile:
                     formField('requester_mobile').value.trim(),
                 requester_type:
@@ -2744,9 +2881,11 @@
                 'proposed_venue_country_code',
                 'implementation_country',
                 'online_platform_name',
-                'related_agreement_id',
+                'relationship_type',
                 'external_partner_name',
+                'external_partner_country',
                 'external_partner_role',
+                'international_partner',
                 'requester_mobile',
                 'requester_type_other',
                 'resource_other',
@@ -2774,20 +2913,42 @@
                 'implementation_scope',
                 data.implementation_scope
             );
-            setRadioValue(
-                'has_related_agreement',
-                data.has_related_agreement === null
-                || data.has_related_agreement === undefined
-                    ? Boolean(data.related_agreement_id)
-                    : booleanValue(data.has_related_agreement)
+            const savedRelationshipType = String(
+                data.relationship_type
+                || (
+                    booleanValue(data.has_related_agreement)
+                    || data.related_agreement_id
+                        ? 'LINKED_AGREEMENTS'
+                        : booleanValue(data.has_external_partner)
+                            ? 'EXTERNAL_WITHOUT_AGREEMENT'
+                            : (
+                                data.has_related_agreement === false
+                                && data.has_external_partner === false
+                                    ? 'NO_EXTERNAL_PARTY'
+                                    : ''
+                            )
+                )
+            );
+            formField('relationship_type').value = savedRelationshipType;
+            setSelectedOptionValues(
+                'related_agreement_ids',
+                Array.isArray(data.related_agreement_ids)
+                    ? data.related_agreement_ids
+                    : data.related_agreement_id
+                        ? [data.related_agreement_id]
+                        : []
             );
             setRadioValue(
-                'has_external_partner',
-                data.has_external_partner === null
-                || data.has_external_partner === undefined
+                'international_participation',
+                data.international_participation === null
+                || data.international_participation === undefined
                     ? null
-                    : booleanValue(data.has_external_partner)
+                    : booleanValue(data.international_participation)
             );
+            formField('international_countries_text').value =
+                Array.isArray(data.international_countries)
+                    ? data.international_countries.join(', ')
+                    : '';
             setRadioValue(
                 'supports_sdg',
                 data.supports_sdg === null
@@ -2795,7 +2956,6 @@
                     ? null
                     : booleanValue(data.supports_sdg)
             );
-            setCheckedValues('secondary_types', data.secondary_types);
             setCheckedValues('target_groups', data.target_groups);
             setCheckedValues(
                 'required_resources',
@@ -2997,7 +3157,7 @@
             );
 
             const agreementSelect = formField(
-                'related_agreement_id'
+                'related_agreement_ids'
             );
             (
                 Array.isArray(agreements)
@@ -3010,12 +3170,23 @@
 
                 const option = document.createElement('option');
                 option.value = agreement.agreement_id;
+                const partnerName = String(
+                    agreement.primary_partner_name
+                    || agreement.partner_name
+                    || agreement.partner_organization_name
+                    || ''
+                ).trim();
                 option.textContent =
                     `${agreement.agreement_code || ''} — ${
                         agreement.title
-                    }`;
+                    }${partnerName ? ` · ${partnerName}` : ''}`;
                 agreementSelect.append(option);
             });
+
+            initializeEnhancedMultiControls(form, [
+                'target_groups',
+                'required_resources'
+            ]);
 
             const preview = document.querySelector(
                 '[data-route-preview]'
@@ -3089,9 +3260,11 @@
                             === preselectedAgreementId
                     )
                 ) {
-                    setRadioValue('has_related_agreement', true);
-                    agreementSelect.value = String(
-                        preselectedAgreementId
+                    formField('relationship_type').value =
+                        'LINKED_AGREEMENTS';
+                    setSelectedOptionValues(
+                        'related_agreement_ids',
+                        [preselectedAgreementId]
                     );
                 }
 
@@ -3138,7 +3311,7 @@
         );
         document.querySelector(
             '[data-add-collaborator]'
-        ).addEventListener('click', () => addCollaborator());
+        )?.addEventListener('click', () => addCollaborator());
         attachmentInput.addEventListener('change', () => {
             acceptFiles(attachmentInput.files);
         });
@@ -3508,6 +3681,18 @@
         const personTemplate = document.querySelector(
             '[data-final-person-template]'
         );
+        const participantsContainer = document.querySelector(
+            '[data-final-participants]'
+        );
+        const participantTemplate = document.querySelector(
+            '[data-final-participant-template]'
+        );
+        const printButton = document.querySelector('[data-final-print]');
+        const translateFinalText = (value) => (
+            typeof window.workspaceT === 'function'
+                ? window.workspaceT(value)
+                : value
+        );
 
         if ((!existingMode && !id) || !form) {
             showError(
@@ -3520,9 +3705,6 @@
             return;
         }
 
-        initializeEnhancedMultiControls(form, [
-            'evidence_types'
-        ]);
 
         let currentStep = 0;
         let agreements = [];
@@ -3694,6 +3876,115 @@
                     sidebar.classList.remove('is-open');
                 }
             });
+        }
+
+        function applyReferenceFinalFormLayout() {
+            if (form.dataset.referenceLayoutApplied === 'true') return;
+            const rows = stepSections.map((section) =>
+                section.querySelector(':scope > .row')
+            );
+            if (rows.some((row) => !row)) return;
+
+            const blockFor = (name) => {
+                const control = field(name);
+                return control
+                    ? (control.closest('[class*="col-"]') || control)
+                    : null;
+            };
+            const appendUnique = (row, nodes) => {
+                const seen = new Set();
+                nodes.filter(Boolean).forEach((node) => {
+                    if (seen.has(node)) return;
+                    seen.add(node);
+                    row.append(node);
+                });
+            };
+            const heading = (title, description) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'col-12 initiative-final-generated-heading';
+                wrap.innerHTML = `
+                    <div class="initiative-final-subheading">
+                        <div><h3>${translateFinalText(title)}</h3><p>${translateFinalText(description)}</p></div>
+                    </div>`;
+                return wrap;
+            };
+
+            const requesterHeading = blockFor('requester_name')
+                ?.previousElementSibling;
+            const responsibleBlock = document.querySelector(
+                '[data-final-contributors]'
+            )?.closest('.col-12');
+            const participantBlock = document.querySelector(
+                '[data-final-participant-group]'
+            );
+            const internationalBlock = document.querySelector(
+                '[data-final-international]'
+            );
+
+            rows.slice(0, 4).forEach((row) => {
+                Array.from(row.children).forEach((child) => {
+                    const hasSubheading = child.querySelector?.(
+                        ':scope > .initiative-final-subheading'
+                    );
+                    if (
+                        hasSubheading
+                        && child !== requesterHeading
+                        && child !== responsibleBlock
+                        && child !== participantBlock
+                    ) child.remove();
+                });
+            });
+
+            appendUnique(rows[0], [
+                heading('Reference and Submitter Information', 'The approved request values are prefilled and may be updated for the official Initiative record.'),
+                blockFor('approval_request_id'), blockFor('legacy_approval_date'), blockFor('initiative_number'),
+                requesterHeading, blockFor('requester_name'), blockFor('requester_email'), blockFor('requester_mobile'),
+                blockFor('requester_type'), blockFor('requester_type_other'), blockFor('requester_position'),
+                blockFor('requester_entity'), blockFor('requester_department'),
+                heading('Activity Information', 'Record the Initiative identity, implementing entity, timing, status, and delivery location.'),
+                blockFor('title'), blockFor('initiative_type'), blockFor('initiative_type_other'),
+                blockFor('entity'), blockFor('department_unit'), blockFor('start_date'), blockFor('end_date'),
+                blockFor('duration_hours'), blockFor('activity_status'), blockFor('activity_recurrence'),
+                blockFor('academic_year'), blockFor('location_mode'), blockFor('implementation_scope_other'),
+                blockFor('proposed_venue'), blockFor('outside_location'), blockFor('proposed_venue_place_id'),
+                blockFor('proposed_venue_name'), blockFor('proposed_venue_latitude'), blockFor('proposed_venue_longitude'),
+                blockFor('proposed_venue_country_code'), blockFor('implementation_country'), blockFor('online_platform_name'),
+                blockFor('international_participation'), internationalBlock
+            ]);
+            appendUnique(rows[1], [
+                heading('Responsible People and Participants', 'Confirm the responsible people and optionally record additional implementation participants.'),
+                responsibleBlock, participantBlock, blockFor('provider_categories'),
+                heading('Partnerships and Agreements', 'Choose the relationship type, linked Agreements, and external entity details.'),
+                blockFor('relationship_type'), blockFor('related_agreement_ids'), blockFor('relation_notes'),
+                blockFor('external_entities'), blockFor('external_partner_name'), blockFor('external_partner_country'),
+                blockFor('external_partner_role')
+            ]);
+            appendUnique(rows[2], [
+                heading('Description and Contribution Areas', 'Describe the Initiative, its objectives, and the areas to which it contributes.'),
+                blockFor('description'), blockFor('objectives'), blockFor('initiative_descriptors'),
+                heading('Beneficiaries and Attendance', 'Select every target group and record the available beneficiary counts.'),
+                blockFor('target_groups'), blockFor('target_group_other'), blockFor('school_names'),
+                blockFor('expected_participants'), blockFor('male_count'), blockFor('female_count'),
+                blockFor('unspecified_count'), blockFor('beneficiary_count_basis'), blockFor('youth_18_35'),
+                blockFor('beneficiaries')
+            ]);
+            appendUnique(rows[3], [
+                heading('Resources, Funding, Training, and Volunteering', 'Record the resources mobilized and the relevant financial or participation values.'),
+                blockFor('resources_mobilized_options'), blockFor('resources_mobilized_other'),
+                blockFor('expected_budget'), blockFor('internal_funding_bhd'), blockFor('in_kind_support_bhd'),
+                blockFor('external_funding_amount'), blockFor('external_funding_currency'), blockFor('funding_entity'),
+                blockFor('training_hours'), blockFor('trainees_count'), blockFor('volunteers_count'),
+                blockFor('volunteer_hours_per_person'), blockFor('direct_outputs'), blockFor('expected_impact'),
+                blockFor('societal_impact'),
+                heading('Global Rankings and Sustainable Development Goals', 'Complete only the ranking, environmental, and SDG fields that apply.'),
+                blockFor('ranking_framework'), blockFor('the_areas'), blockFor('qs_categories'),
+                blockFor('environmental_impact_types'), blockFor('environmental_before_value'),
+                blockFor('environmental_after_value'), blockFor('environmental_improvement_value'),
+                blockFor('environmental_unit'), blockFor('environmental_measurement_basis'),
+                blockFor('environmental_data_source'), blockFor('environmental_impact'),
+                blockFor('supports_sdg'), blockFor('primary_sdg'), blockFor('secondary_sdgs')
+            ]);
+            form.dataset.referenceLayoutApplied = 'true';
         }
 
         function sectionIsComplete(index) {
@@ -3942,64 +4233,361 @@
                 );
         }
 
-        function syncConditionalFields() {
-            const related =
-                radioBoolean('related_agreement') === true;
-            document.querySelectorAll(
-                '[data-final-related-agreement]'
-            ).forEach((element) => {
-                element.classList.toggle('d-none', !related);
-            });
-
-            document.querySelector(
-                '[data-final-other-type]'
-            )?.classList.toggle(
-                'd-none',
-                scalarValue('initiative_type') !== 'OTHER'
+        function participantData(card) {
+            const get = (name) => card.querySelector(
+                `[data-participant-field="${name}"]`
             );
+            return {
+                user_id: Number(get('user_id')?.value) || null,
+                name: String(get('name')?.value || '').trim(),
+                email: String(get('email')?.value || '').trim(),
+                mobile: String(get('mobile')?.value || '').trim(),
+                department: String(get('department')?.value || '').trim(),
+                role: String(get('role')?.value || '').trim(),
+                is_primary: false,
+                is_coordinator: false
+            };
+        }
+
+        function updateParticipantNumbers() {
+            const cards = Array.from(
+                participantsContainer?.querySelectorAll(
+                    '[data-final-participant]'
+                ) || []
+            );
+            cards.forEach((card, index) => {
+                card.querySelector('[data-final-participant-number]')
+                    .textContent = translateFinalText(
+                        `Participant ${index + 1}`
+                    );
+            });
+            document.querySelector('[data-final-participants-empty]')
+                ?.classList.toggle('d-none', cards.length > 0);
+        }
+
+        function addParticipant(data = {}) {
+            if (!participantsContainer || !participantTemplate) return;
+            const fragment = participantTemplate.content.cloneNode(true);
+            const card = fragment.querySelector('[data-final-participant]');
+            const get = (name) => card.querySelector(
+                `[data-participant-field="${name}"]`
+            );
+            get('user_id').value = data.user_id || '';
+            get('name').value = data.name || data.full_name || '';
+            get('email').value = data.email || '';
+            get('mobile').value = data.mobile || data.phone || '';
+            get('department').value = data.department || data.entity || '';
+            get('role').value = data.role || data.participant_role || '';
+            card.querySelector('[data-remove-final-participant]')
+                .addEventListener('click', () => {
+                    card.remove();
+                    updateParticipantNumbers();
+                    updateStepState();
+                });
+            participantsContainer.append(fragment);
+            updateParticipantNumbers();
+        }
+
+        function implementationParticipants() {
+            return Array.from(participantsContainer?.querySelectorAll(
+                '[data-final-participant]'
+            ) || []).map(participantData).filter((person) =>
+                person.name || person.email || person.department || person.role
+            );
+        }
+
+        function syncConditionalFields() {
+            const toggleBlocks = (selector, visible) => {
+                form.querySelectorAll(selector).forEach((element) => {
+                    element.classList.toggle('d-none', !visible);
+                    element.setAttribute('aria-hidden', String(!visible));
+                });
+            };
+            const requireField = (name, required) => {
+                const control = field(name);
+                if (control) control.required = Boolean(required);
+            };
+            const clearScalar = (name) => {
+                const control = field(name);
+                if (control && String(control.value || '') !== '') {
+                    control.value = '';
+                }
+            };
+            const clearMulti = (name) => {
+                const control = field(name);
+                if (control instanceof HTMLSelectElement) {
+                    Array.from(control.options).forEach((option) => {
+                        option.selected = false;
+                    });
+                } else {
+                    controls(name).forEach((item) => {
+                        item.checked = false;
+                    });
+                }
+                refreshEnhancedMultiByName(form, name);
+            };
+
+            const requesterOther =
+                scalarValue('requester_type') === 'OTHER';
+            toggleBlocks(
+                '[data-final-requester-type-other]',
+                requesterOther
+            );
+            if (!requesterOther) clearScalar('requester_type_other');
+
+            const initiativeType = scalarValue('initiative_type');
+            const initiativeOther = initiativeType === 'OTHER';
+            toggleBlocks('[data-final-other-type]', initiativeOther);
+            requireField('initiative_type_other', initiativeOther);
+            if (!initiativeOther) clearScalar('initiative_type_other');
+
+            const relationshipType = scalarValue('relationship_type');
+            const related = relationshipType === 'LINKED_AGREEMENTS';
+            toggleBlocks('[data-final-related-agreement]', related);
+            requireField('related_agreement_ids', related);
+            if (!related) {
+                clearMulti('related_agreement_ids');
+                clearScalar('relation_notes');
+            }
 
             const externalPartner =
-                radioBoolean('has_external_partner') === true;
-            document.querySelectorAll(
-                '[data-final-external-partner]'
-            ).forEach((element) => {
-                element.classList.toggle(
-                    'd-none',
-                    !externalPartner
-                );
-            });
+                relationshipType === 'EXTERNAL_WITHOUT_AGREEMENT';
+            toggleBlocks('[data-final-external-partner]', externalPartner);
+            requireField('external_partner_name', externalPartner);
+            requireField('external_partner_country', externalPartner);
+            if (!externalPartner) {
+                clearScalar('external_partner_name');
+                clearScalar('external_partner_country');
+                clearScalar('external_partner_role');
+            }
+
+            const locationMode = scalarValue('location_mode');
+            const locationOther = locationMode === 'OTHER';
+            const locationVenue = [
+                'WITHIN_UOB', 'OUTSIDE_UOB', 'HYBRID'
+            ].includes(locationMode);
+            const locationOutside = [
+                'OUTSIDE_UOB', 'HYBRID'
+            ].includes(locationMode);
+            const locationOnline = [
+                'VIRTUAL', 'HYBRID'
+            ].includes(locationMode);
+
+            toggleBlocks('[data-final-location-other]', locationOther);
+            toggleBlocks('[data-final-location-venue]', locationVenue);
+            toggleBlocks('[data-final-location-outside]', locationOutside);
+            toggleBlocks('[data-final-location-country]', locationOutside);
+            toggleBlocks('[data-final-location-platform]', locationOnline);
+            requireField('implementation_scope_other', locationOther);
+            requireField(
+                'proposed_venue',
+                locationMode === 'OUTSIDE_UOB' || locationMode === 'HYBRID'
+            );
+            requireField('implementation_country', locationOutside);
+            requireField('online_platform_name', locationOnline);
+            if (!locationOther) clearScalar('implementation_scope_other');
+            if (!locationVenue) clearScalar('proposed_venue');
+            if (!locationOutside) {
+                clearScalar('outside_location');
+                clearScalar('implementation_country');
+            }
+            if (!locationOnline) clearScalar('online_platform_name');
 
             const international =
-                radioBoolean('international_participation')
-                === true;
-            document.querySelector(
-                '[data-final-international]'
-            )?.classList.toggle(
-                'd-none',
-                !international
+                radioBoolean('international_participation') === true;
+            toggleBlocks('[data-final-international]', international);
+            if (!international) {
+                clearScalar('international_countries_text');
+                clearScalar('international_participants');
+                clearScalar('international_partner');
+                clearScalar('international_partner_type');
+                clearMulti('international_collaboration_nature');
+            }
+
+            const targetGroups = multiValues('target_groups');
+            const showSchool = targetGroups.includes('SCHOOL_STUDENTS');
+            const showOtherTarget = targetGroups.includes('OTHER');
+            toggleBlocks('[data-final-school-target]', showSchool);
+            toggleBlocks('[data-final-other-target]', showOtherTarget);
+            requireField('school_names', showSchool);
+            requireField('target_group_other', showOtherTarget);
+            if (!showSchool) clearScalar('school_names');
+            if (!showOtherTarget) clearScalar('target_group_other');
+
+            const resources = multiValues('resources_mobilized_options');
+            const showOtherResource = resources.includes('OTHER');
+            const showBudget = resources.includes('BUDGET');
+            const showExternalFunding =
+                resources.includes('EXTERNAL_FUNDING');
+            const showTraining = [
+                'WORKSHOP_TRAINING',
+                'CAPACITY_BUILDING_TRAINING'
+            ].includes(initiativeType);
+            const showVolunteer =
+                resources.includes('VOLUNTEERS')
+                || initiativeType === 'VOLUNTEERING';
+            toggleBlocks('[data-final-other-resource]', showOtherResource);
+            toggleBlocks('[data-final-budget]', showBudget);
+            toggleBlocks(
+                '[data-final-external-funding]',
+                showExternalFunding
             );
+            toggleBlocks('[data-final-training]', showTraining);
+            toggleBlocks('[data-final-volunteer]', showVolunteer);
+            if (!showOtherResource) clearScalar('resources_mobilized_other');
+            if (!showBudget) {
+                clearScalar('expected_budget');
+                clearScalar('internal_funding_bhd');
+            }
+            if (!showExternalFunding) {
+                clearScalar('external_funding_amount');
+                clearScalar('external_funding_currency');
+                clearScalar('funding_entity');
+            }
+            if (!showTraining) {
+                clearScalar('training_hours');
+                clearScalar('trainees_count');
+            }
+            if (!showVolunteer) {
+                clearScalar('volunteers_count');
+                clearScalar('volunteer_hours_per_person');
+            }
+
+            const rankingFramework = scalarValue('ranking_framework');
+            const showThe = ['THE', 'BOTH'].includes(rankingFramework);
+            const showQs = ['QS', 'BOTH'].includes(rankingFramework);
+            toggleBlocks('[data-final-the]', showThe);
+            toggleBlocks('[data-final-qs]', showQs);
+            if (!showThe) clearMulti('the_areas');
+            if (!showQs) clearMulti('qs_categories');
+
+            const showEnvironmental =
+                showQs && multiValues('qs_categories').includes(
+                    'ENVIRONMENTAL'
+                );
+            toggleBlocks('[data-final-environmental]', showEnvironmental);
+            if (!showEnvironmental) {
+                clearMulti('environmental_impact_types');
+                [
+                    'environmental_before_value',
+                    'environmental_after_value',
+                    'environmental_improvement_value',
+                    'environmental_unit',
+                    'environmental_measurement_basis',
+                    'environmental_data_source',
+                    'environmental_impact'
+                ].forEach(clearScalar);
+            }
 
             const supportsSdg =
                 radioBoolean('supports_sdg') === true;
-            document.querySelectorAll('[data-final-sdg]')
-                .forEach((element) => {
-                    element.classList.toggle(
-                        'd-none',
-                        !supportsSdg
-                    );
-                });
+            toggleBlocks('[data-final-sdg]', supportsSdg);
+            requireField('primary_sdg', supportsSdg);
+            if (!supportsSdg) {
+                clearScalar('primary_sdg');
+                clearMulti('secondary_sdgs');
+            }
+
+            const coverageStatus = scalarValue('coverage_status');
+            const hasCoverage = Boolean(coverageStatus)
+                && coverageStatus !== 'NONE';
+            toggleBlocks('[data-final-media-type]', hasCoverage);
+            requireField('media_coverage_type', hasCoverage);
+            if (!hasCoverage) clearScalar('media_coverage_type');
 
             const mediaType = scalarValue('media_coverage_type');
-            document.querySelector('[data-final-news]')
-                ?.classList.toggle(
-                    'd-none',
-                    mediaType !== 'NEWS'
-                );
-            document.querySelector('[data-final-tv]')
-                ?.classList.toggle(
-                    'd-none',
-                    mediaType !== 'TV_INTERVIEW'
-                );
+            const showNews = hasCoverage && mediaType === 'NEWS';
+            const showTv = hasCoverage && mediaType === 'TV_INTERVIEW';
+            const otherMediaTypes = [
+                'SOCIAL_MEDIA', 'RADIO', 'PODCAST',
+                'PRINT', 'WEBSITE', 'OTHER'
+            ];
+            const showOtherMedia =
+                hasCoverage && otherMediaTypes.includes(mediaType);
+            toggleBlocks('[data-final-news]', showNews);
+            toggleBlocks('[data-final-tv]', showTv);
+            toggleBlocks('[data-final-other-media]', showOtherMedia);
+
+            if (!showNews) {
+                [
+                    'media_outlet_name', 'media_headline',
+                    'media_publication_date', 'news_link'
+                ].forEach(clearScalar);
+            }
+            if (!showTv) {
+                [
+                    'tv_channel', 'tv_program', 'tv_interview_topic',
+                    'tv_interviewer', 'tv_uob_representatives',
+                    'tv_interview_date', 'tv_duration_minutes',
+                    'tv_broadcast_status', 'tv_broadcast_scope',
+                    'tv_interview_language', 'tv_interview_link',
+                    'tv_interview_highlights'
+                ].forEach(clearScalar);
+            }
+
+            const otherMediumField = field(
+                'coverage_other_medium_kind'
+            );
+            if (
+                showOtherMedia
+                && otherMediumField
+                && otherMediumField.value !== mediaType
+            ) {
+                otherMediumField.value = mediaType;
+            }
+            if (!showOtherMedia) {
+                [
+                    'coverage_other_medium_kind',
+                    'coverage_other_medium_other',
+                    'coverage_other_outlet_name',
+                    'coverage_other_reach',
+                    'coverage_other_url'
+                ].forEach(clearScalar);
+            }
+            const otherMedium = scalarValue(
+                'coverage_other_medium_kind'
+            );
+            const specifyOtherMedium =
+                showOtherMedia && otherMedium === 'OTHER';
+            toggleBlocks(
+                '[data-final-other-medium-name]',
+                specifyOtherMedium
+            );
+            requireField(
+                'coverage_other_medium_other',
+                specifyOtherMedium
+            );
+            if (!specifyOtherMedium) {
+                clearScalar('coverage_other_medium_other');
+            }
+
+            const evidenceTypes = multiValues('evidence_types');
+            const hasEvidence = evidenceTypes.length > 0;
+            const hasUploadEvidence = evidenceTypes.includes('UPLOAD');
+            const hasUrlEvidence = evidenceTypes.includes('URL');
+            const hasExplanationEvidence =
+                evidenceTypes.includes('EXPLANATION');
+            toggleBlocks('[data-final-evidence-meta]', hasEvidence);
+            toggleBlocks(
+                '[data-final-evidence-upload]',
+                hasUploadEvidence
+            );
+            toggleBlocks('[data-final-evidence-url]', hasUrlEvidence);
+            toggleBlocks(
+                '[data-final-evidence-explanation]',
+                hasExplanationEvidence
+            );
+            if (!hasEvidence) {
+                [
+                    'evidence_document_type', 'evidence_date',
+                    'evidence_owner', 'evidence_public_access',
+                    'public_sharing'
+                ].forEach(clearScalar);
+            }
+            if (!hasUrlEvidence) clearScalar('evidence_urls_text');
+            if (!hasExplanationEvidence) {
+                clearScalar('evidence_explanation');
+            }
         }
 
         function payload() {
@@ -4026,10 +4614,17 @@
                     scalarValue('requester_department'),
                 initiative_number:
                     scalarValue('initiative_number'),
+                relationship_type: scalarValue('relationship_type'),
                 related_agreement:
-                    radioBoolean('related_agreement'),
+                    scalarValue('relationship_type') === 'LINKED_AGREEMENTS',
+                related_agreement_ids:
+                    multiValues('related_agreement_ids')
+                        .map((value) => Number(value))
+                        .filter((value) => Number.isInteger(value) && value > 0),
                 related_agreement_id:
-                    numberOrNull('related_agreement_id'),
+                    multiValues('related_agreement_ids').length > 0
+                        ? Number(multiValues('related_agreement_ids')[0])
+                        : null,
                 relation_notes:
                     scalarValue('relation_notes'),
                 title: scalarValue('title'),
@@ -4037,15 +4632,16 @@
                     scalarValue('initiative_type'),
                 initiative_type_other:
                     scalarValue('initiative_type_other'),
-                secondary_initiative_types:
-                    multiValues('secondary_initiative_types'),
+                secondary_initiative_types: [],
                 entity: scalarValue('entity'),
                 external_entities:
                     scalarValue('external_entities'),
                 has_external_partner:
-                    radioBoolean('has_external_partner'),
+                    scalarValue('relationship_type') === 'EXTERNAL_WITHOUT_AGREEMENT',
                 external_partner_name:
                     scalarValue('external_partner_name'),
+                external_partner_country:
+                    scalarValue('external_partner_country'),
                 external_partner_role:
                     scalarValue('external_partner_role'),
                 provider_categories:
@@ -4057,7 +4653,8 @@
                 department_within_college:
                     scalarValue('department_within_college'),
                 contributors: contributors(),
-                implementation_participants: [],
+                implementation_participants:
+                    implementationParticipants(),
                 start_date: scalarValue('start_date'),
                 end_date: scalarValue('end_date'),
                 activity_status:
@@ -4074,6 +4671,20 @@
                     scalarValue('implementation_scope_other'),
                 proposed_venue:
                     scalarValue('proposed_venue'),
+                proposed_venue_place_id:
+                    scalarValue('proposed_venue_place_id'),
+                proposed_venue_name:
+                    scalarValue('proposed_venue_name'),
+                proposed_venue_latitude:
+                    scalarValue('proposed_venue_latitude'),
+                proposed_venue_longitude:
+                    scalarValue('proposed_venue_longitude'),
+                proposed_venue_country_code:
+                    scalarValue('proposed_venue_country_code'),
+                implementation_country:
+                    scalarValue('implementation_country'),
+                online_platform_name:
+                    scalarValue('online_platform_name'),
                 outside_location:
                     scalarValue('outside_location'),
                 international_participation:
@@ -4102,6 +4713,7 @@
                     multiValues('target_groups'),
                 target_group_other:
                     scalarValue('target_group_other'),
+                school_names: scalarValue('school_names'),
                 expected_participants:
                     numberOrNull('expected_participants'),
                 male_count: numberOrNull('male_count'),
@@ -4173,6 +4785,7 @@
                     scalarValue('needs_media_support'),
                 publication_status:
                     scalarValue('publication_status'),
+                coverage_status: scalarValue('coverage_status'),
                 media_coverage_type:
                     scalarValue('media_coverage_type'),
                 media_outlet_name:
@@ -4182,6 +4795,16 @@
                 media_publication_date:
                     scalarValue('media_publication_date'),
                 news_link: scalarValue('news_link'),
+                coverage_other_medium_kind:
+                    scalarValue('coverage_other_medium_kind'),
+                coverage_other_medium_other:
+                    scalarValue('coverage_other_medium_other'),
+                coverage_other_outlet_name:
+                    scalarValue('coverage_other_outlet_name'),
+                coverage_other_reach:
+                    numberOrNull('coverage_other_reach'),
+                coverage_other_url:
+                    scalarValue('coverage_other_url'),
                 tv_channel: scalarValue('tv_channel'),
                 tv_program: scalarValue('tv_program'),
                 tv_interview_topic:
@@ -4246,7 +4869,7 @@
                 'requester_entity',
                 'requester_department',
                 'initiative_number',
-                'related_agreement_id',
+                'relationship_type',
                 'relation_notes',
                 'title',
                 'initiative_type',
@@ -4254,6 +4877,7 @@
                 'entity',
                 'external_entities',
                 'external_partner_name',
+                'external_partner_country',
                 'external_partner_role',
                 'department_unit',
                 'department_unit_other',
@@ -4267,6 +4891,13 @@
                 'location_mode',
                 'implementation_scope_other',
                 'proposed_venue',
+                'proposed_venue_place_id',
+                'proposed_venue_name',
+                'proposed_venue_latitude',
+                'proposed_venue_longitude',
+                'proposed_venue_country_code',
+                'implementation_country',
+                'online_platform_name',
                 'outside_location',
                 'international_participants',
                 'international_partner',
@@ -4276,6 +4907,7 @@
                 'expected_impact',
                 'beneficiaries',
                 'target_group_other',
+                'school_names',
                 'expected_participants',
                 'male_count',
                 'female_count',
@@ -4305,12 +4937,18 @@
                 'environmental_impact',
                 'primary_sdg',
                 'needs_media_support',
+                'coverage_status',
                 'publication_status',
                 'media_coverage_type',
                 'media_outlet_name',
                 'media_headline',
                 'media_publication_date',
                 'news_link',
+                'coverage_other_medium_kind',
+                'coverage_other_medium_other',
+                'coverage_other_outlet_name',
+                'coverage_other_reach',
+                'coverage_other_url',
                 'tv_channel',
                 'tv_program',
                 'tv_interview_topic',
@@ -4337,7 +4975,7 @@
             });
 
             [
-                'secondary_initiative_types',
+                'related_agreement_ids',
                 'provider_categories',
                 'international_collaboration_nature',
                 'initiative_descriptors',
@@ -4352,14 +4990,16 @@
                 setMulti(name, data?.[name]);
             });
 
-            setRadioBoolean(
-                'related_agreement',
-                data?.related_agreement
+            const savedRelationshipType = data?.relationship_type || (
+                data?.related_agreement === true
+                    ? 'LINKED_AGREEMENTS'
+                    : (
+                        data?.has_external_partner === true
+                            ? 'EXTERNAL_WITHOUT_AGREEMENT'
+                            : (existingMode ? '' : 'NO_EXTERNAL_PARTY')
+                    )
             );
-            setRadioBoolean(
-                'has_external_partner',
-                data?.has_external_partner
-            );
+            setScalar('relationship_type', savedRelationshipType);
             setRadioBoolean(
                 'international_participation',
                 data?.international_participation
@@ -4396,8 +5036,18 @@
             peopleContainer.replaceChildren();
             (data?.contributors || []).forEach(addPerson);
 
-            if (!peopleContainer.children.length) {
-                addPerson();
+            if (!peopleContainer.children.length) addPerson();
+            if (participantsContainer) {
+                participantsContainer.replaceChildren();
+                (data?.implementation_participants || []).forEach(addParticipant);
+                updateParticipantNumbers();
+            }
+
+            if (!scalarValue('coverage_status')) {
+                setScalar(
+                    'coverage_status',
+                    scalarValue('media_coverage_type') ? 'PUBLISHED' : 'NONE'
+                );
             }
 
             syncConditionalFields();
@@ -4764,6 +5414,7 @@
             }
         }
 
+        applyReferenceFinalFormLayout();
         initializeFinalWorkspaceLayout();
 
         stepButtons.forEach((button, index) => {
@@ -4786,9 +5437,14 @@
             showStep(currentStep + 1);
         });
 
-        document.querySelector(
-            '[data-add-final-contributor]'
-        ).addEventListener('click', () => addPerson());
+        document.querySelector('[data-add-final-contributor]')
+            ?.addEventListener('click', () => addPerson());
+        document.querySelector('[data-add-final-participant]')
+            ?.addEventListener('click', () => addParticipant());
+        printButton?.addEventListener('click', () => {
+            updateReview();
+            window.print();
+        });
 
         fileInput.addEventListener('change', () => {
             const selected = Array.from(fileInput.files || []);
@@ -4914,7 +5570,7 @@
                 : (agreementPayload.items || []);
 
             const agreementSelect =
-                field('related_agreement_id');
+                field('related_agreement_ids');
             agreements.forEach((agreement) => {
                 if (
                     !['ACTIVE', 'APPROVED'].includes(
@@ -4926,12 +5582,32 @@
 
                 const option = document.createElement('option');
                 option.value = agreement.agreement_id;
+                const partnerName = String(
+                    agreement.primary_partner_name
+                    || agreement.partner_name
+                    || agreement.partner_organization_name
+                    || ''
+                ).trim();
                 option.textContent =
                     `${agreement.agreement_code || ''} — ${
                         agreement.title
-                    }`;
+                    }${partnerName ? ` · ${partnerName}` : ''}`;
                 agreementSelect.append(option);
             });
+
+            initializeEnhancedMultiControls(form, [
+                'related_agreement_ids',
+                'provider_categories',
+                'international_collaboration_nature',
+                'initiative_descriptors',
+                'target_groups',
+                'resources_mobilized_options',
+                'the_areas',
+                'qs_categories',
+                'environmental_impact_types',
+                'secondary_sdgs',
+                'evidence_types'
+            ]);
 
             document.querySelector(
                 '[data-final-source-title]'
@@ -5901,12 +6577,54 @@
 
                         commentInput.setCustomValidity('');
                         clearError();
+
+                        let selectedViewerIds = [];
+                        if (visibilitySelect.value === 'PRIVATE') {
+                            try {
+                                const storedViewerIds = JSON.parse(
+                                    form.dataset.revisionAudienceViewerIds || '[]'
+                                );
+                                selectedViewerIds = Array.isArray(storedViewerIds)
+                                    ? storedViewerIds
+                                        .map((value) => Number(value))
+                                        .filter((value) => Number.isInteger(value) && value > 0)
+                                    : [];
+                            } catch (_) {
+                                selectedViewerIds = [];
+                            }
+
+                            if (selectedViewerIds.length === 0) {
+                                visibilitySelect.setCustomValidity(
+                                    'Choose at least one person who can view this private note.'
+                                );
+                                visibilitySelect.reportValidity();
+                                return;
+                            }
+                        }
+                        visibilitySelect.setCustomValidity('');
+
                         submit.disabled = true;
                         visibilitySelect.disabled = true;
                         commentInput.disabled = true;
                         submit.textContent = 'Posting…';
 
                         try {
+                            const selectedAudience =
+                                visibilitySelect.value === 'PRIVATE'
+                                && selectedViewerIds.length > 0;
+                            const commentEndpoint = selectedAudience
+                                ? 'selected-comments'
+                                : 'comments';
+                            const commentPayload = {
+                                comment_text: commentText,
+                                visibility: visibilitySelect.value
+                            };
+
+                            if (selectedAudience) {
+                                commentPayload.audience_mode = 'SELECTED_USERS';
+                                commentPayload.viewer_user_ids = selectedViewerIds;
+                            }
+
                             await AgreementApi.request(
                                 `/initiative-requests/${
                                     encodeURIComponent(id)
@@ -5914,13 +6632,10 @@
                                     encodeURIComponent(
                                         thread.revision_thread_id
                                     )
-                                }/comments`,
+                                }/${commentEndpoint}`,
                                 {
                                     method: 'POST',
-                                    body: AgreementApi.jsonBody({
-                                        comment_text: commentText,
-                                        visibility: visibilitySelect.value
-                                    })
+                                    body: AgreementApi.jsonBody(commentPayload)
                                 }
                             );
 
@@ -6358,14 +7073,64 @@
                 '[data-online-platform-name]',
                 data.online_platform_name
             );
+
+            /*
+             * Keep the read-only detail page consistent with the form:
+             * physical location fields belong to outside/hybrid delivery,
+             * while the online platform belongs to virtual/hybrid delivery.
+             */
+            const detailImplementationScope = String(
+                data.implementation_scope || ''
+            );
+            const showPhysicalLocationDetail = [
+                'OUTSIDE_UOB',
+                'HYBRID'
+            ].includes(detailImplementationScope);
+            const showOnlinePlatformDetail = [
+                'VIRTUAL',
+                'HYBRID'
+            ].includes(detailImplementationScope);
+
+            document.querySelector(
+                '[data-proposed-venue]'
+            )?.closest('div')?.classList.toggle(
+                'd-none',
+                !showPhysicalLocationDetail
+            );
+            document.querySelector(
+                '[data-implementation-country]'
+            )?.closest('div')?.classList.toggle(
+                'd-none',
+                !showPhysicalLocationDetail
+            );
+            document.querySelector(
+                '[data-online-platform-name]'
+            )?.closest('div')?.classList.toggle(
+                'd-none',
+                !showOnlinePlatformDetail
+            );
+            const relatedAgreements = Array.isArray(
+                data.related_agreements
+            )
+                ? data.related_agreements
+                : [];
+            const relatedAgreementSummary = relatedAgreements.length > 0
+                ? relatedAgreements.map((agreement) => (
+                    `${agreement.agreement_code || ''} — ${
+                        agreement.title || ''
+                    }`
+                )).join(', ')
+                : (
+                    data.has_related_agreement === null
+                    || data.has_related_agreement === undefined
+                        ? data.related_agreement_title
+                        : booleanValue(data.has_related_agreement)
+                            ? data.related_agreement_title
+                            : 'No related Agreement'
+                );
             set(
                 '[data-related-agreement]',
-                data.has_related_agreement === null
-                || data.has_related_agreement === undefined
-                    ? data.related_agreement_title
-                    : booleanValue(data.has_related_agreement)
-                        ? data.related_agreement_title
-                        : 'No related Agreement'
+                relatedAgreementSummary
             );
             set(
                 '[data-has-external-partner]',

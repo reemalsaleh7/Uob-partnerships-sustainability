@@ -1,0 +1,946 @@
+/* Admin user management V3: practical master/detail workspace. */
+
+body.admin-users-page .workspace-main {
+    width: 100%;
+    max-width: 104rem;
+    min-width: 0;
+    padding: clamp(1rem, 2vw, 1.75rem);
+}
+
+.admin-users-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    background: #fff;
+    border: 1px solid #dfe7f0;
+    border-radius: 1rem;
+}
+
+.admin-users-heading h1 {
+    margin: 0;
+    color: var(--uob-navy);
+    font-size: clamp(1.45rem, 2vw, 1.9rem);
+    font-weight: 900;
+}
+
+.admin-users-heading .eyebrow {
+    margin-bottom: .2rem !important;
+}
+
+.admin-users-heading .text-secondary {
+    max-width: 66rem;
+    margin-top: .2rem;
+    font-size: .84rem;
+    line-height: 1.6;
+}
+
+.admin-heading-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .55rem .75rem;
+    color: #5d4400;
+    background: #fff8df;
+    border: 1px solid #ead99c;
+    border-radius: 999px;
+    font-size: .74rem;
+    white-space: nowrap;
+}
+
+.admin-users-controls,
+.admin-users-list-card,
+.admin-user-editor {
+    min-width: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dfe7f0;
+    border-radius: 1rem;
+}
+
+.admin-users-controls .workspace-card-header,
+.admin-users-list-card > .workspace-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .85rem 1rem;
+    background: #fafbfd;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-users-controls form {
+    display: grid;
+    grid-template-columns: minmax(16rem, 1.5fr) minmax(11rem, .7fr) minmax(14rem, 1fr);
+    gap: .8rem;
+    margin: 0 !important;
+    padding: .85rem 1rem 1rem;
+}
+
+.admin-users-controls form > div {
+    width: auto !important;
+    max-width: none !important;
+}
+
+.admin-users-controls .form-label,
+.admin-editor-panel .form-label {
+    margin-bottom: .3rem;
+    color: #39485d;
+    font-size: .75rem;
+    font-weight: 800;
+}
+
+.admin-users-controls .form-control,
+.admin-users-controls .form-select,
+.admin-editor-panel .form-control,
+.admin-editor-panel .form-select {
+    min-height: 2.65rem;
+    border-color: #d8e1eb;
+    border-radius: .7rem;
+}
+
+.admin-users-layout {
+    display: grid;
+    grid-template-columns: minmax(23rem, .72fr) minmax(0, 1.28fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-users-list-card [data-admin-users-table-wrap] {
+    max-height: calc(100vh - 19rem);
+    min-height: 30rem;
+    overflow: auto;
+}
+
+.admin-users-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-users-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.admin-users-table thead th {
+    padding: .7rem .6rem;
+    color: #46556a;
+    background: #f6f8fb;
+    border-bottom: 1px solid #dfe7f0;
+    font-size: .68rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.admin-users-table th:nth-child(1),
+.admin-users-table td:nth-child(1) { width: 40%; }
+.admin-users-table th:nth-child(2),
+.admin-users-table td:nth-child(2) { width: 23%; }
+.admin-users-table th:nth-child(3),
+.admin-users-table td:nth-child(3) { width: 25%; }
+.admin-users-table th:nth-child(4),
+.admin-users-table td:nth-child(4) { width: 12%; }
+
+.admin-users-table tbody td {
+    padding: .68rem .6rem;
+    border-bottom-color: #edf1f5;
+    vertical-align: middle;
+}
+
+.admin-users-table tbody tr {
+    cursor: pointer;
+    transition: background-color .15s ease;
+}
+
+.admin-users-table tbody tr:hover,
+.admin-users-table tbody tr:focus-visible {
+    background: #f7faff;
+    outline: none;
+}
+
+.admin-users-table tbody tr.is-selected {
+    background: #eef5ff;
+    box-shadow: inset -4px 0 0 #0d4aa7;
+}
+
+html[dir="ltr"] .admin-users-table tbody tr.is-selected {
+    box-shadow: inset 4px 0 0 #0d4aa7;
+}
+
+.admin-user-identity {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    min-width: 0;
+}
+
+.admin-user-identity > span:last-child,
+.admin-organization-cell {
+    display: grid;
+    min-width: 0;
+    gap: .08rem;
+}
+
+.admin-user-identity strong,
+.admin-organization-cell strong,
+.admin-user-identity small,
+.admin-organization-cell small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-identity strong,
+.admin-organization-cell strong {
+    color: #17243a;
+    font-size: .79rem;
+}
+
+.admin-user-identity small,
+.admin-organization-cell small {
+    color: #728096;
+    font-size: .64rem;
+}
+
+.admin-user-list-avatar,
+.admin-user-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #0d4aa7;
+    background: #e8f1ff;
+    border: 1px solid #d2e2fb;
+    border-radius: 50%;
+    font-weight: 900;
+}
+
+.admin-user-list-avatar {
+    width: 2.15rem;
+    height: 2.15rem;
+    font-size: .7rem;
+}
+
+.admin-user-avatar {
+    width: 3.3rem;
+    height: 3.3rem;
+    font-size: .95rem;
+}
+
+.admin-table-chips,
+.admin-access-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .28rem;
+}
+
+.admin-access-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .24rem .4rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: .62rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.admin-access-badge.is-enabled {
+    color: #11633f;
+    background: #eaf8f1;
+    border-color: #c7e8d7;
+}
+
+.admin-access-badge.is-disabled {
+    color: #687386;
+    background: #f3f5f7;
+    border-color: #e4e8ed;
+}
+
+.admin-access-badge.is-admin.is-enabled {
+    color: #5d3a96;
+    background: #f3edff;
+    border-color: #ddcff8;
+}
+
+.admin-users-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .7rem;
+    padding: .75rem .95rem;
+    background: #fafbfd;
+    border-top: 1px solid #e8edf3;
+}
+
+.admin-user-editor {
+    position: sticky;
+    top: .75rem;
+}
+
+.admin-user-placeholder,
+.admin-users-empty {
+    display: grid;
+    min-height: 30rem;
+    place-items: center;
+    align-content: center;
+    padding: 2rem;
+    text-align: center;
+    background: #fafbfd;
+}
+
+.admin-user-placeholder > span,
+.admin-users-empty > span {
+    margin-bottom: .7rem;
+    font-size: 2rem;
+}
+
+.admin-user-placeholder p,
+.admin-users-empty p {
+    max-width: 28rem;
+    overflow-wrap: anywhere;
+}
+
+.admin-user-editor form {
+    padding: 1rem;
+}
+
+.admin-user-editor-header {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding-bottom: .85rem;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-user-editor-header > div:nth-child(2) {
+    min-width: 0;
+}
+
+.admin-user-editor-header h2,
+.admin-user-editor-header p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-account-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .75rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-access-summary {
+    padding: .8rem 0;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-editor-tabs {
+    display: flex;
+    gap: .25rem;
+    margin: .8rem 0 1rem;
+    padding: .25rem;
+    overflow-x: auto;
+    background: #f1f4f8;
+    border-radius: .8rem;
+}
+
+.admin-editor-tabs button {
+    flex: 1 0 auto;
+    padding: .58rem .68rem;
+    color: #516176;
+    background: transparent;
+    border: 0;
+    border-radius: .6rem;
+    font-size: .72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-editor-tabs button:hover,
+.admin-editor-tabs button:focus-visible {
+    color: #0d4aa7;
+    background: rgba(255, 255, 255, .65);
+}
+
+.admin-editor-tabs button.is-active {
+    color: #0d4aa7;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(2, 8, 23, .08);
+}
+
+.admin-editor-panel {
+    min-height: 16rem;
+}
+
+.admin-readonly-value {
+    color: #687386;
+    background: #f6f8fa;
+}
+
+.admin-role-explainer,
+.admin-transfer-note,
+.admin-workflow-intro {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: .8rem .9rem;
+    background: #f7faff;
+    border: 1px solid #d8e6f7;
+    border-radius: .85rem;
+}
+
+.admin-role-explainer p,
+.admin-transfer-note p,
+.admin-workflow-intro p {
+    color: #627087;
+    font-size: .74rem;
+    line-height: 1.6;
+}
+
+.admin-role-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+    margin-top: .8rem;
+}
+
+.admin-role-group {
+    min-width: 0;
+    padding: .8rem;
+    background: #fafbfd;
+    border: 1px solid #e2e8f0;
+    border-radius: .85rem;
+}
+
+.admin-role-option {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .65rem 0;
+    cursor: pointer;
+}
+
+.admin-role-option + .admin-role-option {
+    border-top: 1px solid #e8edf3;
+}
+
+.admin-role-option > span {
+    display: grid;
+    min-width: 0;
+    gap: .15rem;
+}
+
+.admin-role-option strong {
+    color: #203047;
+    font-size: .76rem;
+}
+
+.admin-role-option small {
+    color: #6b788b;
+    font-size: .66rem;
+    line-height: 1.5;
+}
+
+.admin-workflow-intro {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.admin-workflow-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #46556a;
+    font-size: .68rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-workflow-legend i {
+    width: .7rem;
+    height: .7rem;
+    background: #0d4aa7;
+    border-radius: 50%;
+}
+
+.admin-workflow-grid {
+    display: grid;
+    gap: .85rem;
+    margin-top: .85rem;
+}
+
+.admin-workflow-card {
+    min-width: 0;
+    padding: .9rem;
+    background: #fff;
+    border: 1px solid #dfe7f0;
+    border-radius: .9rem;
+}
+
+.admin-workflow-card > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.admin-workflow-stage-count {
+    padding: .3rem .5rem;
+    color: #546277;
+    background: #f2f5f8;
+    border-radius: 999px;
+    font-size: .65rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-workflow-assignment {
+    margin-top: .75rem;
+    padding: .75rem;
+    background: #fafbfd;
+    border: 1px solid #e5ebf2;
+    border-radius: .75rem;
+}
+
+.admin-workflow-assignment-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .55rem;
+}
+
+.admin-workflow-message {
+    min-height: 1.35rem;
+    margin-top: .45rem;
+    color: #687386;
+    font-size: .68rem;
+}
+
+.admin-workflow-message.is-success { color: #11633f; }
+.admin-workflow-message.is-warning { color: #8a5b00; }
+.admin-workflow-message.is-danger { color: #a61b2b; }
+
+.admin-workflow-route {
+    display: grid;
+    gap: .35rem;
+    margin-top: .85rem;
+}
+
+.admin-workflow-route.is-initiative {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-workflow-route.is-agreement {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-workflow-node {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    place-items: center;
+    align-content: start;
+    gap: .42rem;
+    padding: .45rem .2rem;
+    text-align: center;
+}
+
+.admin-workflow-node:not(:last-child)::after {
+    position: absolute;
+    top: 1.06rem;
+    inset-inline-start: calc(50% + 1rem);
+    width: calc(100% - 2rem);
+    height: 2px;
+    background: #dce4ed;
+    content: '';
+}
+
+.admin-workflow-number {
+    position: relative;
+    z-index: 1;
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    color: #687386;
+    background: #f2f5f8;
+    border: 2px solid #dce4ed;
+    border-radius: 50%;
+    font-size: .72rem;
+    font-weight: 900;
+}
+
+.admin-workflow-node-copy {
+    display: grid;
+    min-width: 0;
+    gap: .12rem;
+}
+
+.admin-workflow-node-copy strong {
+    color: #46556a;
+    font-size: .65rem;
+    line-height: 1.35;
+}
+
+.admin-workflow-node-copy small {
+    overflow: hidden;
+    color: #8390a2;
+    font-size: .57rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+}
+
+.admin-workflow-node.is-current .admin-workflow-number {
+    color: #fff;
+    background: #0d4aa7;
+    border-color: #0d4aa7;
+    box-shadow: 0 0 0 4px #e5efff;
+}
+
+.admin-workflow-node.is-current .admin-workflow-node-copy strong {
+    color: #0d4aa7;
+}
+
+.admin-workflow-node.is-current::after {
+    background: #8fb5ec;
+}
+
+.admin-workflow-current {
+    margin-top: .65rem;
+    padding: .55rem .65rem;
+    border-radius: .65rem;
+    font-size: .68rem;
+    font-weight: 800;
+}
+
+.admin-workflow-current.is-active {
+    color: #0d4aa7;
+    background: #edf4ff;
+}
+
+.admin-workflow-current.is-empty {
+    color: #687386;
+    background: #f4f6f8;
+}
+
+.admin-save-panel {
+    display: flex;
+    align-items: end;
+    gap: .75rem;
+    margin-top: 1rem;
+    padding-top: .9rem;
+    border-top: 1px solid #e8edf3;
+}
+
+.admin-save-panel .flex-grow-1 {
+    min-width: 0;
+}
+
+.admin-save-panel .btn {
+    min-width: 9.5rem;
+}
+
+/* Notification count stays at the visible right edge in Arabic. */
+html[dir="rtl"] .workspace-nav-link:has(.workspace-nav-count),
+html[dir="rtl"] .workspace-nav-link:has([data-initiative-notification-count]) {
+    padding-right: 2.65rem;
+}
+
+html[dir="rtl"] .workspace-nav-link .workspace-nav-count,
+html[dir="rtl"] .workspace-nav-link [data-initiative-notification-count] {
+    position: absolute;
+    top: .6rem;
+    right: .65rem;
+    left: auto;
+}
+
+@media (max-width: 1399.98px) {
+    .admin-users-layout {
+        grid-template-columns: minmax(21rem, .78fr) minmax(0, 1.22fr);
+    }
+
+    .admin-users-table th:nth-child(2),
+    .admin-users-table td:nth-child(2) {
+        display: none;
+    }
+
+    .admin-users-table th:nth-child(1),
+    .admin-users-table td:nth-child(1) { width: 48%; }
+    .admin-users-table th:nth-child(3),
+    .admin-users-table td:nth-child(3) { width: 37%; }
+    .admin-users-table th:nth-child(4),
+    .admin-users-table td:nth-child(4) { width: 15%; }
+}
+
+@media (max-width: 1199.98px) {
+    .admin-users-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-user-editor {
+        position: static;
+    }
+
+    .admin-users-list-card [data-admin-users-table-wrap] {
+        max-height: 30rem;
+        min-height: 20rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .admin-users-heading,
+    .admin-users-controls .workspace-card-header,
+    .admin-user-editor-header,
+    .admin-workflow-intro,
+    .admin-save-panel {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-users-controls form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-role-groups {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-workflow-route.is-initiative,
+    .admin-workflow-route.is-agreement {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-workflow-node {
+        grid-template-columns: 2rem minmax(0, 1fr);
+        justify-items: start;
+        text-align: start;
+    }
+
+    .admin-workflow-node:not(:last-child)::after {
+        top: 2.25rem;
+        bottom: -.55rem;
+        inset-inline-start: .99rem;
+        width: 2px;
+        height: auto;
+    }
+
+    .admin-workflow-node-copy small {
+        white-space: normal;
+    }
+
+    .admin-save-panel .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    body.admin-users-page .workspace-main {
+        padding: .75rem;
+    }
+
+    .admin-users-heading,
+    .admin-users-controls,
+    .admin-users-list-card,
+    .admin-user-editor {
+        border-radius: .8rem;
+    }
+
+    .admin-heading-badge {
+        align-self: flex-start;
+    }
+
+    .admin-workflow-assignment-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-workflow-assignment-row .btn {
+        width: 100%;
+    }
+}
+
+
+/* Workflow step picker v3.1: choose the exact place from the route itself. */
+.admin-workflow-instruction {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-top: .75rem;
+    padding: .7rem .8rem;
+    color: #41516a;
+    background: #f7f9fc;
+    border: 1px solid #e2e8f0;
+    border-radius: .75rem;
+    font-size: .68rem;
+}
+
+.admin-workflow-instruction strong {
+    color: #203047;
+    font-size: .72rem;
+}
+
+.admin-workflow-route.is-initiative,
+.admin-workflow-route.is-agreement {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-top: .8rem;
+}
+
+.admin-workflow-node {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    align-items: stretch;
+    gap: .7rem;
+    padding: 0;
+    text-align: start;
+}
+
+.admin-workflow-node:not(:last-child)::after {
+    display: none;
+}
+
+.admin-workflow-rail {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-top: .9rem;
+}
+
+.admin-workflow-node:not(:last-child) .admin-workflow-rail::after {
+    position: absolute;
+    top: 2.65rem;
+    bottom: -.15rem;
+    inset-inline-start: 50%;
+    width: 2px;
+    background: #dce4ed;
+    transform: translateX(-50%);
+    content: '';
+}
+
+.admin-workflow-node.is-current:not(:last-child) .admin-workflow-rail::after {
+    background: #8fb5ec;
+}
+
+.admin-workflow-number {
+    width: 2.1rem;
+    height: 2.1rem;
+}
+
+.admin-workflow-stage-body {
+    min-width: 0;
+    margin-bottom: .55rem;
+    padding: .75rem .8rem;
+    background: #fff;
+    border: 1px solid #e1e7ef;
+    border-radius: .8rem;
+    transition: border-color .16s ease, background-color .16s ease;
+}
+
+.admin-workflow-node.is-current .admin-workflow-stage-body {
+    background: #f7faff;
+    border-color: #aac7ef;
+}
+
+.admin-workflow-stage-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.admin-workflow-stage-heading strong {
+    color: #203047;
+    font-size: .76rem;
+}
+
+.admin-workflow-placement {
+    color: #6a778a;
+    font-size: .62rem;
+    font-weight: 750;
+}
+
+.admin-workflow-actors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .55rem;
+}
+
+.admin-workflow-actors span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.65rem;
+    padding: .25rem .5rem;
+    color: #3f4e63;
+    background: #f0f3f7;
+    border: 1px solid #dde4ec;
+    border-radius: 999px;
+    font-size: .62rem;
+    font-weight: 750;
+}
+
+.admin-workflow-actors span.is-selected-user {
+    color: #0d4aa7;
+    background: #eaf2ff;
+    border-color: #b9d0f1;
+}
+
+.admin-workflow-actors span.is-empty {
+    color: #7d8998;
+    background: transparent;
+    border-style: dashed;
+}
+
+.admin-workflow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .6rem;
+}
+
+.admin-workflow-action {
+    min-height: 2rem;
+    padding: .38rem .6rem;
+    color: #0d4aa7;
+    background: #fff;
+    border: 1px solid #9cbce7;
+    border-radius: .6rem;
+    font-family: inherit;
+    font-size: .64rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.admin-workflow-action:hover,
+.admin-workflow-action:focus-visible,
+.admin-workflow-action.is-selected {
+    color: #fff;
+    background: #0d4aa7;
+    border-color: #0d4aa7;
+}
+
+@media (max-width: 767.98px) {
+    .admin-workflow-instruction,
+    .admin-workflow-stage-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-workflow-node {
+        grid-template-columns: 2.15rem minmax(0, 1fr);
+        gap: .5rem;
+    }
+
+    .admin-workflow-stage-body {
+        padding: .7rem;
+    }
+
+    .admin-workflow-action {
+        width: 100%;
+    }
+}

@@ -1,0 +1,145 @@
+.generic-review-heading,
+.generic-review-stage-header,
+.generic-decision-actions {
+    display: flex;
+    align-items: center;
+}
+
+.generic-review-heading {
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.generic-review-loading {
+    min-height: 360px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: .8rem;
+    color: var(--bs-secondary-color);
+}
+
+.generic-review-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, .32fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.generic-review-main,
+.generic-review-help {
+    padding: 1.25rem;
+}
+
+.generic-review-help {
+    position: sticky;
+    top: 1rem;
+}
+
+.generic-review-stage-header {
+    gap: 1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.generic-review-stage-number {
+    width: 3.25rem;
+    height: 3.25rem;
+    flex: 0 0 3.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--bs-primary);
+    background: rgba(13, 110, 253, .1);
+    border: 1px solid rgba(13, 110, 253, .2);
+    font-weight: 900;
+}
+
+.generic-agreement-summary,
+.generic-optional-panel {
+    padding: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.generic-phase-list,
+.generic-optional-list {
+    display: grid;
+    gap: .65rem;
+}
+
+.generic-phase-step {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .8rem;
+    padding: .75rem .85rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .8rem;
+}
+
+.generic-phase-step strong,
+.generic-phase-step small {
+    display: block;
+}
+
+.generic-phase-step small {
+    color: var(--bs-secondary-color);
+    margin-top: .15rem;
+}
+
+.generic-step-status {
+    flex: 0 0 auto;
+    padding: .3rem .55rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 800;
+    background: var(--bs-tertiary-bg);
+}
+
+.generic-step-status.is-progress {
+    color: #0a58ca;
+    background: rgba(13, 110, 253, .1);
+}
+
+.generic-step-status.is-approved {
+    color: #146c43;
+    background: rgba(25, 135, 84, .1);
+}
+
+.generic-decision-actions {
+    gap: .65rem;
+    flex-wrap: wrap;
+}
+
+.generic-help-item {
+    padding: .75rem 0;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.generic-help-item strong,
+.generic-help-item span {
+    display: block;
+}
+
+.generic-help-item span {
+    margin-top: .2rem;
+    color: var(--bs-secondary-color);
+    font-size: .78rem;
+}
+
+@media (max-width: 991.98px) {
+    .generic-review-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .generic-review-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .generic-review-help {
+        position: static;
+    }
+}

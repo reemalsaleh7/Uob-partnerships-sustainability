@@ -455,76 +455,47 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                         placeholder="Enter the activity name, such as the name of the initiative, event, workshop, research project, or media participation."
                     >
                 </div>
-
-                <input
-                    type="hidden"
-                    id="initiative_type"
-                    name="initiative_type"
-                    value="ACADEMIC"
-                >
-                <input
-                    type="hidden"
-                    name="primary_type_other"
-                    value=""
-                >
-
-                <div class="col-12">
-                    <label class="form-label">
-                        Initiative or Activity types *
+                <div class="col-md-8">
+                    <label for="initiative_type" class="form-label">
+                        Initiative or Activity type *
                     </label>
-                    <div class="form-text mb-2">
-                        Select all types that apply to the proposed activity.
+                    <select
+                        id="initiative_type"
+                        name="initiative_type"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">Select one type</option>
+                        <option value="WORKSHOP_TRAINING">Workshop / Training</option>
+                        <option value="LECTURE_SEMINAR">Lecture / Seminar</option>
+                        <option value="STUDENT_INITIATIVE">Student Initiative</option>
+                        <option value="COMMUNITY_ENGAGEMENT">Community Engagement</option>
+                        <option value="VOLUNTEERING">Volunteering</option>
+                        <option value="AWARENESS_CAMPAIGN">Awareness Campaign / Media Engagement</option>
+                        <option value="RESEARCH">Research</option>
+                        <option value="CONSULTATION">Consultation</option>
+                        <option value="PARTNERSHIP">Partnership / Project / Program</option>
+                        <option value="SUSTAINABILITY">Sustainability</option>
+                        <option value="ACADEMIC">Academic</option>
+                        <option value="INNOVATION">Innovation</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                    <div class="form-text">
+                        Select the single primary type that best describes the proposed activity.
                     </div>
-                    <div class="initiative-choice-grid initiative-choice-grid-compact">
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="WORKSHOP_TRAINING">
-                            <span>Workshop / Training</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="LECTURE_SEMINAR">
-                            <span>Lecture / Seminar</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="STUDENT_INITIATIVE">
-                            <span>Student Initiative</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="COMMUNITY_ENGAGEMENT">
-                            <span>Community Engagement</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="VOLUNTEERING">
-                            <span>Volunteering</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="AWARENESS_CAMPAIGN">
-                            <span>Awareness Campaign</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="RESEARCH">
-                            <span>Research</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="CONSULTATION">
-                            <span>Consultation</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="PARTNERSHIP">
-                            <span>Partnership</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="SUSTAINABILITY">
-                            <span>Sustainability</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="ACADEMIC">
-                            <span>Academic</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="checkbox" name="secondary_types" value="INNOVATION">
-                            <span>Innovation</span>
-                        </label>
-                    </div>
+                </div>
+
+                <div class="col-md-4 d-none" data-primary-type-other-wrap>
+                    <label for="primary_type_other" class="form-label">
+                        Other type *
+                    </label>
+                    <input
+                        id="primary_type_other"
+                        name="primary_type_other"
+                        class="form-control"
+                        maxlength="150"
+                        placeholder="Specify the other type"
+                    >
                 </div>
 
                 <div class="col-12">
@@ -856,7 +827,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                         for="implementation_country"
                         class="form-label"
                     >
-                        Country *
+                        Implementation country *
                     </label>
                     <input
                         id="implementation_country"
@@ -871,7 +842,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     >
                     <datalist id="initiative-country-options"></datalist>
                     <div class="form-text">
-                        Search and select a country from the list.
+                        Search and select the country where the Initiative will be implemented.
                     </div>
                 </div>
 
@@ -909,86 +880,135 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
 
             <div class="row g-4">
                 <div class="col-12">
-                    <label class="form-label">
-                        Is this Initiative linked to an existing Agreement or memorandum of understanding? *
+                    <label for="relationship_type" class="form-label">
+                        How is this Initiative connected to an external entity or an existing Agreement? *
                     </label>
-                    <div class="initiative-choice-grid initiative-choice-grid-two">
-                        <label class="initiative-choice-card">
-                            <input type="radio" name="has_related_agreement" value="true">
-                            <span>Yes</span>
-                        </label>
-                        <label class="initiative-choice-card">
-                            <input type="radio" name="has_related_agreement" value="false">
-                            <span>No</span>
-                        </label>
+                    <div class="form-text mb-2">
+                        Select the option that best describes the relationship.
                     </div>
+                    <select
+                        id="relationship_type"
+                        name="relationship_type"
+                        class="form-select"
+                    >
+                        <option value="">Select the relationship type</option>
+                        <option value="NO_EXTERNAL_PARTY">No external entity is involved</option>
+                        <option value="EXTERNAL_WITHOUT_AGREEMENT">External collaboration without an Agreement</option>
+                        <option value="LINKED_AGREEMENTS">Linked to one or more Agreements or memoranda of understanding</option>
+                        <option value="UNSURE">Not sure</option>
+                    </select>
                 </div>
 
                 <div class="col-12 d-none" data-related-agreement-wrap>
                     <label
-                        for="related_agreement_id"
+                        for="related_agreement_ids"
                         class="form-label"
                     >
-                        Agreement Related to the Initiative *
+                        Related Agreements *
                     </label>
                     <select
-                        id="related_agreement_id"
-                        name="related_agreement_id"
+                        id="related_agreement_ids"
+                        name="related_agreement_ids"
                         class="form-select"
-                    >
-                        <option value="">Select an Agreement</option>
-                    </select>
+                        multiple
+                    ></select>
+                    <div class="form-text">
+                        Search by Agreement number, title, or partner. Select one or more Agreements.
+                    </div>
+                </div>
+
+                <div class="col-12 d-none" data-external-partner-wrap>
+                    <div class="initiative-form-subcard">
+                        <div class="initiative-form-subcard-heading">
+                            <div>
+                                <h3>External entity details</h3>
+                                <p>
+                                    Complete these fields when collaborating with an external entity without an Agreement.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label
+                                    for="external_partner_name"
+                                    class="form-label"
+                                >
+                                    External entity name *
+                                </label>
+                                <input
+                                    id="external_partner_name"
+                                    name="external_partner_name"
+                                    class="form-control"
+                                    maxlength="255"
+                                >
+                            </div>
+                            <div class="col-md-4">
+                                <label
+                                    for="external_partner_country"
+                                    class="form-label"
+                                >
+                                    External entity country *
+                                </label>
+                                <input
+                                    id="external_partner_country"
+                                    name="external_partner_country"
+                                    class="form-control"
+                                    maxlength="120"
+                                    placeholder="Enter the country of the external entity"
+                                >
+                            </div>
+                            <div class="col-md-4">
+                                <label
+                                    for="external_partner_role"
+                                    class="form-label"
+                                >
+                                    Role in the Initiative
+                                </label>
+                                <input
+                                    id="external_partner_role"
+                                    name="external_partner_role"
+                                    class="form-control"
+                                    maxlength="500"
+                                >
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-12">
                     <label class="form-label">
-                        Is an external partner involved? *
+                        Does the Initiative include additional international participation not already represented by the selected Agreement(s) or external entity? *
                     </label>
                     <div class="initiative-choice-grid initiative-choice-grid-two">
                         <label class="initiative-choice-card">
-                            <input type="radio" name="has_external_partner" value="true">
+                            <input type="radio" name="international_participation" value="true">
                             <span>Yes</span>
                         </label>
                         <label class="initiative-choice-card">
-                            <input type="radio" name="has_external_partner" value="false">
+                            <input type="radio" name="international_participation" value="false">
                             <span>No</span>
                         </label>
                     </div>
                 </div>
 
-                <div class="col-12 d-none" data-external-partner-wrap>
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <label
-                                for="external_partner_name"
-                                class="form-label"
-                            >
-                                External Partner Entity Name *
-                            </label>
-                            <input
-                                id="external_partner_name"
-                                name="external_partner_name"
-                                class="form-control"
-                                maxlength="255"
-                            >
-                        </div>
-                        <div class="col-md-6">
-                            <label
-                                for="external_partner_role"
-                                class="form-label"
-                            >
-                                Partner Role in the Initiative
-                            </label>
-                            <input
-                                id="external_partner_role"
-                                name="external_partner_role"
-                                class="form-control"
-                                maxlength="500"
-                            >
-                        </div>
+                <div class="col-12 d-none" data-international-participation-wrap>
+                    <label for="international_countries_text" class="form-label">
+                        Countries of international participation *
+                    </label>
+                    <input
+                        id="international_countries_text"
+                        name="international_countries_text"
+                        class="form-control"
+                        maxlength="500"
+                        placeholder="Example: Saudi Arabia, Kuwait, United Kingdom"
+                    >
+                    <div class="form-text">
+                        Separate multiple countries with commas.
                     </div>
+                    <input type="hidden" name="international_partner">
                 </div>
             </div>
+
 
             <div class="initiative-form-subcard mt-4">
                 <div class="initiative-form-subcard-heading">
@@ -1010,8 +1030,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     class="initiative-collaborator-list"
                     data-collaborator-list
                 ></div>
-            </div>
-        </div>
+            </div>        </div>
 
         <div class="initiative-form-section" data-form-step="4">
             <div class="initiative-form-section-heading">
@@ -1466,35 +1485,35 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                         <span class="initiative-final-step-marker">1</span>
                         <span class="initiative-final-step-copy">
                             <small>Step 1</small>
-                            <strong>General Information</strong>
+                            <strong>Activity, Timing &amp; Location</strong>
                         </span>
                     </button>
                     <button class="initiative-final-step" type="button" data-final-step-button="1">
                         <span class="initiative-final-step-marker">2</span>
                         <span class="initiative-final-step-copy">
                             <small>Step 2</small>
-                            <strong>Timing &amp; Location</strong>
+                            <strong>Team &amp; Partnerships</strong>
                         </span>
                     </button>
                     <button class="initiative-final-step" type="button" data-final-step-button="2">
                         <span class="initiative-final-step-marker">3</span>
                         <span class="initiative-final-step-copy">
                             <small>Step 3</small>
-                            <strong>Beneficiaries &amp; Impact</strong>
+                            <strong>Description &amp; Beneficiaries</strong>
                         </span>
                     </button>
                     <button class="initiative-final-step" type="button" data-final-step-button="3">
                         <span class="initiative-final-step-marker">4</span>
                         <span class="initiative-final-step-copy">
                             <small>Step 4</small>
-                            <strong>Rankings &amp; SDGs</strong>
+                            <strong>Resources, Impact &amp; SDGs</strong>
                         </span>
                     </button>
                     <button class="initiative-final-step" type="button" data-final-step-button="4">
                         <span class="initiative-final-step-marker">5</span>
                         <span class="initiative-final-step-copy">
                             <small>Step 5</small>
-                            <strong>Documentation &amp; Notes</strong>
+                            <strong>Media, Evidence &amp; Notes</strong>
                         </span>
                     </button>
                 </nav>
@@ -1505,10 +1524,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <header class="initiative-final-section-heading">
                         <div>
                             <p class="eyebrow mb-2">Section 1 of 5</p>
-                            <h2>General Information</h2>
+                            <h2>Activity, Timing &amp; Location</h2>
                             <p>
-                                Approval reference, Agreement, Initiative identity,
-                                implementing entity, and responsible people.
+                                Submitter details, Initiative identity, implementation dates,
+                                delivery scope, venue, and international participation.
                             </p>
                         </div>
                         <span class="initiative-prefill-badge"><?= $isExistingFinalForm ? 'Manual existing record' : 'Prefilled from request' ?></span>
@@ -1570,7 +1589,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-requester-type-other>
                             <label class="form-label">Other Requester Category</label>
                             <input class="form-control" name="requester_type_other">
                         </div>
@@ -1588,21 +1607,37 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label">
-                                Is the Initiative linked to an existing Agreement?
+                            <label class="form-label" for="final_relationship_type">
+                                How is this Initiative connected to an external entity or an existing Agreement? *
                             </label>
-                            <div class="initiative-final-choice-row">
-                                <label><input type="radio" name="related_agreement" value="true"> Yes</label>
-                                <label><input type="radio" name="related_agreement" value="false"> No</label>
+                            <div class="form-text mb-2">
+                                Select the option that best describes the relationship.
                             </div>
-                        </div>
-                        <div class="col-md-8" data-final-related-agreement>
-                            <label class="form-label">Related Agreement</label>
-                            <select class="form-select" name="related_agreement_id">
-                                <option value="">Select an Agreement</option>
+                            <select
+                                id="final_relationship_type"
+                                class="form-select"
+                                name="relationship_type"
+                                required
+                            >
+                                <option value="">Select the relationship type</option>
+                                <option value="NO_EXTERNAL_PARTY">No external entity is involved</option>
+                                <option value="EXTERNAL_WITHOUT_AGREEMENT">External collaboration without an Agreement</option>
+                                <option value="LINKED_AGREEMENTS">Linked to one or more Agreements or memoranda of understanding</option>
+                                <option value="UNSURE">Not sure</option>
                             </select>
                         </div>
-                        <div class="col-md-4" data-final-related-agreement>
+                        <div class="col-md-8 d-none" data-final-related-agreement>
+                            <label class="form-label">Related Agreements</label>
+                            <select
+                                class="form-select"
+                                name="related_agreement_ids"
+                                multiple
+                            ></select>
+                            <div class="form-text">
+                                Select one or more Agreements. All approved request links are retained.
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-none" data-final-related-agreement>
                             <label class="form-label">Relationship Notes</label>
                             <input class="form-control" name="relation_notes" maxlength="500">
                         </div>
@@ -1649,61 +1684,21 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             <label class="form-label">Other Initiative Type</label>
                             <input class="form-control" name="initiative_type_other">
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Secondary Initiative Types</label>
-                            <select class="form-select" name="secondary_initiative_types" multiple size="6">
-                                <option value="WORKSHOP_TRAINING">Workshop / Training</option>
-<option value="LECTURE_SEMINAR">Lecture / Seminar</option>
-<option value="CONFERENCE_FORUM">Conference / Forum</option>
-<option value="EXHIBITION_FAIR">Exhibition / Fair</option>
-<option value="COMPETITION_HACKATHON">Competition / Hackathon</option>
-<option value="CULTURAL_SPORTS_EVENT">Cultural / Arts / Sports Event</option>
-<option value="FIELD_VISIT">Field Visit</option>
-<option value="EXCHANGE_PROGRAM">Exchange Program</option>
-<option value="JOINT_RESEARCH">Joint Research</option>
-<option value="COORDINATION_PROFESSIONAL_MEETING">Coordination / Professional Meeting</option>
-<option value="STUDENT_INITIATIVE">Student Initiative</option>
-<option value="COMMUNITY_ENGAGEMENT">Community Engagement</option>
-<option value="VOLUNTEERING">Volunteering Program</option>
-<option value="CONSULTATION">Consultation / Advisory Role</option>
-<option value="AWARENESS_CAMPAIGN">Awareness Campaign / Media Engagement</option>
-<option value="CAPACITY_BUILDING_TRAINING">Capacity Building & Community Training</option>
-<option value="PARTNERSHIP">Community Partnership / Joint Project</option>
-<option value="KNOWLEDGE_TRANSFER">Knowledge Transfer</option>
-<option value="TUTORING_COACHING_MENTORSHIP">Tutoring / Coaching / Mentorship</option>
-<option value="PROFESSIONAL_MEMBERSHIP">Professional Membership / Committee / Jury</option>
-<option value="MEDIA_ARTICLE">Media / Newspaper Article</option>
-<option value="SCHOOL_OUTREACH">School Outreach Activities</option>
-<option value="VULNERABLE_GROUPS">Support for Vulnerable Groups</option>
-<option value="SUSTAINABILITY">Sustainability Activities</option>
-<option value="RESEARCH">Research</option>
-<option value="ACADEMIC">Academic</option>
-<option value="INNOVATION">Innovation</option>
-
-                            </select>
-                            <div class="form-text">Hold Ctrl to select more than one type.</div>
-                        </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Implementing Entity *</label>
                             <input class="form-control" name="entity" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">External Entities</label>
-                            <input class="form-control" name="external_entities">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Is an External Partner Involved?</label>
-                            <div class="initiative-final-choice-row">
-                                <label><input type="radio" name="has_external_partner" value="true"> Yes</label>
-                                <label><input type="radio" name="has_external_partner" value="false"> No</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6" data-final-external-partner>
+                        <input type="hidden" name="external_entities">
+                        <div class="col-md-4 d-none" data-final-external-partner>
                             <label class="form-label">External Partner Name</label>
                             <input class="form-control" name="external_partner_name">
                         </div>
-                        <div class="col-md-6" data-final-external-partner>
+                        <div class="col-md-4 d-none" data-final-external-partner>
+                            <label class="form-label">External Partner Country</label>
+                            <input class="form-control" name="external_partner_country">
+                        </div>
+                        <div class="col-md-4 d-none" data-final-external-partner>
                             <label class="form-label">External Partner Role</label>
                             <input class="form-control" name="external_partner_role">
                         </div>
@@ -1738,6 +1733,22 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             </div>
                             <div class="initiative-final-people" data-final-contributors></div>
                         </div>
+
+                        <div class="col-12" data-final-participant-group>
+                            <div class="initiative-final-subheading">
+                                <div>
+                                    <h3>Additional Implementation Participants</h3>
+                                    <p>Add other people who participated in implementation. This section is optional.</p>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" type="button" data-add-final-participant>
+                                    Add participant
+                                </button>
+                            </div>
+                            <div class="initiative-final-people" data-final-participants></div>
+                            <div class="initiative-final-empty-note" data-final-participants-empty>
+                                No additional implementation participants have been added.
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1745,10 +1756,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <header class="initiative-final-section-heading">
                         <div>
                             <p class="eyebrow mb-2">Section 2 of 5</p>
-                            <h2>Timing &amp; Location</h2>
+                            <h2>Team &amp; Partnerships</h2>
                             <p>
-                                Dates, operational status, recurrence, venue,
-                                international participation, description, and objectives.
+                                Responsible people, implementation participants, provider categories,
+                                external entities, and linked Agreements or memoranda of understanding.
                             </p>
                         </div>
                     </header>
@@ -1805,17 +1816,30 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-location-other>
                             <label class="form-label">Other Implementation Scope</label>
                             <input class="form-control" name="implementation_scope_other">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-location-venue>
                             <label class="form-label">Venue or Entity Name</label>
                             <input class="form-control" name="proposed_venue">
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-location-outside>
                             <label class="form-label">Additional Location Details</label>
                             <input class="form-control" name="outside_location">
+                        </div>
+                        <input type="hidden" name="proposed_venue_place_id">
+                        <input type="hidden" name="proposed_venue_name">
+                        <input type="hidden" name="proposed_venue_latitude">
+                        <input type="hidden" name="proposed_venue_longitude">
+                        <input type="hidden" name="proposed_venue_country_code">
+                        <div class="col-md-6 d-none" data-final-location-country>
+                            <label class="form-label">Country</label>
+                            <input class="form-control" name="implementation_country">
+                        </div>
+                        <div class="col-md-6 d-none" data-final-location-platform>
+                            <label class="form-label">Online Platform Name</label>
+                            <input class="form-control" name="online_platform_name" placeholder="Enter the online platform name.">
                         </div>
 
                         <div class="col-12">
@@ -1835,14 +1859,8 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                     <label class="form-label">International Participants</label>
                                     <input type="number" min="0" class="form-control" name="international_participants">
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">International Partner</label>
-                                    <input class="form-control" name="international_partner">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">International Partner Type</label>
-                                    <input class="form-control" name="international_partner_type">
-                                </div>
+                                <input type="hidden" name="international_partner">
+                                <input type="hidden" name="international_partner_type">
                                 <div class="col-md-6">
                                     <label class="form-label">International Collaboration Nature</label>
                                     <select class="form-select" name="international_collaboration_nature" multiple size="5">
@@ -1886,10 +1904,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <header class="initiative-final-section-heading">
                         <div>
                             <p class="eyebrow mb-2">Section 3 of 5</p>
-                            <h2>Beneficiaries &amp; Impact</h2>
+                            <h2>Description &amp; Beneficiaries</h2>
                             <p>
-                                Audience, participant counts, resources, funding,
-                                training, volunteering, outputs, and impact.
+                                Activity description, objectives, contribution areas,
+                                target groups, participant counts, and beneficiary details.
                             </p>
                         </div>
                     </header>
@@ -1914,9 +1932,13 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-6 d-none" data-final-other-target>
                             <label class="form-label">Other Target Group</label>
                             <input class="form-control" name="target_group_other">
+                        </div>
+                        <div class="col-md-6 d-none" data-final-school-target>
+                            <label class="form-label">School Name or Schools</label>
+                            <input class="form-control" name="school_names" placeholder="Enter one or more school names">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Expected Beneficiaries or Attendees from Request</label>
@@ -1971,11 +1993,15 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="OTHER">Other</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 d-none" data-final-other-resource>
+                            <label class="form-label">Other Resources or Additional Details</label>
+                            <input class="form-control" name="resources_mobilized_other">
+                        </div>
+                        <div class="col-md-4 d-none" data-final-budget>
                             <label class="form-label">Expected Budget (BHD)</label>
                             <input type="number" min="0" step="0.001" class="form-control" name="expected_budget">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-budget>
                             <label class="form-label">Internal Funding (BHD)</label>
                             <input type="number" min="0" step="0.001" class="form-control" name="internal_funding_bhd">
                         </div>
@@ -1983,32 +2009,32 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             <label class="form-label">In-kind Support (BHD)</label>
                             <input type="number" min="0" step="0.001" class="form-control" name="in_kind_support_bhd">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-external-funding>
                             <label class="form-label">External Funding Amount</label>
                             <input type="number" min="0" step="0.001" class="form-control" name="external_funding_amount">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-external-funding>
                             <label class="form-label">Funding Currency</label>
                             <input class="form-control" name="external_funding_currency">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-external-funding>
                             <label class="form-label">Funding Entity</label>
                             <input class="form-control" name="funding_entity">
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-training>
                             <label class="form-label">Training Hours</label>
                             <input type="number" min="0" step="0.5" class="form-control" name="training_hours">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-training>
                             <label class="form-label">Number of Trainees</label>
                             <input type="number" min="0" class="form-control" name="trainees_count">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-volunteer>
                             <label class="form-label">Number of Volunteers</label>
                             <input type="number" min="0" class="form-control" name="volunteers_count">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-volunteer>
                             <label class="form-label">Volunteer Hours per Person</label>
                             <input type="number" min="0" step="0.5" class="form-control" name="volunteer_hours_per_person">
                         </div>
@@ -2032,10 +2058,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <header class="initiative-final-section-heading">
                         <div>
                             <p class="eyebrow mb-2">Section 4 of 5</p>
-                            <h2>Rankings &amp; SDGs</h2>
+                            <h2>Resources, Impact &amp; SDGs</h2>
                             <p>
-                                Global ranking relevance, environmental measurement,
-                                and Sustainable Development Goals.
+                                Resources and funding, training and volunteering, direct outputs,
+                                impact measurement, global rankings, and Sustainable Development Goals.
                             </p>
                         </div>
                     </header>
@@ -2050,7 +2076,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="BOTH">THE and QS</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-the>
                             <label class="form-label">THE Areas</label>
                             <select class="form-select" name="the_areas" multiple size="4">
                                 <option value="TEACHING">Teaching</option>
@@ -2059,7 +2085,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="STEWARDSHIP">Stewardship</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-qs>
                             <label class="form-label">QS Categories</label>
                             <select class="form-select" name="qs_categories" multiple size="3">
                                 <option value="ENVIRONMENTAL">Environmental Impact</option>
@@ -2068,7 +2094,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             </select>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-environmental>
                             <div class="initiative-final-subheading">
                                 <div>
                                     <h3>Environmental Impact Measurement</h3>
@@ -2076,7 +2102,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-environmental>
                             <label class="form-label">Environmental Impact Types</label>
                             <select class="form-select" name="environmental_impact_types" multiple size="5">
                                 <option value="ENERGY">Energy</option>
@@ -2089,23 +2115,23 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="PROCUREMENT">Sustainable Procurement or Consumption</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-environmental>
                             <label class="form-label">Value Before the Initiative</label>
                             <input type="number" step="any" class="form-control" name="environmental_before_value">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-environmental>
                             <label class="form-label">Value After the Initiative</label>
                             <input type="number" step="any" class="form-control" name="environmental_after_value">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-environmental>
                             <label class="form-label">Improvement Value</label>
                             <input type="number" step="any" class="form-control" name="environmental_improvement_value">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none" data-final-environmental>
                             <label class="form-label">Unit of Measurement</label>
                             <input class="form-control" name="environmental_unit">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-environmental>
                             <label class="form-label">Measurement Basis</label>
                             <select class="form-select" name="environmental_measurement_basis">
                                 <option value="">Select basis</option>
@@ -2113,11 +2139,11 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="ESTIMATED">Estimated</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-environmental>
                             <label class="form-label">Data or Measurement Source</label>
                             <input class="form-control" name="environmental_data_source">
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-environmental>
                             <label class="form-label">Environmental Impact Description</label>
                             <textarea class="form-control" name="environmental_impact" rows="4"></textarea>
                         </div>
@@ -2129,7 +2155,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <label><input type="radio" name="supports_sdg" value="false"> No</label>
                             </div>
                         </div>
-                        <div class="col-md-6" data-final-sdg>
+                        <div class="col-md-6 d-none" data-final-sdg>
                             <label class="form-label">Primary Sustainable Development Goal</label>
                             <select class="form-select" name="primary_sdg">
                                 <option value="">Select the primary goal</option>
@@ -2152,7 +2178,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
 <option value="SDG_17">SDG 17</option>
                             </select>
                         </div>
-                        <div class="col-md-6" data-final-sdg>
+                        <div class="col-md-6 d-none" data-final-sdg>
                             <label class="form-label">Secondary Sustainable Development Goals</label>
                             <select class="form-select" name="secondary_sdgs" multiple size="6">
                                 <option value="SDG_1">SDG 1</option>
@@ -2181,10 +2207,10 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     <header class="initiative-final-section-heading">
                         <div>
                             <p class="eyebrow mb-2">Section 5 of 5</p>
-                            <h2>Documentation &amp; Notes</h2>
+                            <h2>Media, Evidence &amp; Notes</h2>
                             <p>
-                                Publication, media coverage, evidence, supporting files,
-                                sharing permission, notes, and final confirmation.
+                                Media coverage, publication details, evidence, supporting files,
+                                sharing permission, notes, print review, and final confirmation.
                             </p>
                         </div>
                     </header>
@@ -2208,11 +2234,25 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             </select>
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Media Coverage Status</label>
+                            <select class="form-select" name="coverage_status">
+                                <option value="NONE">No media coverage</option>
+                                <option value="PUBLISHED">Yes, already published or broadcast</option>
+                                <option value="PLANNED">Yes, planned or scheduled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-none" data-final-media-type>
                             <label class="form-label">Media Coverage Type</label>
                             <select class="form-select" name="media_coverage_type">
-                                <option value="">No media coverage</option>
+                                <option value="">Select the coverage type</option>
                                 <option value="NEWS">News article</option>
                                 <option value="TV_INTERVIEW">TV interview</option>
+                                <option value="SOCIAL_MEDIA">Social media</option>
+                                <option value="RADIO">Radio</option>
+                                <option value="PODCAST">Podcast</option>
+                                <option value="PRINT">Print publication</option>
+                                <option value="WEBSITE">Website</option>
+                                <option value="OTHER">Other</option>
                             </select>
                         </div>
 
@@ -2254,6 +2294,39 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             </div>
                         </div>
 
+                        <div class="col-12 d-none" data-final-other-media>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <label class="form-label">Medium Type</label>
+                                    <select class="form-select" name="coverage_other_medium_kind">
+                                        <option value="">Select</option>
+                                        <option value="SOCIAL_MEDIA">Social media</option>
+                                        <option value="RADIO">Radio</option>
+                                        <option value="PODCAST">Podcast</option>
+                                        <option value="PRINT">Print publication</option>
+                                        <option value="WEBSITE">Website</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-none" data-final-other-medium-name>
+                                    <label class="form-label">Specify Other Medium</label>
+                                    <input class="form-control" name="coverage_other_medium_other">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Outlet or Platform Name</label>
+                                    <input class="form-control" name="coverage_other_outlet_name">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Views or Reach</label>
+                                    <input type="number" min="0" class="form-control" name="coverage_other_reach">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Media Link</label>
+                                    <input type="url" class="form-control" name="coverage_other_url" placeholder="https://">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <label class="form-label">Evidence Method</label>
                             <div class="initiative-final-check-grid">
@@ -2263,7 +2336,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             </div>
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-evidence-upload>
                             <div class="initiative-final-subheading">
                                 <div>
                                     <h3>Supporting Files</h3>
@@ -2288,19 +2361,19 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                             <div class="initiative-final-queued-files" data-final-queued-files></div>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-evidence-meta>
                             <label class="form-label">Evidence Document Type</label>
                             <input class="form-control" name="evidence_document_type">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-evidence-meta>
                             <label class="form-label">Evidence Date</label>
                             <input type="date" class="form-control" name="evidence_date">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none" data-final-evidence-meta>
                             <label class="form-label">Evidence Owner</label>
                             <input class="form-control" name="evidence_owner">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-evidence-meta>
                             <label class="form-label">Evidence Public Access</label>
                             <select class="form-select" name="evidence_public_access">
                                 <option value="">Select</option>
@@ -2308,7 +2381,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="NO">Restricted</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-none" data-final-evidence-meta>
                             <label class="form-label">UOB May Use and Publish the Evidence</label>
                             <select class="form-select" name="public_sharing">
                                 <option value="">Select</option>
@@ -2316,11 +2389,11 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                                 <option value="NO">No</option>
                             </select>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-evidence-url>
                             <label class="form-label">News or Public Evidence Links</label>
                             <textarea class="form-control" name="evidence_urls_text" rows="3" placeholder="One URL per line"></textarea>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 d-none" data-final-evidence-explanation>
                             <label class="form-label">Evidence Explanation</label>
                             <textarea class="form-control" name="evidence_explanation" rows="3"></textarea>
                         </div>
@@ -2364,6 +2437,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                 Next section
             </button>
             <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-outline-secondary" type="button" data-final-print>Print form</button>
                 <button class="btn btn-outline-secondary" type="button" data-final-save>
                     <?= $isExistingFinalForm ? 'Save draft' : 'Save conversion draft' ?>
                 </button>
@@ -2411,6 +2485,23 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                     Initiative coordinator
                 </label>
             </div>
+        </div>
+    </article>
+</template>
+
+<template data-final-participant-template>
+    <article class="initiative-final-person" data-final-participant>
+        <div class="initiative-final-person-head">
+            <strong data-final-participant-number>Participant</strong>
+            <button class="btn btn-sm btn-outline-danger" type="button" data-remove-final-participant>Remove</button>
+        </div>
+        <input type="hidden" data-participant-field="user_id">
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" data-participant-field="name"></div>
+            <div class="col-md-4"><label class="form-label">Email</label><input type="email" class="form-control" data-participant-field="email"></div>
+            <div class="col-md-4"><label class="form-label">Mobile</label><input class="form-control" data-participant-field="mobile"></div>
+            <div class="col-md-6"><label class="form-label">Entity or Department</label><input class="form-control" data-participant-field="department"></div>
+            <div class="col-md-6"><label class="form-label">Role in the Initiative</label><input class="form-control" data-participant-field="role"></div>
         </div>
     </article>
 </template>
@@ -2592,7 +2683,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
                 </div>
                 <div class="form-section">
                     <dl class="initiative-detail-grid">
-                        <div class="initiative-detail-wide"><dt>Initiative or Activity types</dt><dd data-secondary-types></dd></div>
+                        <div class="initiative-detail-wide"><dt>Initiative Type</dt><dd data-request-type></dd></div>
                         <div class="initiative-detail-wide"><dt>Description</dt><dd data-description></dd></div>
                         <div class="initiative-detail-wide"><dt>Objectives</dt><dd data-objective></dd></div>
                         <div><dt>Expected Results or Impact</dt><dd data-impact></dd></div>

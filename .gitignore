@@ -5,3 +5,26 @@
 !/storage/private/web.config
 !/storage/private/**/.gitkeep
 
+
+# Local backups and installer artifacts
+/.admin-*-backup-*/
+/.initiative-*-backup-*/
+/.initiative-*-repair-*/
+/.workspace-*-backup-*/
+/*-payload/
+/payload/
+/apply_*.php
+/repair_*.php
+/MANIFEST.json
+/*.zip
+
+# Local translation audit outputs
+/audit_workspace_translation.php
+/workspace_translation_audit.html
+/workspace_translation_audit.json
+/workspace_translation_missing_keys.php
+
+# Runtime user uploads
+/uob-agreements/uploads/**
+!/uob-agreements/uploads/.gitkeep
+!/uob-agreements/uploads/**/.gitkeep

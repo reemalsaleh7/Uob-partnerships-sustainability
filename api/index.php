@@ -82,18 +82,33 @@ try {
         exit;
     }
 
-    if (
-    $requestPath === '/workflow-inbox'
-    || str_starts_with(
-        $requestPath,
-        '/workflow-instances/'
-    )
-) {
-    require dirname(__DIR__)
-        . '/routes/approvals.php';
+    if (str_starts_with($requestPath, '/admin/users')) {
+        require dirname(__DIR__) . '/routes/admin-users.php';
+        exit;
+    }
+    // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1: administrative template routes.
+    if (str_starts_with($requestPath, '/admin/workflows')) {
+        require dirname(__DIR__) . '/routes/admin-workflows.php';
+        exit;
+    }
 
-    exit;
-}
+    if (str_starts_with($requestPath, '/configurable-workflows')) {
+        require dirname(__DIR__) . '/routes/configurable-workflows.php';
+        exit;
+    }
+
+    if (
+        $requestPath === '/workflow-inbox'
+        || str_starts_with(
+            $requestPath,
+            '/workflow-instances/'
+        )
+    ) {
+        require dirname(__DIR__)
+            . '/routes/approvals.php';
+
+        exit;
+    }
 
     if (
         str_starts_with($requestPath, '/agreement-performance-reports')

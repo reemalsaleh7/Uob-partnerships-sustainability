@@ -1,0 +1,704 @@
+/*
+ * Admin user management redesign v2.1
+ * Practical full-width layout and an independent RTL/LTR sidebar drawer.
+ */
+
+body.admin-users-page {
+    overflow-x: hidden;
+}
+
+body.admin-users-page.admin-sidebar-open {
+    overflow: hidden;
+}
+
+body.admin-users-page .workspace-stage {
+    width: 100%;
+    min-width: 0;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+body.admin-users-page .workspace-main {
+    width: 100%;
+    max-width: 106rem;
+    min-width: 0;
+    padding: clamp(1rem, 2vw, 1.75rem);
+}
+
+/* The admin page always uses an off-canvas drawer. */
+body.workspace-sidebar-drawer .workspace-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    width: min(20rem, 88vw) !important;
+    max-width: 20rem !important;
+    height: 100dvh !important;
+    z-index: 1085 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateX(105%) !important;
+    transition: transform .24s ease, opacity .18s ease, visibility 0s linear .24s !important;
+    box-shadow: -18px 0 48px rgba(2, 8, 23, .28) !important;
+}
+
+html[dir="ltr"] body.workspace-sidebar-drawer .workspace-sidebar {
+    right: auto !important;
+    left: 0 !important;
+    transform: translateX(-105%) !important;
+    box-shadow: 18px 0 48px rgba(2, 8, 23, .28) !important;
+}
+
+body.workspace-sidebar-drawer .workspace-sidebar.is-open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateX(0) !important;
+    transition: transform .24s ease, opacity .18s ease, visibility 0s !important;
+}
+
+body.workspace-sidebar-drawer .workspace-app.sidebar-collapsed .workspace-sidebar,
+html[dir="rtl"] body.workspace-sidebar-drawer .workspace-app.sidebar-collapsed .workspace-sidebar {
+    transform: translateX(105%) !important;
+}
+
+html[dir="ltr"] body.workspace-sidebar-drawer .workspace-app.sidebar-collapsed .workspace-sidebar {
+    transform: translateX(-105%) !important;
+}
+
+body.workspace-sidebar-drawer .workspace-stage,
+body.workspace-sidebar-drawer .workspace-app.sidebar-collapsed .workspace-stage {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+body.admin-users-page::before {
+    position: fixed;
+    inset: 0;
+    z-index: 1075;
+    background: rgba(4, 15, 30, .48);
+    backdrop-filter: blur(2px);
+    content: "";
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .18s ease, visibility 0s linear .18s;
+}
+
+body.admin-users-page.admin-sidebar-open::before {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity .18s ease, visibility 0s;
+}
+
+.admin-sidebar-close {
+    position: absolute;
+    top: .7rem;
+    left: .7rem;
+    z-index: 5;
+    display: inline-grid;
+    width: 2.35rem;
+    height: 2.35rem;
+    place-items: center;
+    padding: 0;
+    color: #fff;
+    background: rgba(255, 255, 255, .09);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: .75rem;
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+html[dir="ltr"] .admin-sidebar-close {
+    right: .7rem;
+    left: auto;
+}
+
+.admin-sidebar-close:hover,
+.admin-sidebar-close:focus-visible {
+    background: rgba(255, 255, 255, .18);
+    outline: 2px solid rgba(255, 255, 255, .55);
+    outline-offset: 2px;
+}
+
+/* Compact page heading. */
+.admin-users-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.05rem 1.2rem;
+    background: #fff;
+    border: 1px solid #dfe7f0;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(2, 8, 23, .045);
+}
+
+.admin-users-heading h1 {
+    margin: 0;
+    color: var(--uob-navy);
+    font-size: clamp(1.45rem, 2vw, 1.95rem);
+    font-weight: 900;
+}
+
+.admin-users-heading .eyebrow {
+    margin-bottom: .25rem !important;
+}
+
+.admin-users-heading .text-secondary {
+    max-width: 70rem;
+    margin-top: .25rem;
+    font-size: .86rem;
+    line-height: 1.65;
+}
+
+.admin-heading-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .55rem .75rem;
+    color: #5d4400;
+    background: #fff8df;
+    border: 1px solid #ead99c;
+    border-radius: 999px;
+    font-size: .76rem;
+    white-space: nowrap;
+}
+
+/* Search/filter card. */
+.admin-users-controls,
+.admin-users-list-card,
+.admin-user-editor {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dfe7f0;
+    border-radius: 1rem;
+    box-shadow: 0 10px 26px rgba(2, 8, 23, .045);
+}
+
+.admin-users-controls .workspace-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 1rem;
+    background: #fafbfd;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-users-controls form {
+    display: grid;
+    grid-template-columns: minmax(18rem, 1.7fr) minmax(12rem, .75fr) minmax(15rem, 1fr);
+    gap: .8rem;
+    margin: 0 !important;
+    padding: .9rem 1rem 1rem;
+}
+
+.admin-users-controls form > div {
+    width: auto !important;
+    max-width: none !important;
+}
+
+.admin-users-controls .form-label,
+.admin-editor-panel .form-label {
+    margin-bottom: .3rem;
+    color: #39485d;
+    font-size: .75rem;
+    font-weight: 800;
+}
+
+.admin-users-controls .form-control,
+.admin-users-controls .form-select,
+.admin-editor-panel .form-control,
+.admin-editor-panel .form-select {
+    min-height: 2.65rem;
+    border-color: #d8e1eb;
+    border-radius: .7rem;
+}
+
+/* Balanced master/detail layout. */
+.admin-users-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(29rem, .92fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-users-list-card,
+.admin-user-editor {
+    min-width: 0;
+}
+
+.admin-users-list-card > .workspace-card-header {
+    padding: .9rem 1rem;
+    background: #fafbfd;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-users-list-card [data-admin-users-table-wrap] {
+    max-height: calc(100vh - 20.5rem);
+    min-height: 25rem;
+    overflow: auto;
+}
+
+.admin-users-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-users-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.admin-users-table thead th {
+    padding: .72rem .65rem;
+    color: #46556a;
+    background: #f6f8fb;
+    border-bottom: 1px solid #dfe7f0;
+    font-size: .7rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.admin-users-table th:nth-child(1),
+.admin-users-table td:nth-child(1) { width: 38%; }
+.admin-users-table th:nth-child(2),
+.admin-users-table td:nth-child(2) { width: 23%; }
+.admin-users-table th:nth-child(3),
+.admin-users-table td:nth-child(3) { width: 27%; }
+.admin-users-table th:nth-child(4),
+.admin-users-table td:nth-child(4) { width: 12%; }
+
+.admin-users-table tbody td {
+    padding: .72rem .65rem;
+    border-bottom-color: #edf1f5;
+    vertical-align: middle;
+}
+
+.admin-users-table tbody tr:hover,
+.admin-users-table tbody tr:focus-visible {
+    background: #f7faff;
+    outline: none;
+}
+
+.admin-users-table tbody tr.is-selected {
+    background: #eef5ff;
+    box-shadow: inset -4px 0 0 #0d4aa7;
+}
+
+html[dir="ltr"] .admin-users-table tbody tr.is-selected {
+    box-shadow: inset 4px 0 0 #0d4aa7;
+}
+
+.admin-user-identity {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    min-width: 0;
+}
+
+.admin-user-identity > span:last-child,
+.admin-organization-cell {
+    display: grid;
+    min-width: 0;
+    gap: .08rem;
+}
+
+.admin-user-identity strong,
+.admin-organization-cell strong,
+.admin-user-identity small,
+.admin-organization-cell small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-identity strong,
+.admin-organization-cell strong {
+    color: #17243a;
+    font-size: .8rem;
+}
+
+.admin-user-identity small,
+.admin-organization-cell small {
+    color: #728096;
+    font-size: .65rem;
+}
+
+.admin-user-list-avatar,
+.admin-user-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #0d4aa7;
+    background: #e8f1ff;
+    border: 1px solid #d2e2fb;
+    border-radius: 50%;
+    font-weight: 900;
+}
+
+.admin-user-list-avatar {
+    width: 2.2rem;
+    height: 2.2rem;
+    font-size: .72rem;
+}
+
+.admin-user-avatar {
+    width: 3.45rem;
+    height: 3.45rem;
+    font-size: 1rem;
+}
+
+.admin-table-chips,
+.admin-access-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .28rem;
+}
+
+.admin-access-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .42rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: .63rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.admin-access-badge.is-enabled {
+    color: #11633f;
+    background: #eaf8f1;
+    border-color: #c7e8d7;
+}
+
+.admin-access-badge.is-disabled {
+    color: #687386;
+    background: #f3f5f7;
+    border-color: #e4e8ed;
+}
+
+.admin-access-badge.is-admin.is-enabled {
+    color: #5d3a96;
+    background: #f3edff;
+    border-color: #ddcff8;
+}
+
+.admin-users-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .7rem;
+    padding: .75rem .95rem;
+    background: #fafbfd;
+    border-top: 1px solid #e8edf3;
+}
+
+/* Editor remains visible while scrolling the list. */
+.admin-user-editor {
+    position: sticky;
+    top: .75rem;
+}
+
+.admin-user-placeholder,
+.admin-users-empty {
+    display: grid;
+    min-height: 25rem;
+    place-items: center;
+    align-content: center;
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(180deg, #fff, #fafbfd);
+}
+
+.admin-user-editor form {
+    max-height: calc(100vh - 1.5rem);
+    padding: 1rem 1.05rem 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.admin-user-editor-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .8rem;
+    padding-bottom: .9rem;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-account-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem .65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: .7rem;
+    font-size: .72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-access-summary {
+    padding: .75rem 0;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.admin-editor-tabs {
+    display: flex;
+    gap: .25rem;
+    margin: .8rem 0 .9rem;
+    padding: .25rem;
+    overflow-x: auto;
+    background: #f1f4f7;
+    border-radius: .78rem;
+}
+
+.admin-editor-tabs button {
+    flex: 1 0 auto;
+    min-height: 2.3rem;
+    padding: .46rem .62rem;
+    color: #5d6b7e;
+    background: transparent;
+    border: 0;
+    border-radius: .6rem;
+    font-size: .7rem;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.admin-editor-tabs button.is-active {
+    color: #0b2f67;
+    background: #fff;
+    box-shadow: 0 3px 9px rgba(2, 8, 23, .075);
+}
+
+.admin-transfer-note {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .75rem .85rem;
+    color: #35506f;
+    background: #eef6ff;
+    border: 1px solid #d5e8ff;
+    border-radius: .78rem;
+    font-size: .72rem;
+    line-height: 1.6;
+}
+
+.admin-save-panel {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    align-items: end;
+    gap: .75rem;
+    margin-top: .9rem;
+    padding: .9rem 0 1rem;
+    background: linear-gradient(180deg, rgba(255,255,255,.25), #fff 30%);
+    border-top: 1px solid #edf1f5;
+}
+
+.admin-save-panel .flex-grow-1 {
+    min-width: 0;
+}
+
+.admin-save-panel textarea {
+    min-height: 4rem;
+    resize: vertical;
+}
+
+.admin-save-panel .btn {
+    min-width: 9rem;
+    min-height: 2.7rem;
+    border-radius: .72rem;
+    font-size: .78rem;
+    font-weight: 850;
+}
+
+/* Notification counter: force it to the visible right edge in Arabic. */
+.workspace-nav-link {
+    position: relative !important;
+}
+
+html[dir="rtl"] .workspace-nav-link:has(.workspace-nav-count:not(.d-none)),
+html[dir="rtl"] .workspace-nav-link:has([data-nav-count]:not(.d-none)) {
+    padding-right: 3rem !important;
+}
+
+html[dir="rtl"] .workspace-nav-link .workspace-nav-count,
+html[dir="rtl"] .workspace-nav-link [data-nav-count] {
+    position: absolute !important;
+    top: 50% !important;
+    right: .7rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    transform: translateY(-50%);
+}
+
+html[dir="ltr"] .workspace-nav-link .workspace-nav-count,
+html[dir="ltr"] .workspace-nav-link [data-nav-count] {
+    position: absolute !important;
+    top: 50% !important;
+    right: .7rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    transform: translateY(-50%);
+}
+
+@media (max-width: 1180px) {
+    .admin-users-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-user-editor {
+        position: static;
+    }
+
+    .admin-user-editor form {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .admin-users-list-card [data-admin-users-table-wrap] {
+        max-height: 34rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .admin-users-heading,
+    .admin-users-controls .workspace-card-header,
+    .admin-save-panel {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-users-controls form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-users-table {
+        min-width: 46rem;
+        table-layout: auto;
+    }
+
+    .admin-user-editor-header {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .admin-account-toggle {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+        justify-content: flex-start;
+    }
+
+    .admin-save-panel .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    body.admin-users-page .workspace-main {
+        padding: .7rem;
+    }
+
+    .admin-users-heading,
+    .admin-users-controls,
+    .admin-users-list-card,
+    .admin-user-editor {
+        border-radius: .85rem;
+    }
+
+    .admin-heading-badge {
+        align-self: flex-start;
+    }
+
+    .admin-users-pagination {
+        flex-wrap: wrap;
+    }
+}
+/* ADMIN USER MANAGEMENT REDESIGN V2.2 RTL LAYOUT REPAIR START */
+/*
+ * workspace-rtl.css is loaded after page-specific styles. These selectors
+ * intentionally have higher specificity so the admin drawer does not leave
+ * the desktop sidebar margin behind or push the page outside the viewport.
+ */
+html[dir="rtl"] body.admin-users-page .workspace-app,
+html[dir="ltr"] body.admin-users-page .workspace-app {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: clip !important;
+}
+
+html[dir="rtl"] body.admin-users-page .workspace-stage,
+html[dir="ltr"] body.admin-users-page .workspace-stage,
+html[dir="rtl"] body.admin-users-page .workspace-app.sidebar-collapsed .workspace-stage,
+html[dir="ltr"] body.admin-users-page .workspace-app.sidebar-collapsed .workspace-stage {
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    margin-inline: 0 !important;
+    transform: none !important;
+}
+
+html[dir="rtl"] body.admin-users-page .workspace-topbar,
+html[dir="ltr"] body.admin-users-page .workspace-topbar,
+html[dir="rtl"] body.admin-users-page .workspace-main,
+html[dir="ltr"] body.admin-users-page .workspace-main,
+html[dir="rtl"] body.admin-users-page .workspace-footer,
+html[dir="ltr"] body.admin-users-page .workspace-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-inline: 0 !important;
+}
+
+html[dir="rtl"] body.admin-users-page .workspace-main,
+html[dir="ltr"] body.admin-users-page .workspace-main {
+    padding-inline: clamp(.9rem, 2vw, 1.75rem) !important;
+}
+
+body.admin-users-page .admin-users-layout {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: minmax(0, 1.12fr) minmax(28rem, .88fr);
+}
+
+body.admin-users-page .admin-users-controls,
+body.admin-users-page .admin-users-layout,
+body.admin-users-page .admin-users-list-card,
+body.admin-users-page .admin-user-editor {
+    min-width: 0;
+}
+
+body.admin-users-page .admin-user-placeholder,
+body.admin-users-page .admin-users-empty {
+    overflow: hidden;
+}
+
+body.admin-users-page .admin-user-placeholder p,
+body.admin-users-page .admin-users-empty p {
+    max-width: 30rem;
+    margin-inline: auto;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1279.98px) {
+    body.admin-users-page .admin-users-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.admin-users-page .admin-user-editor {
+        position: static;
+    }
+}
+/* ADMIN USER MANAGEMENT REDESIGN V2.2 RTL LAYOUT REPAIR END */

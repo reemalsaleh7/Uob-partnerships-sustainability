@@ -170,7 +170,7 @@ final class InitiativeFinalFormRepository
                 'CONVERTING',
                 [
                     'storage' => 'PostgreSQL',
-                    'form_version' => 1,
+                    'form_version' => 2,
                 ]
             );
 
@@ -259,7 +259,7 @@ final class InitiativeFinalFormRepository
                     :submitted_at,
                     :final_decision_at,
                     CAST(:final_form_data AS JSONB),
-                    1
+                    2
                  )
                  RETURNING initiative_id"
             );
@@ -301,8 +301,23 @@ final class InitiativeFinalFormRepository
                 'initiative_code' => $initiativeCode,
                 'initiative_id' => $initiativeId,
             ]);
-
+            $relatedAgreementIds = array_merge(
+                $this->requestAgreementIds($requestId),
+                $data['related_agreement_ids'] ?? []
+            );
             if ($data['related_agreement_id'] !== null) {
+                $relatedAgreementIds[] =
+                    (int) $data['related_agreement_id'];
+            }
+            $relatedAgreementIds = array_values(array_unique(
+                array_filter(
+                    array_map('intval', $relatedAgreementIds),
+                    static fn (int $agreementId): bool =>
+                        $agreementId > 0
+                )
+            ));
+
+            if ($relatedAgreementIds !== []) {
                 $agreement = $this->db->prepare(
                     "INSERT INTO initiative_agreements (
                         initiative_id,
@@ -317,15 +332,16 @@ final class InitiativeFinalFormRepository
                      DO UPDATE SET
                         relation_notes = EXCLUDED.relation_notes"
                 );
-                $agreement->execute([
-                    'initiative_id' => $initiativeId,
-                    'agreement_id' =>
-                        $data['related_agreement_id'],
-                    'relation_notes' =>
-                        $data['relation_notes'],
-                ]);
-            }
 
+                foreach ($relatedAgreementIds as $agreementId) {
+                    $agreement->execute([
+                        'initiative_id' => $initiativeId,
+                        'agreement_id' => $agreementId,
+                        'relation_notes' =>
+                            $data['relation_notes'],
+                    ]);
+                }
+            }
             $this->saveFinalPeople(
                 $initiativeId,
                 $data['contributors'],
@@ -428,7 +444,7 @@ final class InitiativeFinalFormRepository
                     'initiative_id' => $initiativeId,
                     'initiative_code' => $initiativeCode,
                     'storage' => 'PostgreSQL',
-                    'form_version' => 1,
+                    'form_version' => 2,
                 ]
             );
 
@@ -663,7 +679,7 @@ final class InitiativeFinalFormRepository
                     CAST(:submitted_at AS TIMESTAMP),
                     CAST(:final_decision_at AS TIMESTAMP),
                     CAST(:final_form_data AS JSONB),
-                    1,
+                    2,
                     'LEGACY',
                     :legacy_reference,
                     CAST(:legacy_approval_date AS DATE),
@@ -717,8 +733,20 @@ final class InitiativeFinalFormRepository
                 'initiative_code' => $initiativeCode,
                 'initiative_id' => $initiativeId,
             ]);
-
+            $relatedAgreementIds = $data['related_agreement_ids'] ?? [];
             if ($data['related_agreement_id'] !== null) {
+                $relatedAgreementIds[] =
+                    (int) $data['related_agreement_id'];
+            }
+            $relatedAgreementIds = array_values(array_unique(
+                array_filter(
+                    array_map('intval', $relatedAgreementIds),
+                    static fn (int $agreementId): bool =>
+                        $agreementId > 0
+                )
+            ));
+
+            if ($relatedAgreementIds !== []) {
                 $agreement = $this->db->prepare(
                     "INSERT INTO initiative_agreements (
                         initiative_id,
@@ -733,15 +761,16 @@ final class InitiativeFinalFormRepository
                      DO UPDATE SET
                         relation_notes = EXCLUDED.relation_notes"
                 );
-                $agreement->execute([
-                    'initiative_id' => $initiativeId,
-                    'agreement_id' =>
-                        $data['related_agreement_id'],
-                    'relation_notes' =>
-                        $data['relation_notes'],
-                ]);
-            }
 
+                foreach ($relatedAgreementIds as $agreementId) {
+                    $agreement->execute([
+                        'initiative_id' => $initiativeId,
+                        'agreement_id' => $agreementId,
+                        'relation_notes' =>
+                            $data['relation_notes'],
+                    ]);
+                }
+            }
             $this->saveFinalPeople(
                 $initiativeId,
                 $data['contributors'],
@@ -1391,6 +1420,9 @@ final class InitiativeFinalFormRepository
         $sdgGoals = $this->decodeJsonArray(
             $request['sdg_goals'] ?? null
         );
+        $internationalCountries = $this->decodeJsonArray(
+            $request['international_countries'] ?? null
+        );
 
         $providerCategories = match (
             strtoupper(
@@ -1450,6 +1482,29 @@ final class InitiativeFinalFormRepository
         $secondarySdgs = array_values(
             array_slice($sdgGoals, 1)
         );
+        $relatedAgreementIds = $this->requestAgreementIds(
+            (int) $request['request_id']
+        );
+        if (
+            $request['related_agreement_id'] !== null
+            && !in_array(
+                (int) $request['related_agreement_id'],
+                $relatedAgreementIds,
+                true
+            )
+        ) {
+            array_unshift(
+                $relatedAgreementIds,
+                (int) $request['related_agreement_id']
+            );
+        }
+        $relatedAgreementIds = array_values(array_unique(
+            array_filter(
+                array_map('intval', $relatedAgreementIds),
+                static fn (int $agreementId): bool =>
+                    $agreementId > 0
+            )
+        ));
 
         return [
             'approval_request_id' =>
@@ -1470,18 +1525,25 @@ final class InitiativeFinalFormRepository
                 $request['requester_entity_snapshot'] ?? null,
             'requester_department' =>
                 $request['requester_department_snapshot'] ?? null,
-            'related_agreement' =>
-                $this->databaseBoolean(
-                    $request['has_related_agreement']
-                        ?? (
-                            $request['related_agreement_id']
-                                !== null
+            'relationship_type' =>
+                ($request['relationship_type'] ?? null)
+                ?: (
+                    ($request['related_agreement_id'] ?? null) !== null
+                        ? 'LINKED_AGREEMENTS'
+                        : (
+                            $this->databaseBoolean(
+                                $request['has_external_partner'] ?? false
+                            )
+                                ? 'EXTERNAL_WITHOUT_AGREEMENT'
+                                : 'NO_EXTERNAL_PARTY'
                         )
                 ),
+            'related_agreement' =>
+                $relatedAgreementIds !== [],
+            'related_agreement_ids' =>
+                $relatedAgreementIds,
             'related_agreement_id' =>
-                $request['related_agreement_id'] !== null
-                    ? (int) $request['related_agreement_id']
-                    : null,
+                $relatedAgreementIds[0] ?? null,
             'relation_notes' => null,
             'initiative_number' => null,
             'title' => (string) $request['title'],
@@ -1489,8 +1551,7 @@ final class InitiativeFinalFormRepository
                 (string) $request['initiative_type'],
             'initiative_type_other' =>
                 $request['primary_type_other'] ?? null,
-            'secondary_initiative_types' =>
-                $secondaryTypes,
+            'secondary_initiative_types' => [],
             'entity' =>
                 $request['requester_entity_snapshot']
                 ?? $request['requester_department_snapshot']
@@ -1518,20 +1579,45 @@ final class InitiativeFinalFormRepository
                 $request['implementation_scope_other'] ?? null,
             'proposed_venue' =>
                 $request['proposed_venue'] ?? null,
+            'proposed_venue_place_id' =>
+                $request['proposed_venue_place_id'] ?? null,
+            'proposed_venue_name' =>
+                $request['proposed_venue_name'] ?? null,
+            'proposed_venue_latitude' =>
+                $request['proposed_venue_latitude'] ?? null,
+            'proposed_venue_longitude' =>
+                $request['proposed_venue_longitude'] ?? null,
+            'proposed_venue_country_code' =>
+                $request['proposed_venue_country_code'] ?? null,
+            'implementation_country' =>
+                $request['implementation_country'] ?? null,
+            'online_platform_name' =>
+                $request['online_platform_name'] ?? null,
             'outside_location' =>
                 $request['proposed_venue'] ?? null,
             'has_external_partner' =>
-                $this->databaseBoolean(
-                    $request['has_external_partner'] ?? false
+                ($request['relationship_type'] ?? null)
+                    === 'EXTERNAL_WITHOUT_AGREEMENT'
+                || (
+                    ($request['relationship_type'] ?? null) === null
+                    && $this->databaseBoolean(
+                        $request['has_external_partner'] ?? false
+                    )
                 ),
             'external_partner_name' =>
                 $request['external_partner_name'] ?? null,
+            'external_partner_country' =>
+                $request['external_partner_country'] ?? null,
             'external_partner_role' =>
                 $request['external_partner_role'] ?? null,
-            'international_participation' => false,
-            'international_countries' => [],
+            'international_participation' =>
+                $this->databaseBoolean(
+                    $request['international_participation'] ?? false
+                ),
+            'international_countries' => $internationalCountries,
             'international_participants' => null,
-            'international_partner' => null,
+            'international_partner' =>
+                $request['international_partner'] ?? null,
             'international_partner_type' => null,
             'international_collaboration_nature' => [],
             'initiative_descriptors' => [],
@@ -1546,6 +1632,7 @@ final class InitiativeFinalFormRepository
             'target_groups' => $targetGroups,
             'target_group_other' =>
                 $request['target_group_other'] ?? null,
+            'school_names' => null,
             'expected_participants' =>
                 $request['expected_participants'] ?? null,
             'male_count' => 0,
@@ -1596,17 +1683,19 @@ final class InitiativeFinalFormRepository
                 $this->databaseBoolean(
                     $request['needs_media_support'] ?? false
                 ),
-            'publication_status' =>
-                $this->databaseBoolean(
-                    $request['needs_media_support'] ?? false
-                )
-                    ? 'IN_PROGRESS'
-                    : 'NOT_PLANNED',
+            'coverage_status' => null,
+            'publication_status' => 'NOT_PLANNED',
+
             'media_coverage_type' => null,
             'media_outlet_name' => null,
             'media_headline' => null,
             'media_publication_date' => null,
             'news_link' => null,
+            'coverage_other_medium_kind' => null,
+            'coverage_other_medium_other' => null,
+            'coverage_other_outlet_name' => null,
+            'coverage_other_reach' => null,
+            'coverage_other_url' => null,
             'tv_channel' => null,
             'tv_program' => null,
             'tv_interview_topic' => null,
@@ -1653,6 +1742,7 @@ final class InitiativeFinalFormRepository
             'requester_entity',
             'requester_department',
             'initiative_number',
+            'relationship_type',
             'title',
             'initiative_type',
             'initiative_type_other',
@@ -1670,8 +1760,16 @@ final class InitiativeFinalFormRepository
             'location_mode',
             'implementation_scope_other',
             'proposed_venue',
+            'proposed_venue_place_id',
+            'proposed_venue_name',
+            'proposed_venue_latitude',
+            'proposed_venue_longitude',
+            'proposed_venue_country_code',
+            'implementation_country',
+            'online_platform_name',
             'outside_location',
             'external_partner_name',
+            'external_partner_country',
             'external_partner_role',
             'international_participants',
             'international_partner',
@@ -1681,6 +1779,7 @@ final class InitiativeFinalFormRepository
             'expected_impact',
             'beneficiaries',
             'target_group_other',
+            'school_names',
             'expected_participants',
             'male_count',
             'female_count',
@@ -1710,11 +1809,17 @@ final class InitiativeFinalFormRepository
             'environmental_impact',
             'primary_sdg',
             'publication_status',
+            'coverage_status',
             'media_coverage_type',
             'media_outlet_name',
             'media_headline',
             'media_publication_date',
             'news_link',
+            'coverage_other_medium_kind',
+            'coverage_other_medium_other',
+            'coverage_other_outlet_name',
+            'coverage_other_reach',
+            'coverage_other_url',
             'tv_channel',
             'tv_program',
             'tv_interview_topic',
@@ -1770,14 +1875,65 @@ final class InitiativeFinalFormRepository
             $this->nullableBoolean(
                 $payload['related_agreement'] ?? null
             );
+        $data['related_agreement_ids'] =
+            $this->normalizeIntegerArray(
+                $payload['related_agreement_ids']
+                    ?? (
+                        isset($payload['related_agreement_id'])
+                            ? [$payload['related_agreement_id']]
+                            : []
+                    )
+            );
         $data['related_agreement_id'] =
             $this->nullableInteger(
-                $payload['related_agreement_id'] ?? null
+                $payload['related_agreement_id']
+                    ?? ($data['related_agreement_ids'][0] ?? null)
             );
+        if (
+            $data['related_agreement_id'] !== null
+            && !in_array(
+                $data['related_agreement_id'],
+                $data['related_agreement_ids'],
+                true
+            )
+        ) {
+            array_unshift(
+                $data['related_agreement_ids'],
+                $data['related_agreement_id']
+            );
+        }
+        $data['related_agreement_ids'] = array_values(
+            array_unique($data['related_agreement_ids'])
+        );
+        $data['related_agreement_id'] =
+            $data['related_agreement_ids'][0] ?? null;
         $data['has_external_partner'] =
             $this->nullableBoolean(
                 $payload['has_external_partner'] ?? null
             );
+        $relationshipType = strtoupper(
+            (string) ($data['relationship_type'] ?? '')
+        );
+        $allowedRelationshipTypes = [
+            'NO_EXTERNAL_PARTY',
+            'EXTERNAL_WITHOUT_AGREEMENT',
+            'LINKED_AGREEMENTS',
+            'UNSURE',
+        ];
+        if (!in_array($relationshipType, $allowedRelationshipTypes, true)) {
+            $relationshipType = $data['related_agreement'] === true
+                ? 'LINKED_AGREEMENTS'
+                : (
+                    $data['has_external_partner'] === true
+                        ? 'EXTERNAL_WITHOUT_AGREEMENT'
+                        : null
+                );
+        }
+        $data['relationship_type'] = $relationshipType;
+        $data['related_agreement'] =
+            $relationshipType === 'LINKED_AGREEMENTS';
+        $data['has_external_partner'] =
+            $relationshipType === 'EXTERNAL_WITHOUT_AGREEMENT';
         $data['needs_media_support'] =
             $this->nullableBoolean(
                 $payload['needs_media_support'] ?? null
@@ -1850,6 +2006,7 @@ final class InitiativeFinalFormRepository
                 'environmental_after_value',
                 'environmental_improvement_value',
                 'tv_duration_minutes',
+                'coverage_other_reach',
             ] as $numericField
         ) {
             $data[$numericField] =
@@ -1895,12 +2052,14 @@ final class InitiativeFinalFormRepository
         }
 
         if ($data['related_agreement'] !== true) {
+            $data['related_agreement_ids'] = [];
             $data['related_agreement_id'] = null;
             $data['relation_notes'] = null;
         }
 
         if ($data['has_external_partner'] !== true) {
             $data['external_partner_name'] = null;
+            $data['external_partner_country'] = null;
             $data['external_partner_role'] = null;
         }
 
@@ -1917,6 +2076,54 @@ final class InitiativeFinalFormRepository
             $data['secondary_sdgs'] = [];
         }
 
+        if (!in_array('SCHOOL_STUDENTS', $data['target_groups'], true)) {
+            $data['school_names'] = null;
+        }
+        if (!in_array('OTHER', $data['target_groups'], true)) {
+            $data['target_group_other'] = null;
+        }
+        if (!in_array('OTHER', $data['resources_mobilized_options'], true)) {
+            $data['resources_mobilized_other'] = null;
+        }
+
+        $otherMediaTypes = [
+            'SOCIAL_MEDIA',
+            'RADIO',
+            'PODCAST',
+            'PRINT',
+            'WEBSITE',
+            'OTHER',
+        ];
+        if (in_array($data['media_coverage_type'], $otherMediaTypes, true)) {
+            $data['coverage_other_medium_kind'] =
+                $data['media_coverage_type'];
+        }
+
+        if (($data['coverage_status'] ?? 'NONE') === 'NONE') {
+            $data['media_coverage_type'] = null;
+            $data['media_outlet_name'] = null;
+            $data['media_headline'] = null;
+            $data['media_publication_date'] = null;
+            $data['news_link'] = null;
+            $data['tv_channel'] = null;
+            $data['tv_program'] = null;
+            $data['tv_interview_topic'] = null;
+            $data['tv_interviewer'] = null;
+            $data['tv_uob_representatives'] = null;
+            $data['tv_interview_date'] = null;
+            $data['tv_duration_minutes'] = null;
+            $data['tv_broadcast_status'] = null;
+            $data['tv_broadcast_scope'] = null;
+            $data['tv_interview_language'] = null;
+            $data['tv_interview_link'] = null;
+            $data['tv_interview_highlights'] = null;
+            $data['coverage_other_medium_kind'] = null;
+            $data['coverage_other_medium_other'] = null;
+            $data['coverage_other_outlet_name'] = null;
+            $data['coverage_other_reach'] = null;
+            $data['coverage_other_url'] = null;
+        }
+
         if ($forFinalization) {
             $missing = [];
 
@@ -1930,6 +2137,7 @@ final class InitiativeFinalFormRepository
                     'location_mode' => 'location mode',
                     'description' => 'description',
                     'objectives' => 'objectives',
+                    'relationship_type' => 'relationship type',
                 ] as $field => $label
             ) {
                 if ($data[$field] === null) {
@@ -1940,6 +2148,18 @@ final class InitiativeFinalFormRepository
             if ($data['target_groups'] === []) {
                 $missing[] = 'target groups';
             }
+            if (
+                in_array('SCHOOL_STUDENTS', $data['target_groups'], true)
+                && $data['school_names'] === null
+            ) {
+                $missing[] = 'school name';
+            }
+            if (
+                in_array('OTHER', $data['target_groups'], true)
+                && $data['target_group_other'] === null
+            ) {
+                $missing[] = 'other target group';
+            }
 
             if ($data['contributors'] === []) {
                 $missing[] = 'at least one responsible person';
@@ -1947,9 +2167,34 @@ final class InitiativeFinalFormRepository
 
             if (
                 $data['related_agreement'] === true
-                && $data['related_agreement_id'] === null
+                && $data['related_agreement_ids'] === []
             ) {
                 $missing[] = 'related Agreement';
+            }
+            if (
+                $data['has_external_partner'] === true
+                && $data['external_partner_name'] === null
+            ) {
+                $missing[] = 'external entity name';
+            }
+            if (
+                $data['has_external_partner'] === true
+                && $data['external_partner_country'] === null
+            ) {
+                $missing[] = 'external entity country';
+            }
+
+            if (
+                ($data['coverage_status'] ?? 'NONE') !== 'NONE'
+                && $data['media_coverage_type'] === null
+            ) {
+                $missing[] = 'media coverage type';
+            }
+            if (
+                $data['media_coverage_type'] === 'OTHER'
+                && $data['coverage_other_medium_other'] === null
+            ) {
+                $missing[] = 'other media type';
             }
 
             if (
@@ -2125,6 +2370,7 @@ final class InitiativeFinalFormRepository
             'approval_request_id' => null,
             'legacy_approval_date' => null,
             'initiative_number' => null,
+            'relationship_type' => null,
             'requester_name' => $user['full_name'] ?? null,
             'requester_email' => $user['email'] ?? null,
             'requester_mobile' => $user['phone'] ?? null,
@@ -2133,6 +2379,7 @@ final class InitiativeFinalFormRepository
             'requester_entity' => null,
             'requester_department' => null,
             'related_agreement' => false,
+            'related_agreement_ids' => [],
             'related_agreement_id' => null,
             'title' => null,
             'initiative_type' => null,
@@ -2150,10 +2397,12 @@ final class InitiativeFinalFormRepository
             'activity_status' => 'COMPLETED',
             'activity_recurrence' => 'ONE_TIME',
             'target_groups' => [],
+            'school_names' => null,
             'resources_mobilized_options' => [],
             'supports_sdg' => false,
             'secondary_sdgs' => [],
             'needs_media_support' => false,
+            'coverage_status' => null,
             'declaration_confirmed' => false,
             'excluded_request_attachment_ids' => [],
         ];
@@ -2216,6 +2465,21 @@ final class InitiativeFinalFormRepository
         ]);
     }
 
+    private function requestAgreementIds(int $requestId): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT agreement_id
+             FROM initiative_request_agreements
+             WHERE request_id = :request_id
+             ORDER BY agreement_id'
+        );
+        $statement->execute(['request_id' => $requestId]);
+
+        return array_map(
+            static fn (mixed $value): int => (int) $value,
+            $statement->fetchAll(PDO::FETCH_COLUMN)
+        );
+    }
     private function requestParticipants(int $requestId): array
     {
         $statement = $this->db->prepare(
@@ -2657,6 +2921,10 @@ final class InitiativeFinalFormRepository
                 'mobile' =>
                     $this->nullableText(
                         $person['mobile'] ?? null
+                    ),
+                'department' =>
+                    $this->nullableText(
+                        $person['department'] ?? null
                     ),
                 'role' =>
                     $this->nullableText(

@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/helpers/ApiSession.php';
 require_once dirname(__DIR__, 2) . '/helpers/response.php';
 require_once dirname(__DIR__, 2) . '/middleware/AuthMiddleware.php';
 require_once __DIR__ . '/InitiativeWorkflowRepository.php';
+require_once __DIR__ . '/InitiativeRevisionAudienceService.php';
 require_once __DIR__ . '/InitiativeAccessPolicy.php';
 require_once __DIR__ . '/InitiativeConversionRepository.php';
 require_once __DIR__ . '/InitiativeFinalFormRepository.php';
@@ -14,6 +15,7 @@ ApiSession::start();
 AuthMiddleware::handle();
 
 $repository = new InitiativeWorkflowRepository();
+$revisionAudienceService = new InitiativeRevisionAudienceService();
 $accessPolicy = new InitiativeAccessPolicy();
 $conversionRepository = new InitiativeConversionRepository();
 $finalFormRepository = new InitiativeFinalFormRepository();
@@ -25,6 +27,64 @@ $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $userId = (int) $_SESSION['user_id'];
 
 try {
+
+    // INITIATIVE_REVISION_SELECTED_VIEWERS_V1
+    if (
+        $method === 'GET'
+        && preg_match(
+            '#^/initiative-requests/([0-9]+)/revision-note-viewers$#',
+            $uri,
+            $matches
+        )
+    ) {
+        $requestId = (int) $matches[1];
+        $request = $repository->requestDetail($requestId, $userId);
+        if ($request === null) {
+            Response::error('Initiative request not found.', 404);
+        }
+
+        Response::success([
+            'items' => $revisionAudienceService->searchViewers(
+                $requestId,
+                $userId,
+                (string) ($_GET['q'] ?? '')
+            ),
+        ]);
+    }
+
+    if (
+        $method === 'POST'
+        && preg_match(
+            '#^/initiative-requests/([0-9]+)/revision-discussions/([0-9]+)/selected-comments$#',
+            $uri,
+            $matches
+        )
+    ) {
+        $requestId = (int) $matches[1];
+        $threadId = (int) $matches[2];
+        $request = $repository->requestDetail($requestId, $userId);
+        if ($request === null) {
+            Response::error('Initiative request not found.', 404);
+        }
+
+        $payload = json_decode(
+            (string) file_get_contents('php://input'),
+            true
+        );
+        if (!is_array($payload)) {
+            Response::error('A valid JSON request body is required.', 422);
+        }
+
+        Response::success(
+            $revisionAudienceService->addSelectedComment(
+                $requestId,
+                $threadId,
+                $userId,
+                $payload
+            ),
+            201
+        );
+    }
     if ($method === 'GET' && $uri === '/initiative-access') {
         Response::success([
             'can_create_initiative' =>
@@ -835,6 +895,11 @@ try {
         if ($request === null) {
             Response::error('Initiative request not found.', 404);
         }
+
+        $request = $revisionAudienceService->filterRequestDetail(
+            $request,
+            $userId
+        );
 
         Response::success($request);
     }

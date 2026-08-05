@@ -3839,3 +3839,36 @@ html[dir="rtl"] .initiative-map-picker-modal .btn-close{
         flex-direction:column;
     }
 }
+
+
+/* Final Initiative forms aligned with the approved five-section reference form. */
+.initiative-final-generated-heading{margin-top:.35rem}
+.initiative-final-generated-heading:first-child{margin-top:0}
+.initiative-final-form [data-final-participant-group]{margin-top:.35rem}
+.initiative-final-empty-note{
+    display:block;padding:1rem;border:1px dashed #d8dee8;border-radius:.85rem;
+    color:#667085;background:#fbfcfe
+}
+@media print{
+    body.initiative-final-focus .workspace-sidebar,
+    body.initiative-final-focus .workspace-topbar,
+    body.initiative-final-focus .initiative-final-step-panel,
+    body.initiative-final-focus .initiative-final-actions,
+    body.initiative-final-focus [data-module-alert],
+    body.initiative-final-focus .initiative-final-hero-badge,
+    body.initiative-final-focus button,
+    body.initiative-final-focus .btn{display:none!important}
+    body.initiative-final-focus .workspace-stage,
+    body.initiative-final-focus .initiative-final-shell,
+    body.initiative-final-focus .initiative-final-content{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+    body.initiative-final-focus .initiative-final-hero{box-shadow:none!important;break-after:avoid}
+    body.initiative-final-focus .initiative-final-section{display:block!important;break-before:page;box-shadow:none!important}
+    body.initiative-final-focus .initiative-final-section:first-child{break-before:auto}
+    body.initiative-final-focus .initiative-final-person,
+    body.initiative-final-focus .initiative-final-subheading,
+    body.initiative-final-focus .initiative-final-review,
+    body.initiative-final-focus .initiative-final-attachment{break-inside:avoid}
+    body.initiative-final-focus input,
+    body.initiative-final-focus select,
+    body.initiative-final-focus textarea{border-color:#b7bec8!important;box-shadow:none!important}
+}

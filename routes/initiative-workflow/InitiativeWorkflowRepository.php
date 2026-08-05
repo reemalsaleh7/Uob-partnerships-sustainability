@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once __DIR__ . '/InitiativeAssigneeResolver.php';
 require_once __DIR__ . '/InitiativeConversionRepository.php';
+require_once dirname(__DIR__, 2) . '/services/ConfigurableInitiativeWorkflowService.php';
 
 final class InitiativeWorkflowRepository
 {
@@ -229,9 +230,14 @@ final class InitiativeWorkflowRepository
                     proposed_venue_country_code,
                     implementation_country,
                     online_platform_name,
+                    international_participation,
+                    international_countries,
+                    international_partner,
+                    relationship_type,
                     has_related_agreement,
                     has_external_partner,
                     external_partner_name,
+                    external_partner_country,
                     external_partner_role,
                     required_resources,
                     resource_other,
@@ -279,9 +285,14 @@ final class InitiativeWorkflowRepository
                     :proposed_venue_country_code,
                     :implementation_country,
                     :online_platform_name,
+                    CAST(:international_participation AS BOOLEAN),
+                    CAST(:international_countries AS JSONB),
+                    :international_partner,
+                    :relationship_type,
                     CAST(:has_related_agreement AS BOOLEAN),
                     CAST(:has_external_partner AS BOOLEAN),
                     :external_partner_name,
+                    :external_partner_country,
                     :external_partner_role,
                     CAST(:required_resources AS JSONB),
                     :resource_other,
@@ -361,6 +372,16 @@ final class InitiativeWorkflowRepository
                     $data['implementation_country'],
                 'online_platform_name' =>
                     $data['online_platform_name'],
+                'international_participation' =>
+                    $this->databaseBoolean(
+                        $data['international_participation']
+                    ),
+                'international_countries' =>
+                    $this->jsonArray($data['international_countries']),
+                'international_partner' =>
+                    $data['international_partner'],
+                'relationship_type' =>
+                    $data['relationship_type'],
                 'has_related_agreement' =>
                     $this->databaseBoolean(
                         $data['has_related_agreement']
@@ -371,6 +392,8 @@ final class InitiativeWorkflowRepository
                     ),
                 'external_partner_name' =>
                     $data['external_partner_name'],
+                'external_partner_country' =>
+                    $data['external_partner_country'],
                 'external_partner_role' =>
                     $data['external_partner_role'],
                 'required_resources' =>
@@ -419,6 +442,11 @@ final class InitiativeWorkflowRepository
                 'request_code' => $code,
                 'request_id' => $requestId,
             ]);
+
+            $this->replaceRequestAgreementLinks(
+                $requestId,
+                $data['related_agreement_ids']
+            );
 
             $this->insertMembers(
                 $requestId,
@@ -561,12 +589,22 @@ final class InitiativeWorkflowRepository
                          :implementation_country,
                      online_platform_name =
                          :online_platform_name,
+                     international_participation =
+                         CAST(:international_participation AS BOOLEAN),
+                     international_countries =
+                         CAST(:international_countries AS JSONB),
+                     international_partner =
+                         :international_partner,
+                     relationship_type =
+                         :relationship_type,
                      has_related_agreement =
                          CAST(:has_related_agreement AS BOOLEAN),
                      has_external_partner =
                          CAST(:has_external_partner AS BOOLEAN),
                      external_partner_name =
                          :external_partner_name,
+                     external_partner_country =
+                         :external_partner_country,
                      external_partner_role =
                          :external_partner_role,
                      required_resources =
@@ -660,6 +698,16 @@ final class InitiativeWorkflowRepository
                     $data['implementation_country'],
                 'online_platform_name' =>
                     $data['online_platform_name'],
+                'international_participation' =>
+                    $this->databaseBoolean(
+                        $data['international_participation']
+                    ),
+                'international_countries' =>
+                    $this->jsonArray($data['international_countries']),
+                'international_partner' =>
+                    $data['international_partner'],
+                'relationship_type' =>
+                    $data['relationship_type'],
                 'has_related_agreement' =>
                     $this->databaseBoolean(
                         $data['has_related_agreement']
@@ -670,6 +718,8 @@ final class InitiativeWorkflowRepository
                     ),
                 'external_partner_name' =>
                     $data['external_partner_name'],
+                'external_partner_country' =>
+                    $data['external_partner_country'],
                 'external_partner_role' =>
                     $data['external_partner_role'],
                 'required_resources' =>
@@ -699,6 +749,11 @@ final class InitiativeWorkflowRepository
                 'request_id' => $requestId,
                 'requester_id' => $userId,
             ]);
+
+            $this->replaceRequestAgreementLinks(
+                $requestId,
+                $data['related_agreement_ids']
+            );
 
             $deleteMembers = $this->db->prepare(
                 'DELETE FROM initiative_request_members
@@ -774,6 +829,7 @@ final class InitiativeWorkflowRepository
                      submitted_at = COALESCE(submitted_at, CURRENT_TIMESTAMP),
                      revision_cycle = :revision_cycle,
                      current_stage_order = NULL,
+                     current_phase_order = NULL,
                      current_assignee_id = NULL,
                      current_assignee_unit_id = NULL,
                      updated_at = CURRENT_TIMESTAMP
@@ -856,6 +912,18 @@ final class InitiativeWorkflowRepository
         string $action,
         ?string $comment = null
     ): array {
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1_DECISION
+        $configurableWorkflow =
+            new ConfigurableInitiativeWorkflowService($this->db);
+        if ($configurableWorkflow->isConfigurableRequest($requestId)) {
+            return $configurableWorkflow->decide(
+                $requestId,
+                $userId,
+                $action,
+                $comment
+            );
+        }
+
         $normalizedAction = strtoupper(trim($action));
         $allowedActions = [
             'APPROVE',
@@ -1432,6 +1500,17 @@ final class InitiativeWorkflowRepository
         int $userId,
         string $reason
     ): array {
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1_ADMIN_SKIP
+        $configurableWorkflow =
+            new ConfigurableInitiativeWorkflowService($this->db);
+        if ($configurableWorkflow->isConfigurableRequest($requestId)) {
+            return $configurableWorkflow->adminSkip(
+                $requestId,
+                $userId,
+                $reason
+            );
+        }
+
         if (!$this->isSystemAdministrator($userId)) {
             throw new DomainException(
                 'Only a System Administrator can skip an Initiative approval stage.'
@@ -2235,6 +2314,7 @@ final class InitiativeWorkflowRepository
                 'secondary_types',
                 'target_groups',
                 'required_resources',
+                'international_countries',
                 'sdg_goals',
             ] as $arrayField
         ) {
@@ -2244,6 +2324,10 @@ final class InitiativeWorkflowRepository
                 );
         }
 
+        $request['related_agreement_ids'] =
+            $this->requestAgreementIds($requestId);
+        $request['related_agreements'] =
+            $this->requestAgreements($requestId);
         $request['attachments'] =
             $this->attachments($requestId);
 
@@ -2516,132 +2600,15 @@ final class InitiativeWorkflowRepository
         ?int $requesterUnitId,
         int $cycleNumber = 0
     ): void {
-        $labels = match ($roleKey) {
-            'DEPARTMENT_HEAD' => [
-                ['DEAN', 'Dean', 3],
-                ['VICE_PRESIDENT', 'Vice President / Office', 3],
-                ['PRESIDENT', 'President / Office', 7],
-            ],
-            'DEAN' => [
-                ['VICE_PRESIDENT', 'Vice President / Office', 3],
-                ['PRESIDENT', 'President / Office', 7],
-            ],
-            'VP_OFFICE' => [
-                ['VICE_PRESIDENT', 'Vice President', 3],
-                ['PRESIDENT', 'President / Office', 7],
-            ],
-            'VICE_PRESIDENT' => [
-                ['PRESIDENT', 'President / Office', 7],
-            ],
-            default => [
-                ['DEPARTMENT_HEAD', 'Department Head', 3],
-                ['DEAN', 'Dean', 3],
-                ['VICE_PRESIDENT', 'Vice President / Office', 3],
-                ['PRESIDENT', 'President / Office', 7],
-            ],
-        };
-
-        $insert = $this->db->prepare(
-            "INSERT INTO initiative_request_stages (
-                request_id,
-                cycle_number,
-                stage_order,
-                stage_key,
-                stage_label,
-                responsible_unit_id,
-                assigned_user_id,
-                status,
-                received_at,
-                due_at,
-                reminder_after_days,
-                is_office_delegable
-             ) VALUES (
-                :request_id,
-                :cycle_number,
-                :stage_order,
-                :stage_key,
-                :stage_label,
-                :responsible_unit_id,
-                :assigned_user_id,
-                :status,
-                :received_at,
-                :due_at,
-                :reminder_after_days,
-                :is_office_delegable
-             )
-             RETURNING request_stage_id"
-        );
-
-        $firstStageId = null;
-        $firstAssigneeId = null;
-        $firstAssigneeUnitId = null;
-
-        foreach ($labels as $index => [$key, $label, $days]) {
-            $assignment = $this->assigneeResolver->resolve(
-                $key,
-                $requesterUnitId
-            );
-            $isFirst = $index === 0;
-
-            $insert->execute([
-                'request_id' => $requestId,
-                'cycle_number' => $cycleNumber,
-                'stage_order' => $index + 1,
-                'stage_key' => $key,
-                'stage_label' => $label,
-                'responsible_unit_id' => $assignment['unit_id'],
-                'assigned_user_id' => $assignment['user_id'],
-                'status' => $isFirst ? 'IN_PROGRESS' : 'PENDING',
-                'received_at' => $isFirst ? date('Y-m-d H:i:s') : null,
-                'due_at' => $isFirst
-                    ? date('Y-m-d H:i:s', strtotime("+{$days} days"))
-                    : null,
-                'reminder_after_days' => $days,
-                'is_office_delegable' => in_array(
-                    $key,
-                    ['VICE_PRESIDENT', 'PRESIDENT'],
-                    true
-                ) ? 'true' : 'false',
-            ]);
-
-            $stageId = (int) $insert->fetchColumn();
-
-            if ($isFirst) {
-                $firstStageId = $stageId;
-                $firstAssigneeId = (int) $assignment['user_id'];
-                $firstAssigneeUnitId = (int) $assignment['unit_id'];
-            }
-        }
-
-        if (
-            $firstStageId === null
-            || $firstAssigneeId === null
-            || $firstAssigneeUnitId === null
-        ) {
-            throw new DomainException(
-                'The first Initiative approval stage could not be assigned.'
-            );
-        }
-
-        $update = $this->db->prepare(
-            'UPDATE initiative_requests
-             SET current_stage_order = 1,
-                 current_assignee_id = :current_assignee_id,
-                 current_assignee_unit_id = :current_assignee_unit_id
-             WHERE request_id = :request_id'
-        );
-        $update->execute([
-            'current_assignee_id' => $firstAssigneeId,
-            'current_assignee_unit_id' => $firstAssigneeUnitId,
-            'request_id' => $requestId,
-        ]);
-
-        $this->notifyStageReviewers(
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1: snapshot the active
+        // Initiative template for this approval cycle.
+        $configurableWorkflow =
+            new ConfigurableInitiativeWorkflowService($this->db);
+        $configurableWorkflow->createStages(
             $requestId,
-            $firstStageId,
-            'APPROVAL_ASSIGNED',
-            'Initiative request awaiting your decision',
-            'A new Initiative request has reached your approval office.'
+            $roleKey,
+            $requesterUnitId,
+            $cycleNumber
         );
     }
 
@@ -2927,6 +2894,16 @@ final class InitiativeWorkflowRepository
         int $requestId,
         int $userId
     ): ?array {
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1_ACTOR
+        $configurableWorkflow =
+            new ConfigurableInitiativeWorkflowService($this->db);
+        if ($configurableWorkflow->isConfigurableRequest($requestId)) {
+            return $configurableWorkflow->decisionActorContext(
+                $requestId,
+                $userId
+            );
+        }
+
         $statement = $this->db->prepare(
             "SELECT
                 stage.assigned_user_id,
@@ -3081,6 +3058,17 @@ final class InitiativeWorkflowRepository
         int $requestId,
         int $userId
     ): void {
+        // ADMIN_WORKFLOW_TEMPLATE_MANAGEMENT_V1_OPENED
+        $configurableWorkflow =
+            new ConfigurableInitiativeWorkflowService($this->db);
+        if ($configurableWorkflow->isConfigurableRequest($requestId)) {
+            $configurableWorkflow->markCurrentStageOpened(
+                $requestId,
+                $userId
+            );
+            return;
+        }
+
         $statement = $this->db->prepare(
             "UPDATE initiative_request_stages stage
              SET opened_at = CURRENT_TIMESTAMP
@@ -3846,6 +3834,8 @@ final class InitiativeWorkflowRepository
                 proposed_start_date,
                 proposed_end_date,
                 related_agreement_id,
+                relationship_type,
+                external_partner_country,
                 requester_mobile,
                 requester_type,
                 requester_type_other,
@@ -3864,6 +3854,9 @@ final class InitiativeWorkflowRepository
                 proposed_venue_country_code,
                 implementation_country,
                 online_platform_name,
+                international_participation,
+                international_countries,
+                international_partner,
                 has_related_agreement,
                 has_external_partner,
                 external_partner_name,
@@ -3939,6 +3932,12 @@ final class InitiativeWorkflowRepository
             'HYBRID',
             'OTHER',
         ];
+        $relationshipTypes = [
+            'NO_EXTERNAL_PARTY',
+            'EXTERNAL_WITHOUT_AGREEMENT',
+            'LINKED_AGREEMENTS',
+            'UNSURE',
+        ];
         $resourceOptions = [
             'VENUE',
             'BUDGET',
@@ -3981,6 +3980,21 @@ final class InitiativeWorkflowRepository
             'proposed_end_date' => $this->nullableDate(
                 $payload['proposed_end_date'] ?? null
             ),
+            'relationship_type' =>
+                $this->normalizeCode(
+                    $payload['relationship_type'] ?? null,
+                    $relationshipTypes,
+                    'external relationship type'
+                ),
+            'related_agreement_ids' =>
+                $this->normalizeIntegerArray(
+                    $payload['related_agreement_ids']
+                        ?? (
+                            isset($payload['related_agreement_id'])
+                                ? [$payload['related_agreement_id']]
+                                : []
+                        )
+                ),
             'related_agreement_id' =>
                 $this->nullableInteger(
                     $payload['related_agreement_id'] ?? null
@@ -4075,6 +4089,18 @@ final class InitiativeWorkflowRepository
                 $this->nullableText(
                     $payload['online_platform_name'] ?? null
                 ),
+            'international_participation' =>
+                $this->nullableBoolean(
+                    $payload['international_participation'] ?? null
+                ),
+            'international_countries' =>
+                $this->normalizeTextArray(
+                    $payload['international_countries'] ?? []
+                ),
+            'international_partner' =>
+                $this->nullableText(
+                    $payload['international_partner'] ?? null
+                ),
             'has_related_agreement' =>
                 $this->nullableBoolean(
                     $payload['has_related_agreement'] ?? null
@@ -4086,6 +4112,10 @@ final class InitiativeWorkflowRepository
             'external_partner_name' =>
                 $this->nullableText(
                     $payload['external_partner_name'] ?? null
+                ),
+            'external_partner_country' =>
+                $this->nullableText(
+                    $payload['external_partner_country'] ?? null
                 ),
             'external_partner_role' =>
                 $this->nullableText(
@@ -4249,13 +4279,91 @@ final class InitiativeWorkflowRepository
             $data['online_platform_name'] = null;
         }
 
-        if ($data['has_related_agreement'] !== true) {
-            $data['related_agreement_id'] = null;
+        if ($data['international_participation'] !== true) {
+            $data['international_countries'] = [];
+            $data['international_partner'] = null;
         }
 
-        if ($data['has_external_partner'] !== true) {
-            $data['external_partner_name'] = null;
-            $data['external_partner_role'] = null;
+        if ($data['relationship_type'] === null) {
+            if (
+                $data['has_related_agreement'] === true
+                || $data['related_agreement_ids'] !== []
+                || $data['related_agreement_id'] !== null
+            ) {
+                $data['relationship_type'] = 'LINKED_AGREEMENTS';
+            } elseif ($data['has_external_partner'] === true) {
+                $data['relationship_type'] =
+                    'EXTERNAL_WITHOUT_AGREEMENT';
+            } elseif (
+                $data['has_related_agreement'] === false
+                && $data['has_external_partner'] === false
+            ) {
+                $data['relationship_type'] = 'NO_EXTERNAL_PARTY';
+            }
+        }
+
+        if (
+            $data['related_agreement_id'] !== null
+            && !in_array(
+                $data['related_agreement_id'],
+                $data['related_agreement_ids'],
+                true
+            )
+        ) {
+            array_unshift(
+                $data['related_agreement_ids'],
+                $data['related_agreement_id']
+            );
+            $data['related_agreement_ids'] = array_values(
+                array_unique($data['related_agreement_ids'])
+            );
+        }
+
+        switch ($data['relationship_type']) {
+            case 'LINKED_AGREEMENTS':
+                $data['has_related_agreement'] = true;
+                $data['has_external_partner'] = true;
+                $data['related_agreement_id'] =
+                    $data['related_agreement_ids'][0] ?? null;
+                $data['external_partner_name'] = null;
+                $data['external_partner_country'] = null;
+                $data['external_partner_role'] = null;
+                break;
+
+            case 'EXTERNAL_WITHOUT_AGREEMENT':
+                $data['has_related_agreement'] = false;
+                $data['has_external_partner'] = true;
+                $data['related_agreement_ids'] = [];
+                $data['related_agreement_id'] = null;
+                break;
+
+            case 'NO_EXTERNAL_PARTY':
+                $data['has_related_agreement'] = false;
+                $data['has_external_partner'] = false;
+                $data['related_agreement_ids'] = [];
+                $data['related_agreement_id'] = null;
+                $data['external_partner_name'] = null;
+                $data['external_partner_country'] = null;
+                $data['external_partner_role'] = null;
+                break;
+
+            case 'UNSURE':
+                $data['has_related_agreement'] = null;
+                $data['has_external_partner'] = null;
+                $data['related_agreement_ids'] = [];
+                $data['related_agreement_id'] = null;
+                $data['external_partner_name'] = null;
+                $data['external_partner_country'] = null;
+                $data['external_partner_role'] = null;
+                break;
+
+            default:
+                $data['related_agreement_ids'] = [];
+                $data['related_agreement_id'] = null;
+                $data['external_partner_name'] = null;
+                $data['external_partner_country'] = null;
+                $data['external_partner_role'] = null;
+                break;
         }
 
         if ($data['supports_sdg'] !== true) {
@@ -4333,23 +4441,37 @@ final class InitiativeWorkflowRepository
             ) {
                 $missing[] = 'online platform name';
             }
-            if ($data['has_related_agreement'] === null) {
-                $missing[] = 'Agreement link choice';
+            if ($data['relationship_type'] === null) {
+                $missing[] = 'external relationship type';
             }
             if (
-                $data['has_related_agreement'] === true
-                && $data['related_agreement_id'] === null
+                $data['relationship_type'] === 'LINKED_AGREEMENTS'
+                && $data['related_agreement_ids'] === []
             ) {
-                $missing[] = 'related Agreement';
-            }
-            if ($data['has_external_partner'] === null) {
-                $missing[] = 'external partner choice';
+                $missing[] = 'at least one related Agreement';
             }
             if (
-                $data['has_external_partner'] === true
+                $data['relationship_type'] ===
+                    'EXTERNAL_WITHOUT_AGREEMENT'
                 && $data['external_partner_name'] === null
             ) {
-                $missing[] = 'external partner name';
+                $missing[] = 'external entity name';
+            }
+            if (
+                $data['relationship_type'] ===
+                    'EXTERNAL_WITHOUT_AGREEMENT'
+                && $data['external_partner_country'] === null
+            ) {
+                $missing[] = 'external entity country';
+            }
+            if ($data['international_participation'] === null) {
+                $missing[] = 'international participation choice';
+            }
+            if (
+                $data['international_participation'] === true
+                && $data['international_countries'] === []
+            ) {
+                $missing[] = 'international participation countries';
             }
             if ($data['required_resources'] === []) {
                 $missing[] = 'required resources';
@@ -4529,6 +4651,143 @@ final class InitiativeWorkflowRepository
         return $normalized;
     }
 
+    private function normalizeIntegerArray(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded)
+                ? $decoded
+                : (preg_split('/\s*,\s*/', trim($value)) ?: []);
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($value as $item) {
+            if (filter_var($item, FILTER_VALIDATE_INT) === false) {
+                continue;
+            }
+
+            $id = (int) $item;
+            if ($id > 0) {
+                $normalized[] = $id;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function replaceRequestAgreementLinks(
+        int $requestId,
+        array $agreementIds
+    ): void {
+        $delete = $this->db->prepare(
+            'DELETE FROM initiative_request_agreements
+             WHERE request_id = :request_id'
+        );
+        $delete->execute(['request_id' => $requestId]);
+
+        if ($agreementIds === []) {
+            return;
+        }
+
+        $exists = $this->db->prepare(
+            'SELECT EXISTS (
+                SELECT 1
+                FROM agreements
+                WHERE agreement_id = :agreement_id
+            )'
+        );
+        $insert = $this->db->prepare(
+            'INSERT INTO initiative_request_agreements (
+                request_id,
+                agreement_id
+             ) VALUES (
+                :request_id,
+                :agreement_id
+             )
+             ON CONFLICT DO NOTHING'
+        );
+
+        foreach ($agreementIds as $agreementId) {
+            $exists->execute(['agreement_id' => $agreementId]);
+            if (!filter_var(
+                $exists->fetchColumn(),
+                FILTER_VALIDATE_BOOLEAN
+            )) {
+                throw new InvalidArgumentException(
+                    'One of the selected Agreements does not exist.'
+                );
+            }
+
+            $insert->execute([
+                'request_id' => $requestId,
+                'agreement_id' => $agreementId,
+            ]);
+        }
+    }
+
+    private function requestAgreementIds(int $requestId): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT agreement_id
+             FROM initiative_request_agreements
+             WHERE request_id = :request_id
+             ORDER BY agreement_id'
+        );
+        $statement->execute(['request_id' => $requestId]);
+
+        return array_map(
+            static fn (mixed $value): int => (int) $value,
+            $statement->fetchAll(PDO::FETCH_COLUMN)
+        );
+    }
+
+    private function requestAgreements(int $requestId): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT
+                agreement.agreement_id,
+                agreement.agreement_code,
+                agreement.title,
+                agreement.status
+             FROM initiative_request_agreements request_agreement
+             JOIN agreements agreement
+               ON agreement.agreement_id = request_agreement.agreement_id
+             WHERE request_agreement.request_id = :request_id
+             ORDER BY agreement.agreement_code, agreement.title'
+        );
+        $statement->execute(['request_id' => $requestId]);
+
+        return $statement->fetchAll();
+    }
+    private function normalizeTextArray(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            } else {
+                $value = preg_split('/\s*,\s*/', trim($value)) ?: [];
+            }
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($value as $item) {
+            $text = trim((string) $item);
+            if ($text !== '') {
+                $normalized[] = substr($text, 0, 120);
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
     private function normalizeCodeArray(
         mixed $value,
         array $allowed
