@@ -1,0 +1,317 @@
+/* WORKFLOW_SCENARIO_VISUAL_PREVIEW_V1 */
+
+.workflow-scenario-explorer {
+    overflow: hidden;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    background: var(--bs-body-bg);
+}
+
+.workflow-scenario-explorer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.workflow-scenario-explorer-copy {
+    min-width: 0;
+}
+
+.workflow-scenario-explorer-copy p {
+    max-width: 760px;
+}
+
+.workflow-scenario-tabs {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: .25rem;
+    padding: .25rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .85rem;
+    background: var(--bs-body-bg);
+}
+
+.workflow-scenario-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 2.4rem;
+    padding: .45rem .75rem;
+    border: 0;
+    border-radius: .65rem;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.workflow-scenario-tab:hover,
+.workflow-scenario-tab:focus-visible {
+    color: var(--bs-body-color);
+    background: var(--bs-tertiary-bg);
+}
+
+.workflow-scenario-tab.is-active {
+    color: var(--bs-primary);
+    background: rgba(13, 110, 253, .1);
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, .18);
+}
+
+.workflow-scenario-tab-count {
+    display: inline-grid;
+    min-width: 1.45rem;
+    height: 1.45rem;
+    padding: 0 .35rem;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--bs-body-bg);
+    font-size: .68rem;
+}
+
+.workflow-scenario-current,
+.workflow-scenario-all {
+    padding: 1rem;
+}
+
+.workflow-scenario-current .workflow-route-summary {
+    margin: 0;
+}
+
+.workflow-scenario-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.workflow-scenario-metric {
+    padding: .85rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .85rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.workflow-scenario-metric strong,
+.workflow-scenario-metric span {
+    display: block;
+}
+
+.workflow-scenario-metric strong {
+    font-size: 1.25rem;
+    line-height: 1.1;
+}
+
+.workflow-scenario-metric span {
+    margin-top: .2rem;
+    color: var(--bs-secondary-color);
+    font-size: .74rem;
+}
+
+.workflow-scenario-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.workflow-scenario-card {
+    overflow: hidden;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    background: var(--bs-body-bg);
+}
+
+.workflow-scenario-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .8rem 1rem;
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.workflow-scenario-card-eyebrow {
+    display: block;
+    margin-bottom: .12rem;
+    color: var(--bs-primary);
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+
+.workflow-scenario-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: .4rem;
+}
+
+.workflow-scenario-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    padding: .25rem .55rem;
+    border: 1px solid rgba(13, 110, 253, .18);
+    border-radius: 999px;
+    background: rgba(13, 110, 253, .07);
+    color: var(--bs-primary);
+    font-size: .68rem;
+    font-weight: 800;
+}
+
+.workflow-scenario-badge.is-muted {
+    border-color: var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+}
+
+.workflow-scenario-route {
+    display: flex;
+    align-items: stretch;
+    gap: .55rem;
+    overflow-x: auto;
+    padding: 1rem;
+    scroll-snap-type: inline proximity;
+}
+
+.workflow-scenario-stage-node,
+.workflow-scenario-parallel-group {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+}
+
+.workflow-scenario-stage-node {
+    display: grid;
+    align-content: center;
+    min-width: 150px;
+    max-width: 220px;
+    min-height: 78px;
+    padding: .7rem .8rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .85rem;
+    background: var(--bs-body-bg);
+}
+
+.workflow-scenario-stage-node strong,
+.workflow-scenario-stage-node small {
+    display: block;
+}
+
+.workflow-scenario-stage-node strong {
+    overflow-wrap: anywhere;
+    font-size: .78rem;
+}
+
+.workflow-scenario-stage-node small {
+    margin-top: .25rem;
+    color: var(--bs-secondary-color);
+    font-size: .66rem;
+}
+
+.workflow-scenario-stage-node.is-optional {
+    border-style: dashed;
+    border-color: rgba(111, 66, 193, .35);
+    background: rgba(111, 66, 193, .045);
+}
+
+.workflow-scenario-stage-node.is-creator {
+    border-color: rgba(13, 110, 253, .28);
+    background: rgba(13, 110, 253, .045);
+}
+
+.workflow-scenario-connector {
+    display: grid;
+    flex: 0 0 1.4rem;
+    place-items: center;
+    color: var(--bs-secondary-color);
+    font-weight: 900;
+}
+
+.workflow-scenario-parallel-group {
+    min-width: 200px;
+    padding: .55rem;
+    border: 1px dashed rgba(25, 135, 84, .38);
+    border-radius: 1rem;
+    background: rgba(25, 135, 84, .04);
+}
+
+.workflow-scenario-parallel-label {
+    display: block;
+    margin: 0 0 .45rem;
+    color: #146c43;
+    font-size: .67rem;
+    font-weight: 900;
+    text-align: center;
+}
+
+.workflow-scenario-parallel-branches {
+    display: grid;
+    gap: .45rem;
+}
+
+.workflow-scenario-parallel-branches .workflow-scenario-stage-node {
+    width: 100%;
+    max-width: none;
+    min-height: 58px;
+}
+
+.workflow-scenario-skipped {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+    padding: .75rem 1rem;
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    font-size: .72rem;
+}
+
+.workflow-scenario-skipped strong {
+    margin-inline-end: .15rem;
+    color: var(--bs-body-color);
+}
+
+.workflow-scenario-more {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+}
+
+html[dir="rtl"] .workflow-scenario-card-badges {
+    justify-content: start;
+}
+
+@media (max-width: 767.98px) {
+    .workflow-scenario-explorer-header,
+    .workflow-scenario-card-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .workflow-scenario-tabs {
+        width: 100%;
+    }
+
+    .workflow-scenario-tab {
+        flex: 1 1 50%;
+        justify-content: center;
+    }
+
+    .workflow-scenario-card-badges {
+        justify-content: start;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .workflow-scenario-metrics {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workflow-scenario-stage-node {
+        min-width: 138px;
+    }
+}

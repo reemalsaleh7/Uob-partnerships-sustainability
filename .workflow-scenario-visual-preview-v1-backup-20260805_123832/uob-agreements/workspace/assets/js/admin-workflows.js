@@ -205,15 +205,6 @@
             node.textContent = `${phases[index].phase}. ${stage.step_label || t('New stage', 'مرحلة جديدة')}`;
             elements.summary.append(node);
         });
-
-        // WORKFLOW_SCENARIO_VISUAL_PREVIEW_V1
-        window.dispatchEvent(
-            new CustomEvent('uob:workflow-stages-changed', {
-                detail: {
-                    stages: state.stages.map(cloneStage)
-                }
-            })
-        );
     }
 
     function createSelectOption(value, label) {
@@ -310,7 +301,6 @@
             });
             optional.addEventListener('change', () => {
                 stage.is_optional = optional.value === 'true';
-                renderRouteSummary();
             });
             responsibility.addEventListener('change', () => {
                 stage.responsibility_type = responsibility.value;

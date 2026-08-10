@@ -12,10 +12,7 @@ $text = static fn (string $english, string $arabic): string =>
 workspaceHeader(
     $text('Workflow templates', 'قوالب سير العمل'),
     'admin-workflows',
-    [
-        'assets/css/admin-workflows.css',
-        'assets/css/admin-workflow-scenarios.css',
-    ]
+    ['assets/css/admin-workflows.css']
 );
 ?>
 
@@ -97,67 +94,7 @@ workspaceHeader(
                 <textarea class="form-control" id="workflow-description" rows="2" maxlength="1000" data-template-description></textarea>
             </div>
 
-            <!-- WORKFLOW_SCENARIO_VISUAL_PREVIEW_V1 -->
-            <section class="workflow-scenario-explorer mt-4" data-scenario-explorer>
-                <header class="workflow-scenario-explorer-header">
-                    <div class="workflow-scenario-explorer-copy">
-                        <p class="eyebrow mb-1"><?= htmlspecialchars($text('Visual route preview', 'المعاينة المرئية للمسارات'), ENT_QUOTES, 'UTF-8') ?></p>
-                        <h3 class="h5 mb-1"><?= htmlspecialchars($text('Workflow scenarios', 'سيناريوهات سير العمل'), ENT_QUOTES, 'UTF-8') ?></h3>
-                        <p class="small text-secondary mb-0" data-scenario-summary><?= htmlspecialchars(
-                            $text(
-                                'Review the current draft or explore every possible route created by optional and parallel stages.',
-                                'استعرضي المسار الحالي أو جميع المسارات المحتملة الناتجة عن المراحل الاختيارية والمتوازية.'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?></p>
-                    </div>
-                    <div class="workflow-scenario-tabs" role="tablist" aria-label="<?= htmlspecialchars($text('Scenario preview mode', 'وضع معاينة السيناريوهات'), ENT_QUOTES, 'UTF-8') ?>">
-                        <button
-                            class="workflow-scenario-tab is-active"
-                            type="button"
-                            role="tab"
-                            aria-selected="true"
-                            data-scenario-mode="current"
-                        ><?= htmlspecialchars($text('Current route', 'المسار الحالي'), ENT_QUOTES, 'UTF-8') ?></button>
-                        <button
-                            class="workflow-scenario-tab"
-                            type="button"
-                            role="tab"
-                            aria-selected="false"
-                            tabindex="-1"
-                            data-scenario-mode="all"
-                        >
-                            <?= htmlspecialchars($text('All scenarios', 'جميع السيناريوهات'), ENT_QUOTES, 'UTF-8') ?>
-                            <span class="workflow-scenario-tab-count" data-scenario-count-badge>1</span>
-                        </button>
-                    </div>
-                </header>
-
-                <div class="workflow-scenario-current" data-scenario-current>
-                    <div class="workflow-route-summary" data-route-summary aria-live="polite"></div>
-                </div>
-
-                <div class="workflow-scenario-all d-none" data-scenario-all>
-                    <div class="workflow-scenario-metrics">
-                        <div class="workflow-scenario-metric">
-                            <strong data-scenario-total>1</strong>
-                            <span><?= htmlspecialchars($text('Possible visual routes', 'المسارات المرئية المحتملة'), ENT_QUOTES, 'UTF-8') ?></span>
-                        </div>
-                        <div class="workflow-scenario-metric">
-                            <strong data-scenario-optional>0</strong>
-                            <span><?= htmlspecialchars($text('Optional stages', 'المراحل الاختيارية'), ENT_QUOTES, 'UTF-8') ?></span>
-                        </div>
-                    </div>
-
-                    <div class="workflow-scenario-list" data-scenario-list aria-live="polite"></div>
-                    <div class="workflow-scenario-more">
-                        <button class="btn btn-outline-primary d-none" type="button" data-scenario-more>
-                            <span data-scenario-more-label><?= htmlspecialchars($text('Show more scenarios', 'عرض سيناريوهات إضافية'), ENT_QUOTES, 'UTF-8') ?></span>
-                        </button>
-                    </div>
-                </div>
-            </section>
+            <div class="workflow-route-summary mt-4" data-route-summary aria-live="polite"></div>
 
             <div class="workflow-stage-list mt-4" data-stage-list></div>
 
@@ -257,7 +194,4 @@ workspaceHeader(
     </article>
 </template>
 
-<?php workspaceFooter([
-    'assets/js/admin-workflows.js',
-    'assets/js/admin-workflow-scenarios.js',
-]); ?>
+<?php workspaceFooter(['assets/js/admin-workflows.js']); ?>
