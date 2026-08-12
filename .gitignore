@@ -28,3 +28,6 @@
 /uob-agreements/uploads/**
 !/uob-agreements/uploads/.gitkeep
 !/uob-agreements/uploads/**/.gitkeep
+
+# Local Workflow backups
+/.workflow-*-backup-*/
