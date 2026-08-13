@@ -323,6 +323,7 @@ class AgreementService {
             ];
         }
 
+        $existing = $this->restoreMissingFixedTermMonths($existing);
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
         if (!$this->agreementDocumentRepo->hasDocumentType(
             $agreementId,
@@ -449,6 +450,7 @@ class AgreementService {
             ];
         }
 
+        $existing = $this->restoreMissingFixedTermMonths($existing);
         $submissionErrors = AgreementValidator::validateForSubmission($existing);
         if (!$this->agreementDocumentRepo->hasDocumentType(
             $agreementId,
@@ -1119,5 +1121,57 @@ class AgreementService {
             }
         }
         return $content;
+    }
+
+    /**
+     * Drafts saved before fixed_term_months was included in the API/repository
+     * allow-lists may have a NULL term even though the form showed a calculated
+     * value. Recover only that missing value; never replace a term entered by a
+     * user and never apply the fallback to automatically renewing Agreements.
+     */
+    private function restoreMissingFixedTermMonths(array $agreement): array
+    {
+        if (
+            in_array(
+                $agreement['auto_renew'] ?? false,
+                [true, 1, '1', 't', 'true', 'on', 'yes'],
+                true
+            )
+            || (
+                isset($agreement['fixed_term_months'])
+                && $agreement['fixed_term_months'] !== ''
+            )
+        ) {
+            return $agreement;
+        }
+
+        $start = $this->agreementDate($agreement['start_date'] ?? null);
+        $end = $this->agreementDate($agreement['end_date'] ?? null);
+        if ($start === null || $end === null || $end < $start) {
+            return $agreement;
+        }
+
+        $days = (int) $start->diff($end)->format('%a') + 1;
+        $months = max(1, (int) round($days / 30.4375));
+        $this->agreementRepo->update(
+            (int) $agreement['agreement_id'],
+            ['fixed_term_months' => $months]
+        );
+        $agreement['fixed_term_months'] = $months;
+
+        return $agreement;
+    }
+
+    private function agreementDate(mixed $value): ?DateTimeImmutable
+    {
+        $normalized = trim((string) ($value ?? ''));
+        if ($normalized === '') {
+            return null;
+        }
+
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $normalized);
+        return $date !== false && $date->format('Y-m-d') === $normalized
+            ? $date
+            : null;
     }
 }

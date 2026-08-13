@@ -77,7 +77,6 @@ $mapLabel = $isRtl ? 'خريطة الاتفاقيات' : 'Partnership Map';
     <!-- Map Section -->
     <section class="map-section">
         <div class="container">
-            <h2 class="section-title-pro">Partnership Network</h2>
 
             <!-- Search and Filter Controls -->
             <div class="search-filter-container">
