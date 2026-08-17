@@ -67,125 +67,14 @@ workspaceHeader(
         <p class="workflow-admin-description">
             <?= htmlspecialchars(
                 $text(
-                    'Configure how Agreements and Initiatives move through approval. Follow the four steps below from template selection to publishing.',
-                    'حدّد كيفية انتقال الاتفاقيات والمبادرات خلال مراحل الاعتماد. اتبع الخطوات الأربع من اختيار القالب حتى نشر الإصدار.'
+                    'Configure how Agreements and Initiatives move through approval.',
+                    'حدّد كيفية انتقال الاتفاقيات والمبادرات خلال مراحل الاعتماد.'
                 ),
                 ENT_QUOTES,
                 'UTF-8'
             ) ?>
         </p>
 
-        <div class="workflow-admin-guide">
-
-            <div class="workflow-admin-guide-step">
-                <span>1</span>
-                <div>
-                    <strong>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Choose template',
-                                'اختر القالب'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </strong>
-
-                    <small>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Select Agreement or Initiative approval.',
-                                'اختر مسار اعتماد الاتفاقيات أو المبادرات.'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </small>
-                </div>
-            </div>
-
-            <div class="workflow-admin-guide-step">
-                <span>2</span>
-                <div>
-                    <strong>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Review route',
-                                'راجع المسار'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </strong>
-
-                    <small>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Understand the current stages and possible scenarios.',
-                                'افهم المراحل الحالية والسيناريوهات المحتملة.'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </small>
-                </div>
-            </div>
-
-            <div class="workflow-admin-guide-step">
-                <span>3</span>
-                <div>
-                    <strong>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Edit stages',
-                                'عدّل المراحل'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </strong>
-
-                    <small>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Adjust responsibility, order, scope, and reminders.',
-                                'عدّل المسؤولية والترتيب والنطاق والتذكيرات.'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </small>
-                </div>
-            </div>
-
-            <div class="workflow-admin-guide-step">
-                <span>4</span>
-                <div>
-                    <strong>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Publish version',
-                                'انشر الإصدار'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </strong>
-
-                    <small>
-                        <?= htmlspecialchars(
-                            $text(
-                                'Explain the change and publish safely.',
-                                'وضّح سبب التغيير ثم انشر الإصدار بأمان.'
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>
-                    </small>
-                </div>
-            </div>
-
-        </div>
     </div>
 
     <div class="workflow-admin-hero-actions">
@@ -291,8 +180,8 @@ workspaceHeader(
                     <p class="workflow-admin-section-step mb-1">
                     <?= htmlspecialchars(
                         $text(
-                            'STEP 2 · REVIEW ROUTE',
-                            'الخطوة 2 · مراجعة المسار'
+                            'REVIEW ROUTE',
+                            'مراجعة المسار'
                         ),
                         ENT_QUOTES,
                         'UTF-8'
