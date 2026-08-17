@@ -934,9 +934,9 @@ SELECT
         },
         [pscustomobject]@{
             Name = 'workflow-template-seed'
-            Description = 'Current Agreement and Initiative workflow templates'
+            Description = 'Legacy workflow template seed compatibility'
             RelativePath = 'seed\workflows.sql'
-            CheckSql = "SELECT (SELECT count(*) FROM workflow_template_steps s JOIN workflow_templates t ON t.workflow_template_id=s.workflow_template_id WHERE t.name='Agreement Approval' AND s.step_key IN ('CREATOR','VP_INITIAL','LEGAL_REVIEW','FINANCE_REVIEW','VP_FINAL','PRESIDENT_APPROVAL')) = 6 AND (SELECT count(*) FROM workflow_template_steps s JOIN workflow_templates t ON t.workflow_template_id=s.workflow_template_id WHERE t.name='Initiative Approval') = 5;"
+            CheckSql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='workflow_templates' AND column_name='template_key') THEN (SELECT count(*) FROM workflow_template_steps s JOIN workflow_templates t ON t.workflow_template_id=s.workflow_template_id WHERE t.name='Agreement Approval' AND s.step_key IN ('CREATOR','VP_INITIAL','LEGAL_REVIEW','FINANCE_REVIEW','VP_FINAL','PRESIDENT_APPROVAL')) = 6 ELSE (SELECT count(*) FROM workflow_template_steps s JOIN workflow_templates t ON t.workflow_template_id=s.workflow_template_id WHERE t.name='Agreement Approval') >= 5 AND (SELECT count(*) FROM workflow_template_steps s JOIN workflow_templates t ON t.workflow_template_id=s.workflow_template_id WHERE t.name='Initiative Approval') = 5 END;"
         }
     )
 }
@@ -1038,6 +1038,187 @@ SELECT
 "@
         },
         [pscustomobject]@{
+            Name = 'university-structure-development-seed'
+            Description = 'University organizational structure and development workflow actors'
+            RelativePath = 'seed\university_structure_dev.sql'
+            CheckSql = @"
+WITH active_assignments AS (
+    SELECT
+        u.email,
+        p.name AS position_name,
+        ou.code AS unit_code
+    FROM user_positions up
+    JOIN users u
+      ON u.user_id = up.user_id
+     AND u.is_active = TRUE
+    JOIN positions p
+      ON p.position_id = up.position_id
+    JOIN organizational_units ou
+      ON ou.unit_id = up.unit_id
+    WHERE up.is_active = TRUE
+      AND (
+          up.end_date IS NULL
+          OR up.end_date >= CURRENT_DATE
+      )
+),
+initiative_approvers AS (
+    SELECT DISTINCT u.email
+    FROM users u
+    JOIN user_roles ur
+      ON ur.user_id = u.user_id
+    JOIN role_permissions rp
+      ON rp.role_id = ur.role_id
+    JOIN permissions permission
+      ON permission.permission_id = rp.permission_id
+     AND permission.permission_code = 'APPROVE_INITIATIVE'
+)
+SELECT
+    (
+        SELECT count(*)
+        FROM organizational_units college
+        JOIN organizational_units university
+          ON university.unit_id = college.parent_unit_id
+         AND university.code = 'UOB'
+        WHERE college.code IN (
+            'ARTS','SCI','CBA','BTC','CAS',
+            'CIT','LAW','CHSS','ENG'
+        )
+          AND college.unit_type = 'COLLEGE'
+          AND college.is_active = TRUE
+    ) = 9
+
+    AND (
+        SELECT count(*)
+        FROM organizational_units department
+        JOIN organizational_units college
+          ON college.unit_id = department.parent_unit_id
+         AND college.unit_type = 'COLLEGE'
+        WHERE department.code IN (
+            'ARTS-AIS','ARTS-MCTFA','ARTS-ELL','ARTS-PSY','ARTS-SS',
+            'SCI-MATH','SCI-CHEM','SCI-BIO','SCI-PHYS',
+            'CBA-ACC','CBA-EF','CBA-MM','CBA-IB',
+            'BTC-ITE','BTC-AIS','BTC-ELE','BTC-MS','BTC-ES',
+            'CAS-ENGP','CAS-ATP',
+            'CS','IS','CIT-CE',
+            'LAW-PUB','LAW-PRIV',
+            'CHSS-NUR','CHSS-AH','CHSS-PE',
+            'ENG-CIV','ENG-AID','ENG-CHEM','ENG-EEE','ENG-MECH'
+        )
+          AND department.unit_type = 'DEPARTMENT'
+          AND department.is_active = TRUE
+    ) = 33
+
+    AND (
+        SELECT count(DISTINCT unit_code)
+        FROM active_assignments
+        WHERE position_name = 'Dean'
+          AND email LIKE 'dev.dean%@uob.test'
+          AND unit_code IN (
+              'ARTS','SCI','CBA','BTC','CAS',
+              'CIT','LAW','CHSS','ENG'
+          )
+    ) = 9
+
+    AND (
+        SELECT count(DISTINCT unit_code)
+        FROM active_assignments
+        WHERE position_name = 'Department Head'
+          AND email LIKE 'dev.head%@uob.test'
+          AND unit_code IN (
+            'ARTS-AIS','ARTS-MCTFA','ARTS-ELL','ARTS-PSY','ARTS-SS',
+            'SCI-MATH','SCI-CHEM','SCI-BIO','SCI-PHYS',
+            'CBA-ACC','CBA-EF','CBA-MM','CBA-IB',
+            'BTC-ITE','BTC-AIS','BTC-ELE','BTC-MS','BTC-ES',
+            'CAS-ENGP','CAS-ATP',
+            'CS','IS','CIT-CE',
+            'LAW-PUB','LAW-PRIV',
+            'CHSS-NUR','CHSS-AH','CHSS-PE',
+            'ENG-CIV','ENG-AID','ENG-CHEM','ENG-EEE','ENG-MECH'
+          )
+    ) = 33
+
+    AND (
+        SELECT count(DISTINCT unit_code)
+        FROM active_assignments
+        WHERE position_name = 'Faculty Member'
+          AND email LIKE 'dev.faculty%@uob.test'
+          AND unit_code IN (
+            'ARTS-AIS','ARTS-MCTFA','ARTS-ELL','ARTS-PSY','ARTS-SS',
+            'SCI-MATH','SCI-CHEM','SCI-BIO','SCI-PHYS',
+            'CBA-ACC','CBA-EF','CBA-MM','CBA-IB',
+            'BTC-ITE','BTC-AIS','BTC-ELE','BTC-MS','BTC-ES',
+            'CAS-ENGP','CAS-ATP',
+            'CS','IS','CIT-CE',
+            'LAW-PUB','LAW-PRIV',
+            'CHSS-NUR','CHSS-AH','CHSS-PE',
+            'ENG-CIV','ENG-AID','ENG-CHEM','ENG-EEE','ENG-MECH'
+          )
+    ) = 33
+
+    AND (
+        SELECT count(*)
+        FROM active_assignments
+        WHERE (email, position_name, unit_code) IN (
+            (
+                'dev.president.office@uob.test',
+                'President Office Delegate',
+                'PRES'
+            ),
+            (
+                'dev.president.staff@uob.test',
+                'President Office Staff',
+                'PRES'
+            ),
+            (
+                'dev.vp.office@uob.test',
+                'Vice President Office Delegate',
+                'VP'
+            ),
+            (
+                'dev.vp.staff@uob.test',
+                'Vice President Office Staff',
+                'VP'
+            ),
+            (
+                'dev.vpaa@uob.test',
+                'Vice President for Academic Affairs',
+                'VPAA'
+            ),
+            (
+                'dev.vpaa.office@uob.test',
+                'Vice President for Academic Affairs Office Delegate',
+                'VPAA'
+            ),
+            (
+                'dev.vpaa.staff@uob.test',
+                'Vice President for Academic Affairs Office Staff',
+                'VPAA'
+            )
+        )
+    ) = 7
+
+    AND (
+        SELECT count(*)
+        FROM initiative_approvers
+        WHERE email IN (
+            'dev.president.office@uob.test',
+            'dev.vp.office@uob.test',
+            'dev.vpaa.office@uob.test',
+            'dev.vpaa@uob.test'
+        )
+    ) = 4
+
+    AND NOT EXISTS (
+        SELECT 1
+        FROM initiative_approvers
+        WHERE email IN (
+            'dev.president.staff@uob.test',
+            'dev.vp.staff@uob.test',
+            'dev.vpaa.staff@uob.test'
+        )
+    );
+"@
+        },        [pscustomobject]@{
             Name = '20260722_workspace_showcase_data.sql'
             Description = 'Showcase Agreements and annual reports'
             RelativePath = 'migrations\20260722_workspace_showcase_data.sql'

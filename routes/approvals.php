@@ -28,6 +28,22 @@ if (
     $controller->inbox();
 } elseif (
     $method === 'POST'
+    && $uri === '/workflow-inbox/read-all'
+) {
+    $controller->markInboxAllRead();
+} elseif (
+    $method === 'POST'
+    && preg_match(
+        '#^/workflow-inbox/([0-9]+)/read$#',
+        $uri,
+        $matches
+    )
+) {
+    $controller->markInboxStepRead(
+        (int) $matches[1]
+    );
+} elseif (
+    $method === 'POST'
     && preg_match(
         '#^/workflow-instances/([0-9]+)/initial-vp/approve$#',
         $uri,

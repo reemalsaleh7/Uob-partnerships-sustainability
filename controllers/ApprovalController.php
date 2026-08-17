@@ -30,6 +30,7 @@ class ApprovalController
         PermissionMiddleware::requireAny([
             'APPROVE_AGREEMENT',
             'REJECT_AGREEMENT',
+            'APPROVE_INITIATIVE',
         ]);
 
         $userId =
@@ -39,6 +40,56 @@ class ApprovalController
             $this->workflowRepository
                 ->findInboxForUser($userId)
         );
+    }
+
+    public function markInboxStepRead(
+        int $instanceStepId
+    ): void {
+        AuthMiddleware::handle();
+
+        PermissionMiddleware::requireAny([
+            'APPROVE_AGREEMENT',
+            'REJECT_AGREEMENT',
+            'APPROVE_INITIATIVE',
+        ]);
+
+        $updated = $this->workflowRepository
+            ->markInboxStepReadForUser(
+                $instanceStepId,
+                (int) ($_SESSION['user_id'] ?? 0)
+            );
+
+        if (!$updated) {
+            Response::error(
+                'The active Workflow assignment was not found.',
+                404
+            );
+        }
+
+        Response::success([
+            'instance_step_id' => $instanceStepId,
+            'is_read' => true,
+        ]);
+    }
+
+    public function markInboxAllRead(): void
+    {
+        AuthMiddleware::handle();
+
+        PermissionMiddleware::requireAny([
+            'APPROVE_AGREEMENT',
+            'REJECT_AGREEMENT',
+            'APPROVE_INITIATIVE',
+        ]);
+
+        $updated = $this->workflowRepository
+            ->markInboxAllReadForUser(
+                (int) ($_SESSION['user_id'] ?? 0)
+            );
+
+        Response::success([
+            'updated' => $updated,
+        ]);
     }
 
     public function approveInitialVp(

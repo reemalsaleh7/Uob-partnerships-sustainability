@@ -802,99 +802,325 @@ public function clearRedraftBaseVersion(
                 lifecycle_request.lifecycle_request_id,
                 lifecycle_request.request_type AS lifecycle_request_type,
                 lifecycle_request.status AS lifecycle_request_status,
+                initiative_request.request_code AS initiative_request_code,
+                initiative_request.title AS initiative_request_title,
                 wi.finance_review_required,
+                wi.template_version_number,
+                wi.engine_version,
+                inbox_read.read_at,
+                (inbox_read.read_at IS NOT NULL) AS is_read,
                 wis.instance_step_id,
                 wis.step_order,
+                wis.phase_order,
                 wis.step_key,
+                wis.step_label,
+                wis.execution_mode,
+                wis.is_optional,
+                wis.allow_revision,
                 wis.status,
                 wis.started_at,
                 ou.code AS assigned_unit_code,
                 ou.name AS assigned_unit_name,
                 CASE
                     WHEN wis.step_key = \'VP_FINAL\'
-                     AND change_request.instance_step_id
-                         IS NOT NULL
+                     AND change_request.instance_step_id IS NOT NULL
                     THEN \'VP_MEDIATION\'
                     ELSE \'REVIEW\'
                 END AS task_mode,
-                change_request.step_key
-                    AS change_request_step_key,
-                change_request.comments
-                    AS change_request_reason,
-                legal_step.status
-                    AS legal_review_status,
-                legal_step.comments
-                    AS legal_review_comments,
-                finance_step.status
-                    AS finance_review_status,
-                finance_step.comments
-                    AS finance_review_comments,
-                final_vp_step.status
-                    AS final_vp_review_status,
-                final_vp_step.comments
-                    AS final_vp_review_comments,
-                president_step.status
-                    AS president_review_status,
-                president_step.comments
-                    AS president_review_comments
-             FROM workflow_step_assignments wsa
-             JOIN workflow_instance_steps wis
-                ON wis.instance_step_id =
-                   wsa.workflow_instance_step_id
+                change_request.step_key AS change_request_step_key,
+                change_request.comments AS change_request_reason,
+                legal_step.status AS legal_review_status,
+                legal_step.comments AS legal_review_comments,
+                finance_step.status AS finance_review_status,
+                finance_step.comments AS finance_review_comments,
+                final_vp_step.status AS final_vp_review_status,
+                final_vp_step.comments AS final_vp_review_comments,
+                president_step.status AS president_review_status,
+                president_step.comments AS president_review_comments
+             FROM workflow_instance_steps wis
              JOIN workflow_instances wi
-                ON wi.workflow_instance_id =
-                   wis.workflow_instance_id
+                ON wi.workflow_instance_id = wis.workflow_instance_id
+             LEFT JOIN workflow_inbox_read_states inbox_read
+                ON inbox_read.workflow_instance_step_id = wis.instance_step_id
+               AND inbox_read.user_id = :read_user_id
+             LEFT JOIN initiative_requests initiative_request
+                ON wi.entity_type = \'INITIATIVE_REQUEST\'
+               AND initiative_request.request_id = wi.entity_id
              LEFT JOIN agreement_lifecycle_requests lifecycle_request
                 ON wi.entity_type = \'AGREEMENT_LIFECYCLE\'
                AND lifecycle_request.lifecycle_request_id = wi.entity_id
              LEFT JOIN organizational_units ou
                 ON ou.unit_id = wis.assigned_unit_id
              LEFT JOIN workflow_instance_steps legal_step
-                ON legal_step.workflow_instance_id =
-                   wi.workflow_instance_id
+                ON legal_step.workflow_instance_id = wi.workflow_instance_id
                AND legal_step.step_key = \'LEGAL_REVIEW\'
              LEFT JOIN workflow_instance_steps finance_step
-                ON finance_step.workflow_instance_id =
-                   wi.workflow_instance_id
+                ON finance_step.workflow_instance_id = wi.workflow_instance_id
                AND finance_step.step_key = \'FINANCE_REVIEW\'
              LEFT JOIN workflow_instance_steps final_vp_step
-                ON final_vp_step.workflow_instance_id =
-                   wi.workflow_instance_id
+                ON final_vp_step.workflow_instance_id = wi.workflow_instance_id
                AND final_vp_step.step_key = \'VP_FINAL\'
              LEFT JOIN workflow_instance_steps president_step
-                ON president_step.workflow_instance_id =
-                   wi.workflow_instance_id
-               AND president_step.step_key =
-                   \'PRESIDENT_APPROVAL\'
+                ON president_step.workflow_instance_id = wi.workflow_instance_id
+               AND president_step.step_key = \'PRESIDENT_APPROVAL\'
              LEFT JOIN LATERAL (
                 SELECT
                     requested.instance_step_id,
                     requested.step_key,
                     requested.comments
                 FROM workflow_instance_steps requested
-                WHERE requested.workflow_instance_id =
-                      wi.workflow_instance_id
-                  AND requested.status =
-                      \'CHANGES_REQUESTED\'
+                WHERE requested.workflow_instance_id = wi.workflow_instance_id
+                  AND requested.status = \'CHANGES_REQUESTED\'
                 ORDER BY
                     requested.approved_at DESC NULLS LAST,
                     requested.instance_step_id DESC
                 LIMIT 1
              ) change_request ON TRUE
-             WHERE wsa.user_id = :user_id
-               AND wsa.is_active = TRUE
-               AND wi.status = \'IN_PROGRESS\'
+             WHERE wi.status = \'IN_PROGRESS\'
                AND wis.status = \'IN_PROGRESS\'
-             ORDER BY
-                wis.started_at,
-                wi.workflow_instance_id'
+               AND (
+                    EXISTS (
+                        SELECT 1
+                        FROM workflow_step_assignments assignment
+                        WHERE assignment.workflow_instance_step_id =
+                              wis.instance_step_id
+                          AND assignment.user_id = :user_id
+                          AND assignment.is_active = TRUE
+                    )
+                    OR (
+                        wi.entity_type = \'INITIATIVE_REQUEST\'
+                        AND wis.is_office_delegable = TRUE
+                        AND wis.step_key IN (
+                            \'VICE_PRESIDENT\',
+                            \'PRESIDENT\'
+                        )
+                        AND EXISTS (
+                            SELECT 1
+                            FROM user_positions delegate_position
+                            JOIN positions delegate_role_position
+                              ON delegate_role_position.position_id =
+                                 delegate_position.position_id
+                             AND delegate_role_position.name =
+                                 CASE wis.step_key
+                                     WHEN \'VICE_PRESIDENT\' THEN
+                                         \'Vice President Office Delegate\'
+                                     WHEN \'VICE_PRESIDENT_ACADEMIC_AFFAIRS\'
+                                         THEN \'Vice President for Academic Affairs Office Delegate\'
+                                     WHEN \'PRESIDENT\' THEN
+                                         \'President Office Delegate\'
+                                     ELSE \'__NO_DELEGATE_POSITION__\'
+                                 END
+                            JOIN users delegate_user
+                              ON delegate_user.user_id = delegate_position.user_id
+                             AND delegate_user.is_active = TRUE
+                            JOIN user_roles delegate_user_role
+                              ON delegate_user_role.user_id = delegate_user.user_id
+                            JOIN role_permissions delegate_role_permission
+                              ON delegate_role_permission.role_id =
+                                 delegate_user_role.role_id
+                            JOIN permissions delegate_permission
+                              ON delegate_permission.permission_id =
+                                 delegate_role_permission.permission_id
+                             AND delegate_permission.permission_code =
+                                 wis.required_permission_code
+                            WHERE delegate_position.user_id = :delegate_user_id
+                              AND delegate_position.unit_id = wis.assigned_unit_id
+                              AND delegate_position.is_active = TRUE
+                              AND (
+                                   delegate_position.end_date IS NULL
+                                   OR delegate_position.end_date >= CURRENT_DATE
+                              )
+                        )
+                    )
+               )
+             ORDER BY wis.started_at, wi.workflow_instance_id'
         );
 
         $stmt->execute([
+            'read_user_id' => $userId,
             'user_id' => $userId,
+            'delegate_user_id' => $userId,
         ]);
 
         return $stmt->fetchAll();
+    }
+
+    public function markInboxStepReadForUser(
+        int $instanceStepId,
+        int $userId
+    ): bool {
+        $stmt = $this->db->prepare(
+            'WITH authorized_step AS (
+                SELECT wis.instance_step_id
+                FROM workflow_instance_steps wis
+                JOIN workflow_instances wi
+                  ON wi.workflow_instance_id = wis.workflow_instance_id
+                WHERE wis.instance_step_id = :instance_step_id
+                  AND wi.status = \'IN_PROGRESS\'
+                  AND wis.status = \'IN_PROGRESS\'
+                  AND (
+                      EXISTS (
+                          SELECT 1
+                          FROM workflow_step_assignments assignment
+                          WHERE assignment.workflow_instance_step_id =
+                                wis.instance_step_id
+                            AND assignment.user_id = :user_id
+                            AND assignment.is_active = TRUE
+                      )
+                      OR (
+                          wi.entity_type = \'INITIATIVE_REQUEST\'
+                          AND wis.is_office_delegable = TRUE
+                          AND wis.step_key IN (
+                              \'VICE_PRESIDENT\',
+                              \'PRESIDENT\'
+                          )
+                          AND EXISTS (
+                              SELECT 1
+                              FROM user_positions delegate_position
+                              JOIN positions delegate_role_position
+                                ON delegate_role_position.position_id =
+                                   delegate_position.position_id
+                               AND delegate_role_position.name =
+                                   CASE wis.step_key
+                                       WHEN \'VICE_PRESIDENT\' THEN
+                                           \'Vice President Office Delegate\'
+                                       WHEN \'VICE_PRESIDENT_ACADEMIC_AFFAIRS\'
+                                         THEN \'Vice President for Academic Affairs Office Delegate\'
+                                     WHEN \'PRESIDENT\' THEN
+                                           \'President Office Delegate\'
+                                       ELSE \'__NO_DELEGATE_POSITION__\'
+                                   END
+                              JOIN users delegate_user
+                                ON delegate_user.user_id = delegate_position.user_id
+                               AND delegate_user.is_active = TRUE
+                              JOIN user_roles delegate_user_role
+                                ON delegate_user_role.user_id = delegate_user.user_id
+                              JOIN role_permissions delegate_role_permission
+                                ON delegate_role_permission.role_id =
+                                   delegate_user_role.role_id
+                              JOIN permissions delegate_permission
+                                ON delegate_permission.permission_id =
+                                   delegate_role_permission.permission_id
+                               AND delegate_permission.permission_code =
+                                   wis.required_permission_code
+                              WHERE delegate_position.user_id = :delegate_user_id
+                                AND delegate_position.unit_id = wis.assigned_unit_id
+                                AND delegate_position.is_active = TRUE
+                                AND (
+                                     delegate_position.end_date IS NULL
+                                     OR delegate_position.end_date >= CURRENT_DATE
+                                )
+                          )
+                      )
+                  )
+            ),
+            marked AS (
+                INSERT INTO workflow_inbox_read_states (
+                    workflow_instance_step_id,
+                    user_id,
+                    read_at
+                )
+                SELECT
+                    authorized_step.instance_step_id,
+                    :read_user_id,
+                    NOW()
+                FROM authorized_step
+                ON CONFLICT (workflow_instance_step_id, user_id)
+                DO UPDATE
+                SET read_at = workflow_inbox_read_states.read_at
+                RETURNING workflow_instance_step_id
+            )
+            SELECT EXISTS (SELECT 1 FROM authorized_step)'
+        );
+        $stmt->execute([
+            'instance_step_id' => $instanceStepId,
+            'user_id' => $userId,
+            'delegate_user_id' => $userId,
+            'read_user_id' => $userId,
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function markInboxAllReadForUser(
+        int $userId
+    ): int {
+        $stmt = $this->db->prepare(
+            'INSERT INTO workflow_inbox_read_states (
+                workflow_instance_step_id,
+                user_id,
+                read_at
+             )
+             SELECT
+                wis.instance_step_id,
+                :read_user_id,
+                NOW()
+             FROM workflow_instance_steps wis
+             JOIN workflow_instances wi
+               ON wi.workflow_instance_id = wis.workflow_instance_id
+             WHERE wi.status = \'IN_PROGRESS\'
+               AND wis.status = \'IN_PROGRESS\'
+               AND (
+                    EXISTS (
+                        SELECT 1
+                        FROM workflow_step_assignments assignment
+                        WHERE assignment.workflow_instance_step_id =
+                              wis.instance_step_id
+                          AND assignment.user_id = :user_id
+                          AND assignment.is_active = TRUE
+                    )
+                    OR (
+                        wi.entity_type = \'INITIATIVE_REQUEST\'
+                        AND wis.is_office_delegable = TRUE
+                        AND EXISTS (
+                            SELECT 1
+                            FROM user_positions delegate_position
+                            JOIN positions delegate_role_position
+                              ON delegate_role_position.position_id =
+                                 delegate_position.position_id
+                             AND delegate_role_position.name =
+                                 CASE wis.step_key
+                                     WHEN \'VICE_PRESIDENT\'
+                                         THEN \'Vice President Office Delegate\'
+                                     WHEN \'VICE_PRESIDENT_ACADEMIC_AFFAIRS\'
+                                         THEN \'Vice President for Academic Affairs Office Delegate\'
+                                     WHEN \'PRESIDENT\'
+                                         THEN \'President Office Delegate\'
+                                     ELSE \'__NO_DELEGATE_POSITION__\'
+                                 END
+                            JOIN users delegate_user
+                              ON delegate_user.user_id = delegate_position.user_id
+                             AND delegate_user.is_active = TRUE
+                            JOIN user_roles delegate_user_role
+                              ON delegate_user_role.user_id = delegate_user.user_id
+                            JOIN role_permissions delegate_role_permission
+                              ON delegate_role_permission.role_id =
+                                 delegate_user_role.role_id
+                            JOIN permissions delegate_permission
+                              ON delegate_permission.permission_id =
+                                 delegate_role_permission.permission_id
+                             AND delegate_permission.permission_code =
+                                 wis.required_permission_code
+                            WHERE delegate_position.user_id = :delegate_user_id
+                              AND delegate_position.unit_id = wis.assigned_unit_id
+                              AND delegate_position.is_active = TRUE
+                              AND (
+                                   delegate_position.end_date IS NULL
+                                   OR delegate_position.end_date >= CURRENT_DATE
+                              )
+                        )
+                    )
+               )
+             ON CONFLICT (workflow_instance_step_id, user_id)
+             DO NOTHING'
+        );
+        $stmt->execute([
+            'read_user_id' => $userId,
+            'user_id' => $userId,
+            'delegate_user_id' => $userId,
+        ]);
+
+        return $stmt->rowCount();
     }
 
     public function hasActiveAssignmentForEntity(

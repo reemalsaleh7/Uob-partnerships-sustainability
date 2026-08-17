@@ -209,6 +209,8 @@ final class ConfigurableAgreementWorkflowService
                 instance.entity_id AS subject_agreement_id,
                 instance.template_version_number,
                 instance.engine_version,
+                assignment.read_at,
+                (assignment.read_at IS NOT NULL) AS is_read,
                 step.instance_step_id,
                 step.step_order,
                 step.phase_order,
@@ -252,6 +254,7 @@ final class ConfigurableAgreementWorkflowService
             }
             $row['is_optional'] = $this->databaseBoolean($row['is_optional']);
             $row['allow_revision'] = $this->databaseBoolean($row['allow_revision']);
+            $row['is_read'] = $this->databaseBoolean($row['is_read']);
             return $row;
         }, $statement->fetchAll());
     }

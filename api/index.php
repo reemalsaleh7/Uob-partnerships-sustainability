@@ -98,7 +98,7 @@ try {
     }
 
     if (
-        $requestPath === '/workflow-inbox'
+        str_starts_with($requestPath, '/workflow-inbox')
         || str_starts_with(
             $requestPath,
             '/workflow-instances/'
