@@ -40,7 +40,8 @@ final class AdminUserRepository
     public function searchUsers(
         string $search,
         ?bool $active,
-        ?int $unitId,
+        array $unitIds,
+        bool $expandUnitHierarchy,
         int $page,
         int $limit
     ): array {
@@ -63,19 +64,72 @@ final class AdminUserRepository
             $parameters['is_active'] = $active;
         }
 
-        if ($unitId !== null) {
-            $where[] = "EXISTS (
-                SELECT 1
-                FROM user_positions unit_filter
-                WHERE unit_filter.user_id = users.user_id
-                  AND unit_filter.unit_id = :unit_id
-                  AND unit_filter.is_active = TRUE
-                  AND (
-                      unit_filter.end_date IS NULL
-                      OR unit_filter.end_date >= CURRENT_DATE
-                  )
-            )";
-            $parameters['unit_id'] = $unitId;
+        if ($unitIds !== []) {
+            $unitPlaceholders = [];
+
+            foreach (
+                array_values(array_unique($unitIds))
+                as $index => $selectedUnitId
+            ) {
+                $parameterName = 'unit_id_' . $index;
+
+                $unitPlaceholders[] =
+                    ':' . $parameterName;
+
+                $parameters[$parameterName] =
+                    $selectedUnitId;
+            }
+
+            $unitListSql =
+                implode(', ', $unitPlaceholders);
+
+            if ($expandUnitHierarchy) {
+                $where[] = "EXISTS (
+                    WITH RECURSIVE unit_scope AS (
+                        SELECT
+                            selected_unit.unit_id,
+                            selected_unit.unit_type AS root_type
+                        FROM organizational_units selected_unit
+                        WHERE selected_unit.unit_id IN ({$unitListSql})
+
+                        UNION ALL
+
+                        SELECT
+                            child.unit_id,
+                            parent.root_type
+                        FROM organizational_units child
+                        JOIN unit_scope parent
+                          ON child.parent_unit_id = parent.unit_id
+                    )
+
+                    SELECT 1
+                    FROM unit_scope scope
+                    WHERE scope.root_type = 'UNIVERSITY'
+                       OR EXISTS (
+                            SELECT 1
+                            FROM user_positions unit_filter
+                            WHERE unit_filter.user_id = users.user_id
+                              AND unit_filter.unit_id = scope.unit_id
+                              AND unit_filter.is_active = TRUE
+                              AND (
+                                  unit_filter.end_date IS NULL
+                                  OR unit_filter.end_date >= CURRENT_DATE
+                              )
+                       )
+                )";
+            } else {
+                $where[] = "EXISTS (
+                    SELECT 1
+                    FROM user_positions unit_filter
+                    WHERE unit_filter.user_id = users.user_id
+                      AND unit_filter.unit_id IN ({$unitListSql})
+                      AND unit_filter.is_active = TRUE
+                      AND (
+                          unit_filter.end_date IS NULL
+                          OR unit_filter.end_date >= CURRENT_DATE
+                      )
+                )";
+            }
         }
 
         $whereSql = $where === []

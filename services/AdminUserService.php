@@ -31,24 +31,79 @@ final class AdminUserService
     public function listUsers(array $query): array
     {
         $search = trim((string) ($query['search'] ?? ''));
+
         if (mb_strlen($search) > 150) {
             throw new AdminUserManagementException(
                 'Search text cannot exceed 150 characters.'
             );
         }
 
-        $active = $this->nullableBoolean($query['active'] ?? null);
-        $unitId = $this->nullablePositiveInteger($query['unit_id'] ?? null);
-        $page = max(1, (int) ($query['page'] ?? 1));
+        $active = $this->nullableBoolean(
+            $query['active'] ?? null
+        );
+
+        $unitIds = [];
+        $expandUnitHierarchy = false;
+
+        $rawUnitIds = trim(
+            (string) ($query['unit_ids'] ?? '')
+        );
+
+        if ($rawUnitIds !== '') {
+            foreach (explode(',', $rawUnitIds) as $rawUnitId) {
+                $rawUnitId = trim($rawUnitId);
+
+                if ($rawUnitId === '') {
+                    continue;
+                }
+
+                $unitId =
+                    $this->nullablePositiveInteger(
+                        $rawUnitId
+                    );
+
+                if ($unitId === null) {
+                    throw new AdminUserManagementException(
+                        'One or more organizational unit filters are invalid.'
+                    );
+                }
+
+                $unitIds[] = $unitId;
+            }
+
+            $unitIds = array_values(
+                array_unique($unitIds)
+            );
+        } else {
+            $legacyUnitId =
+                $this->nullablePositiveInteger(
+                    $query['unit_id'] ?? null
+                );
+
+            if ($legacyUnitId !== null) {
+                $unitIds = [$legacyUnitId];
+                $expandUnitHierarchy = true;
+            }
+        }
+
+        $page = max(
+            1,
+            (int) ($query['page'] ?? 1)
+        );
+
         $limit = min(
             self::MAX_PAGE_SIZE,
-            max(10, (int) ($query['limit'] ?? 25))
+            max(
+                10,
+                (int) ($query['limit'] ?? 25)
+            )
         );
 
         return $this->repository->searchUsers(
             $search,
             $active,
-            $unitId,
+            $unitIds,
+            $expandUnitHierarchy,
             $page,
             $limit
         );
@@ -384,6 +439,9 @@ final class AdminUserService
             'vice president',
             'vice president office staff',
             'vice president office delegate' => 'VP',
+            'vice president for academic affairs',
+            'vice president for academic affairs office staff',
+            'vice president for academic affairs office delegate' => 'VPAA',
             'legal reviewer' => 'LEGAL',
             'finance reviewer' => 'FIN',
             default => null,
@@ -409,6 +467,9 @@ final class AdminUserService
             'president office delegate',
             'vice president office staff',
             'vice president office delegate',
+            'vice president for academic affairs',
+            'vice president for academic affairs office staff',
+            'vice president for academic affairs office delegate',
             'legal reviewer',
             'finance reviewer' => ['OFFICE'],
             default => [],
