@@ -28,6 +28,9 @@ final class InitiativeWorkflowRepository
     public function requesterFormProfile(int $userId): array
     {
         $profile = $this->requesterProfile($userId);
+        $roleKey = $this->isSystemAdministrator($userId)
+            ? 'SYSTEM_ADMINISTRATOR'
+            : (string) $profile['role_key'];
 
         return [
             'user_id' => $userId,
@@ -37,11 +40,9 @@ final class InitiativeWorkflowRepository
             'position' => $profile['position_name'],
             'entity' => $profile['entity_name'],
             'department' => $profile['department_name'],
-            'role_key' => $profile['role_key'],
+            'role_key' => $roleKey,
             'suggested_requester_type' =>
-                $this->suggestedRequesterType(
-                    (string) $profile['role_key']
-                ),
+                $this->suggestedRequesterType($roleKey),
         ];
     }
 
@@ -51,7 +52,16 @@ final class InitiativeWorkflowRepository
             "SELECT DISTINCT
                 request.request_id,
                 request.request_code,
+                to_jsonb(request)::text AS request_search_blob,
                 request.title,
+                request.description,
+                request.initiative_type,
+                request.objective,
+                request.expected_impact,
+                request.beneficiaries,
+                request.proposed_start_date,
+                request.proposed_end_date,
+                request.requester_role_key,
                 request.status,
                 request.created_at,
                 request.updated_at,
@@ -112,11 +122,23 @@ final class InitiativeWorkflowRepository
                     WHERE acted_stage.request_id = request.request_id
                       AND acted_stage.acted_by_user_id = :acted_user_id
                 )
+               OR EXISTS (
+                   SELECT 1
+                   FROM initiative_request_stages behalf_stage
+                   WHERE behalf_stage.request_id = request.request_id
+                     AND behalf_stage.acted_on_behalf_of_user_id =
+                         :behalf_user_id
+               )
                 OR EXISTS (
                     SELECT 1
                     FROM initiative_request_stages assigned_stage
                     WHERE assigned_stage.request_id = request.request_id
                       AND assigned_stage.assigned_user_id = :historical_assignee_user_id
+                      AND assigned_stage.cycle_number =
+                          request.revision_cycle
+                      AND assigned_stage.stage_order <=
+                          request.current_stage_order
+                      AND assigned_stage.status <> 'PENDING'
                 )
                 OR EXISTS (
                     SELECT 1
@@ -130,6 +152,19 @@ final class InitiativeWorkflowRepository
                           delegate_position.end_date IS NULL
                           OR delegate_position.end_date >= CURRENT_DATE
                      )
+                    JOIN positions delegate_role_position
+                      ON delegate_role_position.position_id =
+                         delegate_position.position_id
+                     AND delegate_role_position.name =
+                         CASE office_stage.stage_key
+                             WHEN 'VICE_PRESIDENT'
+                                 THEN 'Vice President Office Delegate'
+                             WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                 THEN 'President Office Delegate'
+                             ELSE '__NO_DELEGATE_POSITION__'
+                         END
                     JOIN users delegate_user
                       ON delegate_user.user_id =
                          delegate_position.user_id
@@ -147,6 +182,9 @@ final class InitiativeWorkflowRepository
                          'APPROVE_INITIATIVE'
                     WHERE office_stage.request_id =
                           request.request_id
+                      AND office_stage.cycle_number =
+                          request.revision_cycle
+                      AND office_stage.status <> 'PENDING'
                       AND office_stage.is_office_delegable = TRUE
                 )
                 OR EXISTS (
@@ -167,6 +205,7 @@ final class InitiativeWorkflowRepository
             'requester_user_id' => $userId,
             'assignee_user_id' => $userId,
             'acted_user_id' => $userId,
+            'behalf_user_id' => $userId,
             'historical_assignee_user_id' => $userId,
             'delegate_user_id' => $userId,
             'administrator_user_id' => $userId,
@@ -177,6 +216,139 @@ final class InitiativeWorkflowRepository
         return $statement->fetchAll();
     }
 
+    public function adminMonitoring(
+        int $userId,
+        int $limit = 100
+    ): array {
+        if (!$this->isSystemAdministrator($userId)) {
+            throw new DomainException(
+                'Only a System Administrator can access Initiative monitoring.'
+            );
+        }
+
+        $limit = max(10, min($limit, 250));
+
+        $summaryStatement = $this->db->query(
+            "SELECT
+                COUNT(*) AS total_requests,
+                COUNT(*) FILTER (
+                    WHERE status = 'UNDER_REVIEW'
+                ) AS under_review,
+                COUNT(*) FILTER (
+                    WHERE status = 'REVISION_REQUIRED'
+                ) AS revision_required,
+                COUNT(*) FILTER (
+                    WHERE status = 'APPROVED'
+                ) AS approved,
+                COUNT(*) FILTER (
+                    WHERE status = 'REJECTED'
+                ) AS rejected,
+                COUNT(*) FILTER (
+                    WHERE status = 'CONVERTING'
+                ) AS converting,
+                COUNT(*) FILTER (
+                    WHERE status = 'CONVERTED'
+                ) AS converted
+             FROM initiative_requests"
+        );
+
+        $summary = $summaryStatement->fetch() ?: [];
+
+        $notificationStatement = $this->db->prepare(
+            "SELECT
+                notification.notification_id,
+                notification.request_id,
+                notification.recipient_user_id,
+                CONCAT(
+                    recipient.first_name,
+                    ' ',
+                    recipient.last_name
+                ) AS recipient_name,
+                notification.notification_type,
+                notification.title,
+                notification.message,
+                notification.payload,
+                notification.is_read,
+                notification.read_at,
+                notification.created_at,
+                request.request_code,
+                request.title AS request_title
+             FROM initiative_notifications notification
+             LEFT JOIN users recipient
+               ON recipient.user_id =
+                  notification.recipient_user_id
+             LEFT JOIN initiative_requests request
+               ON request.request_id =
+                  notification.request_id
+             ORDER BY
+                notification.created_at DESC,
+                notification.notification_id DESC
+             LIMIT {$limit}"
+        );
+        $notificationStatement->execute();
+
+        $eventStatement = $this->db->prepare(
+            "SELECT
+                event.event_id,
+                event.request_id,
+                event.request_stage_id,
+                event.cycle_number,
+                event.event_type,
+                event.actor_user_id,
+                CONCAT(
+                    actor.first_name,
+                    ' ',
+                    actor.last_name
+                ) AS actor_name,
+                event.target_user_id,
+                CONCAT(
+                    target.first_name,
+                    ' ',
+                    target.last_name
+                ) AS target_name,
+                event.from_status,
+                event.to_status,
+                event.event_note,
+                event.event_data,
+                event.occurred_at,
+                request.request_code,
+                request.title AS request_title
+             FROM initiative_request_events event
+             LEFT JOIN initiative_requests request
+               ON request.request_id = event.request_id
+             LEFT JOIN users actor
+               ON actor.user_id = event.actor_user_id
+             LEFT JOIN users target
+               ON target.user_id = event.target_user_id
+             ORDER BY
+                event.occurred_at DESC,
+                event.event_id DESC
+             LIMIT {$limit}"
+        );
+        $eventStatement->execute();
+
+        return [
+            'summary' => [
+                'total_requests' =>
+                    (int) ($summary['total_requests'] ?? 0),
+                'under_review' =>
+                    (int) ($summary['under_review'] ?? 0),
+                'revision_required' =>
+                    (int) ($summary['revision_required'] ?? 0),
+                'approved' =>
+                    (int) ($summary['approved'] ?? 0),
+                'rejected' =>
+                    (int) ($summary['rejected'] ?? 0),
+                'converting' =>
+                    (int) ($summary['converting'] ?? 0),
+                'converted' =>
+                    (int) ($summary['converted'] ?? 0),
+            ],
+            'requests' => $this->visibleRequests($userId),
+            'notifications' => $notificationStatement->fetchAll(),
+            'events' => $eventStatement->fetchAll(),
+        ];
+    }
     public function createRequest(int $userId, array $payload): int
     {
         $submit = filter_var(
@@ -322,7 +494,10 @@ final class InitiativeWorkflowRepository
                     $data['related_agreement_id'],
                 'requester_id' => $userId,
                 'requester_unit_id' => $profile['unit_id'],
-                'requester_role_key' => $profile['role_key'],
+                'requester_role_key' =>
+                    $this->isSystemAdministrator($userId)
+                        ? 'SYSTEM_ADMINISTRATOR'
+                        : $profile['role_key'],
                 'requester_name_snapshot' =>
                     $profile['full_name'],
                 'requester_email_snapshot' =>
@@ -2564,6 +2739,15 @@ final class InitiativeWorkflowRepository
                     'head of department'
                 ) => 'DEPARTMENT_HEAD',
                 str_contains($positionName, 'dean') => 'DEAN',
+                (
+                    str_contains($positionName, 'vice president')
+                    && str_contains($positionName, 'academic affairs')
+                    && str_contains($positionName, 'office')
+                ) => 'VPAA_OFFICE',
+                (
+                    str_contains($positionName, 'vice president')
+                    && str_contains($positionName, 'academic affairs')
+                ) => 'VICE_PRESIDENT_ACADEMIC_AFFAIRS',
                 str_contains(
                     $positionName,
                     'vice president office'
@@ -2758,9 +2942,21 @@ final class InitiativeWorkflowRepository
                         )
                         OR EXISTS (
                             SELECT 1
+                            FROM initiative_request_stages behalf_stage
+                            WHERE behalf_stage.request_id = request.request_id
+                              AND behalf_stage.acted_on_behalf_of_user_id =
+                                  :behalf_user_id
+                        )
+                        OR EXISTS (
+                            SELECT 1
                             FROM initiative_request_stages assigned_stage
                             WHERE assigned_stage.request_id = request.request_id
                               AND assigned_stage.assigned_user_id = :historical_assignee_user_id
+                      AND assigned_stage.cycle_number =
+                          request.revision_cycle
+                      AND assigned_stage.stage_order <=
+                          request.current_stage_order
+                      AND assigned_stage.status <> 'PENDING'
                         )
                         OR EXISTS (
                             SELECT 1
@@ -2775,7 +2971,20 @@ final class InitiativeWorkflowRepository
                                   delegate_position.end_date IS NULL
                                   OR delegate_position.end_date >= CURRENT_DATE
                              )
-                            JOIN users delegate_user
+                            JOIN positions delegate_role_position
+                      ON delegate_role_position.position_id =
+                         delegate_position.position_id
+                     AND delegate_role_position.name =
+                         CASE office_stage.stage_key
+                             WHEN 'VICE_PRESIDENT'
+                                 THEN 'Vice President Office Delegate'
+                             WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                 THEN 'President Office Delegate'
+                             ELSE '__NO_DELEGATE_POSITION__'
+                         END
+                    JOIN users delegate_user
                               ON delegate_user.user_id =
                                  delegate_position.user_id
                              AND delegate_user.is_active = TRUE
@@ -2792,6 +3001,9 @@ final class InitiativeWorkflowRepository
                                  'APPROVE_INITIATIVE'
                             WHERE office_stage.request_id =
                                   request.request_id
+                              AND office_stage.cycle_number =
+                                  request.revision_cycle
+                              AND office_stage.status <> 'PENDING'
                               AND office_stage.is_office_delegable = TRUE
                         )
                   )
@@ -2803,6 +3015,7 @@ final class InitiativeWorkflowRepository
             'requester_user_id' => $userId,
             'assignee_user_id' => $userId,
             'acted_user_id' => $userId,
+            'behalf_user_id' => $userId,
             'historical_assignee_user_id' => $userId,
             'delegate_user_id' => $userId,
         ]);
@@ -2856,6 +3069,19 @@ final class InitiativeWorkflowRepository
                         AND EXISTS (
                             SELECT 1
                             FROM user_positions delegate_position
+                            JOIN positions delegate_role_position
+                              ON delegate_role_position.position_id =
+                                 delegate_position.position_id
+                             AND delegate_role_position.name =
+                                 CASE stage.stage_key
+                                     WHEN 'VICE_PRESIDENT'
+                                         THEN 'Vice President Office Delegate'
+                                     WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                         THEN 'President Office Delegate'
+                                     ELSE '__NO_DELEGATE_POSITION__'
+                                 END
                             JOIN users delegate_user
                               ON delegate_user.user_id = delegate_position.user_id
                              AND delegate_user.is_active = TRUE
@@ -2931,6 +3157,19 @@ final class InitiativeWorkflowRepository
                         AND EXISTS (
                             SELECT 1
                             FROM user_positions delegate_position
+                            JOIN positions delegate_role_position
+                              ON delegate_role_position.position_id =
+                                 delegate_position.position_id
+                             AND delegate_role_position.name =
+                                 CASE stage.stage_key
+                                     WHEN 'VICE_PRESIDENT'
+                                         THEN 'Vice President Office Delegate'
+                                     WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                         THEN 'President Office Delegate'
+                                     ELSE '__NO_DELEGATE_POSITION__'
+                                 END
                             JOIN users delegate_user
                               ON delegate_user.user_id = delegate_position.user_id
                              AND delegate_user.is_active = TRUE
@@ -3087,6 +3326,19 @@ final class InitiativeWorkflowRepository
                         AND EXISTS (
                             SELECT 1
                             FROM user_positions delegate_position
+                            JOIN positions delegate_role_position
+                              ON delegate_role_position.position_id =
+                                 delegate_position.position_id
+                             AND delegate_role_position.name =
+                                 CASE stage.stage_key
+                                     WHEN 'VICE_PRESIDENT'
+                                         THEN 'Vice President Office Delegate'
+                                     WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                         THEN 'President Office Delegate'
+                                     ELSE '__NO_DELEGATE_POSITION__'
+                                 END
                             JOIN users delegate_user
                               ON delegate_user.user_id = delegate_position.user_id
                              AND delegate_user.is_active = TRUE
@@ -3340,6 +3592,8 @@ final class InitiativeWorkflowRepository
                         AS requested_principal_user_id,
                     requested_stage.responsible_unit_id
                         AS requested_unit_id,
+                    requested_stage.stage_key
+                        AS requested_stage_key,
                     requested_stage.is_office_delegable
                         AS requested_office_delegable,
                     counterpart_stage.assigned_user_id
@@ -3350,6 +3604,8 @@ final class InitiativeWorkflowRepository
                         AS counterpart_principal_user_id,
                     counterpart_stage.responsible_unit_id
                         AS counterpart_unit_id,
+                    counterpart_stage.stage_key
+                        AS counterpart_stage_key,
                     counterpart_stage.is_office_delegable
                         AS counterpart_office_delegable
                 FROM initiative_revision_threads revision_thread
@@ -3424,6 +3680,39 @@ final class InitiativeWorkflowRepository
                                 context.counterpart_unit_id
                         )
                  )
+                JOIN positions delegate_role_position
+                  ON delegate_role_position.position_id =
+                     delegate_position.position_id
+                 AND delegate_role_position.name =
+                     CASE
+                         WHEN
+                             context.requested_office_delegable = TRUE
+                             AND delegate_position.unit_id =
+                                 context.requested_unit_id
+                         THEN CASE context.requested_stage_key
+                             WHEN 'VICE_PRESIDENT'
+                                 THEN 'Vice President Office Delegate'
+                             WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                 THEN 'President Office Delegate'
+                             ELSE '__NO_DELEGATE_POSITION__'
+                         END
+                         WHEN
+                             context.counterpart_office_delegable = TRUE
+                             AND delegate_position.unit_id =
+                                 context.counterpart_unit_id
+                         THEN CASE context.counterpart_stage_key
+                             WHEN 'VICE_PRESIDENT'
+                                 THEN 'Vice President Office Delegate'
+                             WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                 THEN 'President Office Delegate'
+                             ELSE '__NO_DELEGATE_POSITION__'
+                         END
+                         ELSE '__NO_DELEGATE_POSITION__'
+                     END
                 JOIN users delegate_user
                   ON delegate_user.user_id = delegate_position.user_id
                  AND delegate_user.is_active = TRUE
@@ -3644,6 +3933,19 @@ final class InitiativeWorkflowRepository
 
                 SELECT delegate_position.user_id
                 FROM user_positions delegate_position
+                JOIN positions delegate_role_position
+                  ON delegate_role_position.position_id =
+                     delegate_position.position_id
+                 AND delegate_role_position.name =
+                     CASE stage.stage_key
+                         WHEN 'VICE_PRESIDENT'
+                             THEN 'Vice President Office Delegate'
+                         WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                             THEN 'President Office Delegate'
+                         ELSE '__NO_DELEGATE_POSITION__'
+                     END
                 JOIN users delegate_user
                   ON delegate_user.user_id = delegate_position.user_id
                  AND delegate_user.is_active = TRUE

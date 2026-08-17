@@ -101,6 +101,19 @@ final class InitiativeReminderService
 
                     SELECT delegate_position.user_id
                     FROM user_positions delegate_position
+                    JOIN positions delegate_role_position
+                      ON delegate_role_position.position_id =
+                         delegate_position.position_id
+                     AND delegate_role_position.name =
+                         CASE step.step_key
+                             WHEN 'VICE_PRESIDENT'
+                                 THEN 'Vice President Office Delegate'
+                             WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                 THEN 'Vice President for Academic Affairs Office Delegate'
+                             WHEN 'PRESIDENT'
+                                 THEN 'President Office Delegate'
+                             ELSE '__NO_DELEGATE_POSITION__'
+                         END
                     JOIN users delegate_user
                       ON delegate_user.user_id =
                          delegate_position.user_id

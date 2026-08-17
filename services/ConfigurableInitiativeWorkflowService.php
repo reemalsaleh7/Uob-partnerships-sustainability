@@ -250,6 +250,19 @@ final class ConfigurableInitiativeWorkflowService
                         AND EXISTS (
                             SELECT 1
                             FROM user_positions delegate_assignment
+                            JOIN positions delegate_position
+                              ON delegate_position.position_id =
+                                 delegate_assignment.position_id
+                             AND delegate_position.name =
+                                 CASE step.step_key
+                                     WHEN 'VICE_PRESIDENT'
+                                         THEN 'Vice President Office Delegate'
+                                     WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                         THEN 'Vice President for Academic Affairs Office Delegate'
+                                     WHEN 'PRESIDENT'
+                                         THEN 'President Office Delegate'
+                                     ELSE '__NO_DELEGATE_POSITION__'
+                                 END
                             JOIN users delegate
                               ON delegate.user_id =
                                  delegate_assignment.user_id
@@ -375,6 +388,22 @@ final class ConfigurableInitiativeWorkflowService
                     $actedOnBehalf
                 );
 
+                if ($actedOnBehalf === null) {
+                    $this->notifyOfficeOfPrincipalApproval(
+                        $requestId,
+                        $stageId,
+                        (string) $context['stage_key']
+                    );
+                } else {
+                    $this->notifyPrincipalOfDelegateApproval(
+                        $requestId,
+                        $stageId,
+                        $userId,
+                        $actedOnBehalf,
+                        (string) $context['stage_label']
+                    );
+                }
+
                 if ($this->phaseHasOpenStages(
                     $instanceId,
                     $phaseOrder
@@ -439,6 +468,13 @@ final class ConfigurableInitiativeWorkflowService
                         ];
                     }
                 }
+
+                $this->notifyRequesterOfStageApproval(
+                    $requestId,
+                    $stageId,
+                    (string) $context['stage_label'],
+                    (string) $result['status']
+                );
 
                 $this->recordEvent(
                     $requestId,
@@ -787,9 +823,18 @@ final class ConfigurableInitiativeWorkflowService
         string $roleKey
     ): array {
         return match (strtoupper(trim($roleKey))) {
+            'SYSTEM_ADMINISTRATOR' => [
+                'DEPARTMENT_HEAD',
+                'DEAN',
+            ],
             'DEPARTMENT_HEAD' => ['DEPARTMENT_HEAD'],
             'DEAN' => ['DEPARTMENT_HEAD', 'DEAN'],
             'VP_OFFICE' => ['DEPARTMENT_HEAD', 'DEAN'],
+            'VPAA_OFFICE' => ['DEPARTMENT_HEAD', 'DEAN'],
+            'VICE_PRESIDENT_ACADEMIC_AFFAIRS' => [
+                'DEPARTMENT_HEAD',
+                'DEAN',
+            ],
             'VICE_PRESIDENT' => [
                 'DEPARTMENT_HEAD',
                 'DEAN',
@@ -997,7 +1042,7 @@ final class ConfigurableInitiativeWorkflowService
             (string) $step['responsibility_type'] === 'UNIT'
             || in_array(
                 (string) $step['step_key'],
-                ['VICE_PRESIDENT', 'PRESIDENT'],
+                ['VICE_PRESIDENT', 'VICE_PRESIDENT_ACADEMIC_AFFAIRS', 'PRESIDENT'],
                 true
             );
 
@@ -1018,15 +1063,20 @@ final class ConfigurableInitiativeWorkflowService
             'reminder_after_days' =>
                 (int) $step['reminder_after_days'],
             'allow_revision' =>
-                $this->databaseBoolean($step['allow_revision']),
+                $this->databaseBoolean($step['allow_revision'])
+                    ? 'true'
+                    : 'false',
             'assigned_unit_id' => $unitId,
             'assigned_position_id' => $positionId,
             'status' => $status,
             'status_for_started' => $status,
             'status_for_completed' => $status,
             'is_optional' =>
-                $this->databaseBoolean($step['is_optional']),
-            'is_office_delegable' => $officeDelegable,
+                $this->databaseBoolean($step['is_optional'])
+                    ? 'true'
+                    : 'false',
+            'is_office_delegable' =>
+                $officeDelegable ? 'true' : 'false',
         ]);
         $stageId = (int) $statement->fetchColumn();
 
@@ -1296,6 +1346,19 @@ final class ConfigurableInitiativeWorkflowService
                         AND EXISTS (
                             SELECT 1
                             FROM user_positions delegate_assignment
+                            JOIN positions delegate_position
+                              ON delegate_position.position_id =
+                                 delegate_assignment.position_id
+                             AND delegate_position.name =
+                                 CASE step.step_key
+                                     WHEN 'VICE_PRESIDENT'
+                                         THEN 'Vice President Office Delegate'
+                                     WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS'
+                                         THEN 'Vice President for Academic Affairs Office Delegate'
+                                     WHEN 'PRESIDENT'
+                                         THEN 'President Office Delegate'
+                                     ELSE '__NO_DELEGATE_POSITION__'
+                                 END
                             JOIN users delegate
                               ON delegate.user_id =
                                  delegate_assignment.user_id
@@ -1588,6 +1651,260 @@ final class ConfigurableInitiativeWorkflowService
         );
     }
 
+    private function notifyOfficeOfPrincipalApproval(
+        int $requestId,
+        int $stageId,
+        string $stageKey
+    ): void {
+        $delegatePositionName = match ($stageKey) {
+            'VICE_PRESIDENT' =>
+                'Vice President Office Delegate',
+            'VICE_PRESIDENT_ACADEMIC_AFFAIRS' =>
+                'Vice President for Academic Affairs Office Delegate',
+            'PRESIDENT' =>
+                'President Office Delegate',
+            default => null,
+        };
+
+        if ($delegatePositionName === null) {
+            return;
+        }
+        $title = match ($stageKey) {
+            'VICE_PRESIDENT' =>
+                'Vice President approved the Initiative',
+            'VICE_PRESIDENT_ACADEMIC_AFFAIRS' =>
+                'Vice President for Academic Affairs approved the Initiative',
+            'PRESIDENT' =>
+                'President approved the Initiative',
+            default =>
+                'Initiative stage approved',
+        };
+
+        $message = match ($stageKey) {
+            'VICE_PRESIDENT' =>
+                'The Vice President has approved this Initiative request.',
+            'VICE_PRESIDENT_ACADEMIC_AFFAIRS' =>
+                'The Vice President for Academic Affairs has approved this Initiative request.',
+            'PRESIDENT' =>
+                'The President has approved this Initiative request.',
+            default =>
+                'An Initiative approval stage has been approved.',
+        };
+
+        $statement = $this->db->prepare(
+            "INSERT INTO initiative_notifications (
+                request_id,
+                recipient_user_id,
+                notification_type,
+                title,
+                message,
+                payload,
+                dedupe_key
+             )
+             SELECT DISTINCT
+                CAST(:request_id AS BIGINT),
+                delegate_assignment.user_id,
+                'STAGE_APPROVED',
+                :title,
+                :message,
+                jsonb_build_object(
+                    'request_stage_id',
+                    step.instance_step_id,
+                    'request_url',
+                    CONCAT(
+                        'initiative-workflow.php?view=detail&id=',
+                        CAST(:request_url_id AS BIGINT)
+                    )
+                ),
+                CONCAT(
+                    'PRINCIPAL_STAGE_APPROVED:',
+                    step.instance_step_id
+                )
+             FROM workflow_instance_steps step
+             JOIN user_positions delegate_assignment
+               ON delegate_assignment.unit_id =
+                  step.assigned_unit_id
+              AND delegate_assignment.is_active = TRUE
+              AND (
+                   delegate_assignment.end_date IS NULL
+                   OR delegate_assignment.end_date >=
+                      CURRENT_DATE
+              )
+             JOIN positions delegate_position
+               ON delegate_position.position_id =
+                  delegate_assignment.position_id
+              AND delegate_position.name =
+                  :delegate_position_name
+             JOIN users delegate_user
+               ON delegate_user.user_id =
+                  delegate_assignment.user_id
+              AND delegate_user.is_active = TRUE
+             JOIN user_roles delegate_user_role
+               ON delegate_user_role.user_id =
+                  delegate_user.user_id
+             JOIN role_permissions delegate_role_permission
+               ON delegate_role_permission.role_id =
+                  delegate_user_role.role_id
+             JOIN permissions delegate_permission
+               ON delegate_permission.permission_id =
+                  delegate_role_permission.permission_id
+              AND delegate_permission.permission_code =
+                  step.required_permission_code
+             WHERE step.instance_step_id =
+                   CAST(:stage_id AS BIGINT)
+             ON CONFLICT DO NOTHING"
+        );
+
+        $statement->execute([
+            'request_id' => $requestId,
+            'request_url_id' => $requestId,
+            'title' => $title,
+            'message' => $message,
+            'delegate_position_name' =>
+                $delegatePositionName,
+            'stage_id' => $stageId,
+        ]);
+    }
+
+    private function notifyRequesterOfStageApproval(
+        int $requestId,
+        int $stageId,
+        string $stageLabel,
+        string $requestStatus
+    ): void {
+        $title = sprintf(
+            '%s approved your Initiative request',
+            $stageLabel
+        );
+        $message = $requestStatus === 'APPROVED'
+            ? sprintf(
+                '%s approved your Initiative request. The request is now fully approved.',
+                $stageLabel
+            )
+            : sprintf(
+                '%s approved your Initiative request. It has moved to the next approval stage.',
+                $stageLabel
+            );
+
+        $statement = $this->db->prepare(
+            "INSERT INTO initiative_notifications (
+                request_id,
+                recipient_user_id,
+                notification_type,
+                title,
+                message,
+                payload,
+                dedupe_key
+             )
+             SELECT
+                request.request_id,
+                request.requester_id,
+                'STAGE_APPROVED',
+                :title,
+                :message,
+                jsonb_build_object(
+                    'request_stage_id',
+                    CAST(:stage_id AS BIGINT),
+                    'request_url',
+                    CONCAT(
+                        'initiative-workflow.php?view=detail&id=',
+                        CAST(:request_url_id AS BIGINT)
+                    )
+                ),
+                CONCAT(
+                    'REQUESTER_STAGE_APPROVED:',
+                    CAST(:dedupe_stage_id AS BIGINT)
+                )
+             FROM initiative_requests request
+             WHERE request.request_id = CAST(:request_id AS BIGINT)
+             ON CONFLICT DO NOTHING"
+        );
+
+        $statement->execute([
+            'request_id' => $requestId,
+            'request_url_id' => $requestId,
+            'stage_id' => $stageId,
+            'dedupe_stage_id' => $stageId,
+            'title' => $title,
+            'message' => $message,
+        ]);
+    }
+
+    private function notifyPrincipalOfDelegateApproval(
+        int $requestId,
+        int $stageId,
+        int $actorUserId,
+        int $principalUserId,
+        string $stageLabel
+    ): void {
+        $statement = $this->db->prepare(
+            "INSERT INTO initiative_notifications (
+                request_id,
+                recipient_user_id,
+                notification_type,
+                title,
+                message,
+                payload,
+                dedupe_key
+             )
+             SELECT
+                CAST(:request_id AS BIGINT),
+                CAST(:principal_user_id AS BIGINT),
+                'STAGE_APPROVED',
+                'Your office approved an Initiative request on your behalf',
+                CONCAT(
+                    COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    actor.first_name,
+                                    ' ',
+                                    actor.last_name
+                                )
+                            ),
+                            ''
+                        ),
+                        actor.email
+                    ),
+                    ' approved the ',
+                    CAST(:stage_label AS TEXT),
+                    ' stage on your behalf.'
+                ),
+                jsonb_build_object(
+                    'request_stage_id',
+                    CAST(:stage_id AS BIGINT),
+                    'acted_by_user_id',
+                    CAST(:actor_user_id AS BIGINT),
+                    'request_url',
+                    CONCAT(
+                        'initiative-workflow.php?view=detail&id=',
+                        CAST(:request_url_id AS BIGINT)
+                    )
+                ),
+                CONCAT(
+                    'PRINCIPAL_DELEGATE_APPROVAL:',
+                    CAST(:dedupe_stage_id AS BIGINT),
+                    ':',
+                    CAST(:principal_dedupe_id AS BIGINT)
+                )
+             FROM users actor
+             WHERE actor.user_id = CAST(:actor_lookup_id AS BIGINT)
+             ON CONFLICT DO NOTHING"
+        );
+
+        $statement->execute([
+            'request_id' => $requestId,
+            'request_url_id' => $requestId,
+            'stage_id' => $stageId,
+            'dedupe_stage_id' => $stageId,
+            'actor_user_id' => $actorUserId,
+            'actor_lookup_id' => $actorUserId,
+            'principal_user_id' => $principalUserId,
+            'principal_dedupe_id' => $principalUserId,
+            'stage_label' => $stageLabel,
+        ]);
+    }
+
     private function notifyActivePhase(
         int $requestId,
         int $instanceId,
@@ -1600,11 +1917,12 @@ final class ConfigurableInitiativeWorkflowService
                 notification_type,
                 title,
                 message,
-                payload
+                payload,
+                dedupe_key
              )
-             SELECT
-                :request_id,
-                assignment.user_id,
+             SELECT DISTINCT
+                CAST(:request_id AS BIGINT),
+                reviewer.user_id,
                 'APPROVAL_ASSIGNED',
                 'Initiative request awaiting your decision',
                 step.step_label ||
@@ -1613,19 +1931,77 @@ final class ConfigurableInitiativeWorkflowService
                     'request_stage_id',
                     step.instance_step_id,
                     'phase_order',
-                    step.phase_order
+                    step.phase_order,
+                    'request_url',
+                    CONCAT(
+                        'initiative-workflow.php?view=detail&id=',
+                        CAST(:request_url_id AS BIGINT)
+                    )
+                ),
+                CONCAT(
+                    'APPROVAL_ASSIGNED:',
+                    step.instance_step_id
                 )
              FROM workflow_instance_steps step
-             JOIN workflow_step_assignments assignment
-               ON assignment.workflow_instance_step_id =
-                  step.instance_step_id
-              AND assignment.is_active = TRUE
+             JOIN LATERAL (
+                SELECT assignment.user_id
+                FROM workflow_step_assignments assignment
+                WHERE assignment.workflow_instance_step_id =
+                      step.instance_step_id
+                  AND assignment.is_active = TRUE
+
+                UNION
+
+                SELECT delegate_position.user_id
+                FROM user_positions delegate_position
+                JOIN positions delegate_role_position
+                  ON delegate_role_position.position_id =
+                     delegate_position.position_id
+                 AND delegate_role_position.name =
+                     CASE step.step_key
+                         WHEN 'VICE_PRESIDENT' THEN
+                             'Vice President Office Delegate'
+                         WHEN 'VICE_PRESIDENT_ACADEMIC_AFFAIRS' THEN
+                             'Vice President for Academic Affairs Office Delegate'
+                         WHEN 'PRESIDENT' THEN
+                             'President Office Delegate'
+                         ELSE '__NO_DELEGATE_POSITION__'
+                     END
+                JOIN users delegate_user
+                  ON delegate_user.user_id = delegate_position.user_id
+                 AND delegate_user.is_active = TRUE
+                JOIN user_roles delegate_user_role
+                  ON delegate_user_role.user_id = delegate_user.user_id
+                JOIN role_permissions delegate_role_permission
+                  ON delegate_role_permission.role_id =
+                     delegate_user_role.role_id
+                JOIN permissions delegate_permission
+                  ON delegate_permission.permission_id =
+                     delegate_role_permission.permission_id
+                 AND delegate_permission.permission_code =
+                     step.required_permission_code
+                WHERE step.is_office_delegable = TRUE
+                  AND step.step_key IN (
+                      'VICE_PRESIDENT',
+                      'VICE_PRESIDENT_ACADEMIC_AFFAIRS',
+                      'PRESIDENT'
+                  )
+                  AND delegate_position.unit_id = step.assigned_unit_id
+                  AND delegate_position.is_active = TRUE
+                  AND (
+                       delegate_position.end_date IS NULL
+                       OR delegate_position.end_date >= CURRENT_DATE
+                  )
+             ) reviewer
+               ON reviewer.user_id IS NOT NULL
              WHERE step.workflow_instance_id = :instance_id
                AND step.phase_order = :phase_order
-               AND step.status = 'IN_PROGRESS'"
+               AND step.status = 'IN_PROGRESS'
+             ON CONFLICT DO NOTHING"
         );
         $statement->execute([
             'request_id' => $requestId,
+            'request_url_id' => $requestId,
             'instance_id' => $instanceId,
             'phase_order' => $phaseOrder,
         ]);

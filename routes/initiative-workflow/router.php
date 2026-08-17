@@ -89,6 +89,8 @@ try {
         Response::success([
             'can_create_initiative' =>
                 $accessPolicy->canCreate($userId),
+            'can_administer_initiatives' =>
+                $repository->canAdministerInitiatives($userId),
         ]);
     }
 
@@ -271,6 +273,29 @@ try {
 
     if ($method === 'GET' && $uri === '/initiative-requests') {
         Response::success($repository->visibleRequests($userId));
+    }
+
+    if (
+        $method === 'GET'
+        && $uri === '/initiative-requests/admin/monitoring'
+    ) {
+        if (!$repository->canAdministerInitiatives($userId)) {
+            Response::error(
+                'Only a System Administrator can access Initiative monitoring.',
+                403
+            );
+        }
+
+        $limit = isset($_GET['limit'])
+            ? (int) $_GET['limit']
+            : 100;
+
+        Response::success(
+            $repository->adminMonitoring(
+                $userId,
+                $limit
+            )
+        );
     }
 
     if (
