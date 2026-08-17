@@ -248,34 +248,32 @@ class WorkflowRepository
         ?int $actedBy = null
     ): int {
         $now = $this->currentTimestamp();
+        $approvedAt = $actedBy !== null ? $now : null;
+        $startedAt = in_array($status, ['IN_PROGRESS', 'APPROVED'], true)
+            ? $now
+            : null;
+        $completedAt = in_array(
+            $status,
+            ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED', 'SKIPPED'],
+            true
+        ) ? $now : null;
 
-        $approvedAt =
-            $actedBy !== null
-                ? $now
-                : null;
+        $stepKey = (string) $templateStep['step_key'];
+        $stepLabel = trim((string) ($templateStep['step_label'] ?? ''));
+        if ($stepLabel === '') {
+            $stepLabel = ucwords(strtolower(str_replace('_', ' ', $stepKey)));
+        }
 
-        $startedAt =
-            in_array(
-                $status,
-                ['IN_PROGRESS', 'APPROVED'],
-                true
-            )
-                ? $now
-                : null;
-
-        $completedAt =
-            in_array(
-                $status,
-                [
-                    'APPROVED',
-                    'CHANGES_REQUESTED',
-                    'REJECTED',
-                    'SKIPPED',
-                ],
-                true
-            )
-                ? $now
-                : null;
+        $responsibilityType = (string) (
+            $templateStep['responsibility_type']
+            ?? ($stepKey === 'CREATOR'
+                ? 'CREATOR'
+                : (!empty($templateStep['required_position_id']) ? 'POSITION' : 'UNIT'))
+        );
+        $responsibilityScope = (string) (
+            $templateStep['responsibility_scope']
+            ?? ($stepKey === 'CREATOR' ? 'NONE' : 'FIXED_UNIT')
+        );
 
         $stmt = $this->db->prepare(
             'INSERT INTO workflow_instance_steps (
@@ -283,9 +281,17 @@ class WorkflowRepository
                 template_step_id,
                 step_order,
                 step_key,
+                step_label,
+                phase_order,
+                execution_mode,
                 assigned_unit_id,
                 assigned_position_id,
                 is_optional,
+                responsibility_type,
+                responsibility_scope,
+                required_permission_code,
+                reminder_after_days,
+                allow_revision,
                 status,
                 approved_by,
                 approved_at,
@@ -296,9 +302,17 @@ class WorkflowRepository
                 :template_step_id,
                 :step_order,
                 :step_key,
+                :step_label,
+                :phase_order,
+                :execution_mode,
                 :assigned_unit_id,
                 :assigned_position_id,
                 CAST(:is_optional AS BOOLEAN),
+                :responsibility_type,
+                :responsibility_scope,
+                :required_permission_code,
+                :reminder_after_days,
+                CAST(:allow_revision AS BOOLEAN),
                 CAST(:status AS workflow_step_status),
                 :acted_by,
                 :approved_at,
@@ -310,20 +324,25 @@ class WorkflowRepository
 
         $stmt->execute([
             'workflow_instance_id' => $instanceId,
-            'template_step_id' =>
-                $templateStep['template_step_id'],
-            'step_order' =>
-                $templateStep['step_order'],
-            'step_key' =>
-                $templateStep['step_key'],
-            'assigned_unit_id' =>
-                $templateStep['required_unit_id'],
-            'assigned_position_id' =>
-                $templateStep['required_position_id'],
-            'is_optional' =>
-                $this->toPostgresBoolean(
-                    $templateStep['is_optional']
-                ),
+            'template_step_id' => $templateStep['template_step_id'],
+            'step_order' => $templateStep['step_order'],
+            'step_key' => $stepKey,
+            'step_label' => $stepLabel,
+            'phase_order' => $templateStep['phase_order'] ?? $templateStep['step_order'],
+            'execution_mode' => $templateStep['execution_mode'] ?? 'SEQUENTIAL',
+            'assigned_unit_id' => $templateStep['required_unit_id'] ?? null,
+            'assigned_position_id' => $templateStep['required_position_id'] ?? null,
+            'is_optional' => $this->toPostgresBoolean(
+                $templateStep['is_optional'] ?? false
+            ),
+            'responsibility_type' => $responsibilityType,
+            'responsibility_scope' => $responsibilityScope,
+            'required_permission_code' =>
+                $templateStep['required_permission_code'] ?? 'APPROVE_AGREEMENT',
+            'reminder_after_days' => $templateStep['reminder_after_days'] ?? 3,
+            'allow_revision' => $this->toPostgresBoolean(
+                $templateStep['allow_revision'] ?? true
+            ),
             'status' => $status,
             'acted_by' => $actedBy,
             'approved_at' => $approvedAt,
@@ -503,45 +522,56 @@ class WorkflowRepository
         int $unitId,
         string $permissionCode = 'APPROVE_AGREEMENT'
     ): int {
-        $stmt = $this->db->prepare(
+        $eligibleSql =
+            'SELECT DISTINCT up.user_id
+             FROM user_positions up
+             JOIN users u
+               ON u.user_id = up.user_id
+              AND u.is_active = TRUE
+             JOIN user_roles ur
+               ON ur.user_id = u.user_id
+             JOIN role_permissions rp
+               ON rp.role_id = ur.role_id
+             JOIN permissions p
+               ON p.permission_id = rp.permission_id
+              AND p.permission_code = :permission_code
+             WHERE up.unit_id = :unit_id
+               AND up.is_active = TRUE
+               AND (
+                   up.end_date IS NULL
+                   OR up.end_date >= CURRENT_DATE
+               )';
+
+        $insert = $this->db->prepare(
             'INSERT INTO workflow_step_assignments (
                 workflow_instance_step_id,
                 user_id,
                 assigned_at,
                 is_active
              )
-             SELECT DISTINCT
+             SELECT
                 CAST(:instance_step_id AS BIGINT),
-                up.user_id,
+                eligible.user_id,
                 NOW(),
                 TRUE
-             FROM user_positions up
-             JOIN users u
-                ON u.user_id = up.user_id
-               AND u.is_active = TRUE
-             JOIN user_roles ur
-                ON ur.user_id = u.user_id
-             JOIN role_permissions rp
-                ON rp.role_id = ur.role_id
-             JOIN permissions p
-                ON p.permission_id = rp.permission_id
-               AND p.permission_code = :permission_code
-             WHERE up.unit_id = :unit_id
-               AND up.is_active = TRUE
-               AND (
-                   up.end_date IS NULL
-                   OR up.end_date >= CURRENT_DATE
-               )
+             FROM (' . $eligibleSql . ') eligible
              ON CONFLICT DO NOTHING'
         );
-
-        $stmt->execute([
+        $insert->execute([
             'instance_step_id' => $instanceStepId,
             'unit_id' => $unitId,
             'permission_code' => $permissionCode,
         ]);
 
-        return $stmt->rowCount();
+        $count = $this->db->prepare(
+            'SELECT COUNT(*)
+             FROM workflow_step_assignments
+             WHERE workflow_instance_step_id = :instance_step_id
+               AND is_active = TRUE'
+        );
+        $count->execute(['instance_step_id' => $instanceStepId]);
+
+        return (int) $count->fetchColumn();
     }
 
     public function isUserAssignedToStep(

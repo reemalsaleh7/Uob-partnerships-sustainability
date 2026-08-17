@@ -187,6 +187,15 @@ final class ConfigurableAgreementWorkflowService
             return [
                 'workflow_instance_id' => $instanceId,
                 'current_phase_order' => $firstPhase,
+                'current_step_key' => 'VP_INITIAL',
+                'assigned_vp_users' => array_reduce(
+                    $created,
+                    static fn (int $count, array $step): int =>
+                        $count + ((string) $step['step_key'] === 'VP_INITIAL'
+                            ? (int) $step['eligible_user_count']
+                            : 0),
+                    0
+                ),
                 'template_version' => (int) $template['version_number'],
                 'engine_version' => 'CONFIGURABLE',
                 'steps' => $created,
