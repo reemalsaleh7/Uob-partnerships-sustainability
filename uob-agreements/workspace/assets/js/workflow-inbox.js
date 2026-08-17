@@ -9,7 +9,9 @@
         tableWrap: document.getElementById('workflow-table-wrap'),
         tableBody: document.getElementById('workflow-table-body'),
         summary: document.querySelector('[data-workflow-summary]'),
-        refresh: document.querySelector('[data-refresh-inbox]')
+        refresh: document.querySelector('[data-refresh-inbox]'),
+        unreadOnly: document.querySelector('[data-workflow-unread-only]'),
+        markAllRead: document.querySelector('[data-mark-all-workflow-read]')
     };
 
     const stepLabels = Object.freeze({
@@ -17,8 +19,24 @@
         LEGAL_REVIEW: 'Legal review',
         FINANCE_REVIEW: 'Finance review',
         VP_FINAL: 'Final VP review',
-        PRESIDENT_APPROVAL: 'President approval'
+        PRESIDENT_APPROVAL: 'President approval',
+        DEPARTMENT_HEAD: 'Department Head',
+        DEAN: 'Dean',
+        VICE_PRESIDENT: 'Vice President / Office',
+        PRESIDENT: 'President / Office'
     });
+
+    let rows = [];
+
+    function booleanValue(value) {
+        return value === true
+            || value === 1
+            || value === '1'
+            || value === 't'
+            || value === 'true'
+            || value === 'yes'
+            || value === 'on';
+    }
 
     function cell(text) {
         const td = document.createElement('td');
@@ -28,7 +46,8 @@
 
     function canUseInbox(user) {
         return AgreementApi.hasPermission(user, 'APPROVE_AGREEMENT')
-            || AgreementApi.hasPermission(user, 'REJECT_AGREEMENT');
+            || AgreementApi.hasPermission(user, 'REJECT_AGREEMENT')
+            || AgreementApi.hasPermission(user, 'APPROVE_INITIATIVE');
     }
 
     async function addAgreementDetails(assignments) {
@@ -48,17 +67,133 @@
         }));
     }
 
-    function render(rows) {
+    function assignmentHref(assignment) {
+        if (assignment.entity_type === 'INITIATIVE_REQUEST') {
+            return `initiative-workflow.php?view=detail&id=${encodeURIComponent(
+                assignment.entity_id
+            )}`;
+        }
+
+        if (assignment.entity_type === 'AGREEMENT_LIFECYCLE') {
+            const query = new URLSearchParams({
+                instance_id: assignment.workflow_instance_id,
+                request_id: assignment.lifecycle_request_id || assignment.entity_id
+            });
+            return `lifecycle-review.php?${query.toString()}`;
+        }
+
+        if (assignment.engine_version === 'CONFIGURABLE') {
+            return `workflow-generic-review.php?instance_id=${encodeURIComponent(
+                assignment.workflow_instance_id
+            )}`;
+        }
+
+        const reviewPages = {
+            VP_INITIAL: 'workflow-review.php',
+            LEGAL_REVIEW: 'legal-review.php',
+            FINANCE_REVIEW: 'finance-review.php',
+            VP_FINAL: 'vp-review.php',
+            PRESIDENT_APPROVAL: 'president-review.php'
+        };
+
+        if (reviewPages[assignment.step_key]) {
+            const query = new URLSearchParams({
+                instance_id: assignment.workflow_instance_id,
+                agreement_id: assignment.entity_id
+            });
+            return `${reviewPages[assignment.step_key]}?${query.toString()}`;
+        }
+
+        return `agreement.php?id=${encodeURIComponent(
+            assignment.subject_agreement_id || assignment.entity_id
+        )}`;
+    }
+
+    function assignmentItemTitle(assignment) {
+        if (assignment.entity_type === 'INITIATIVE_REQUEST') {
+            const code = assignment.initiative_request_code
+                || `Initiative request #${assignment.entity_id}`;
+            const title = String(assignment.initiative_request_title || '').trim();
+            return title ? `${code} · ${title}` : code;
+        }
+
+        const agreementTitle = assignment.agreement?.title
+            || `Agreement #${assignment.subject_agreement_id || assignment.entity_id}`;
+
+        if (assignment.entity_type === 'AGREEMENT_LIFECYCLE') {
+            return `${String(
+                assignment.lifecycle_request_type || 'Lifecycle'
+            ).replaceAll('_', ' ')} · ${agreementTitle}`;
+        }
+
+        return agreementTitle;
+    }
+
+    function filteredRows() {
+        if (!elements.unreadOnly?.checked) {
+            return rows;
+        }
+
+        return rows.filter((assignment) => !booleanValue(assignment.is_read));
+    }
+
+    async function markRead(assignment) {
+        if (booleanValue(assignment.is_read)) {
+            return;
+        }
+
+        await AgreementApi.request(
+            `/workflow-inbox/${encodeURIComponent(assignment.instance_step_id)}/read`,
+            { method: 'POST' }
+        );
+        assignment.is_read = true;
+        assignment.read_at = new Date().toISOString();
+    }
+
+    async function openAssignment(assignment) {
+        if (assignment.__opening) {
+            return;
+        }
+
+        assignment.__opening = true;
+        const href = assignmentHref(assignment);
+
+        try {
+            await markRead(assignment);
+        } catch (error) {
+            // Reading state must never block the reviewer from opening the task.
+        } finally {
+            window.location.assign(href);
+        }
+    }
+
+    function render() {
+        const visibleRows = filteredRows();
+
         elements.tableBody.replaceChildren();
         elements.loading.classList.add('d-none');
-        elements.empty.classList.toggle('d-none', rows.length !== 0);
-        elements.tableWrap.classList.toggle('d-none', rows.length === 0);
-        elements.summary.textContent = rows.length === 1
+        elements.empty.classList.toggle('d-none', visibleRows.length !== 0);
+        elements.tableWrap.classList.toggle('d-none', visibleRows.length === 0);
+        elements.summary.textContent = visibleRows.length === 1
             ? '1 active task'
-            : `${rows.length} active tasks`;
+            : `${visibleRows.length} active tasks`;
 
-        rows.forEach((assignment) => {
+        if (elements.markAllRead) {
+            elements.markAllRead.disabled = !rows.some(
+                (assignment) => !booleanValue(assignment.is_read)
+            );
+        }
+
+        visibleRows.forEach((assignment) => {
             const tr = document.createElement('tr');
+            const isRead = booleanValue(assignment.is_read);
+            const href = assignmentHref(assignment);
+
+            tr.className = 'workflow-inbox-row';
+            tr.style.cursor = 'pointer';
+            tr.tabIndex = 0;
+            tr.setAttribute('role', 'link');
+            tr.setAttribute('aria-label', `Open ${assignmentItemTitle(assignment)}`);
 
             const taskCell = document.createElement('td');
             taskCell.className = 'workflow-task-cell';
@@ -73,20 +208,20 @@
                 );
             const key = document.createElement('span');
             key.className = 'workflow-task-key';
-            key.textContent = assignment.engine_version === 'CONFIGURABLE'
-                ? `Phase ${assignment.phase_order} · template v${assignment.template_version_number}`
+            const isVersioned = String(assignment.engine_version || '')
+                .startsWith('CONFIGURABLE');
+            const keyText = isVersioned
+                ? `Phase ${assignment.phase_order || assignment.step_order} · template v${
+                    assignment.template_version_number || 1
+                }`
                 : (assignment.step_key || 'Unknown step');
+            key.textContent = isRead ? keyText : `${keyText} · Unread`;
             taskCell.append(label, key);
             tr.appendChild(taskCell);
 
-            const agreementTitle = assignment.agreement?.title
-                || `Agreement #${assignment.subject_agreement_id || assignment.entity_id}`;
-            const subjectTitle = assignment.entity_type === 'AGREEMENT_LIFECYCLE'
-                ? `${String(assignment.lifecycle_request_type || 'Lifecycle').replaceAll('_', ' ')} · ${agreementTitle}`
-                : agreementTitle;
-            const agreementCell = cell(subjectTitle);
-            agreementCell.classList.add('agreement-title-cell');
-            tr.appendChild(agreementCell);
+            const itemCell = cell(assignmentItemTitle(assignment));
+            itemCell.classList.add('agreement-title-cell');
+            tr.appendChild(itemCell);
 
             tr.appendChild(cell(
                 assignment.assigned_unit_name
@@ -97,63 +232,36 @@
 
             const actionCell = document.createElement('td');
             actionCell.className = 'text-end';
+            const link = document.createElement('a');
+            link.className = 'btn btn-sm btn-primary';
+            link.href = href;
+            link.textContent = assignment.entity_type === 'INITIATIVE_REQUEST'
+                ? 'Review Initiative'
+                : 'Review';
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                openAssignment(assignment);
+            });
+            actionCell.appendChild(link);
+            tr.appendChild(actionCell);
 
-            if (assignment.engine_version === 'CONFIGURABLE') {
-                const link = document.createElement('a');
-                link.className = 'btn btn-sm btn-primary';
-                link.href = `workflow-generic-review.php?instance_id=${encodeURIComponent(
-                    assignment.workflow_instance_id
-                )}`;
-                link.textContent = 'Review';
-                actionCell.appendChild(link);
-            } else if (
-                [
-                    'VP_INITIAL',
-                    'LEGAL_REVIEW',
-                    'FINANCE_REVIEW',
-                    'VP_FINAL',
-                    'PRESIDENT_APPROVAL'
-                ].includes(assignment.step_key)
-            ) {
-                const link = document.createElement('a');
-                link.className = 'btn btn-sm btn-primary';
-                if (assignment.entity_type === 'AGREEMENT_LIFECYCLE') {
-                    const lifecycleQuery = new URLSearchParams({
-                        instance_id: assignment.workflow_instance_id,
-                        request_id: assignment.lifecycle_request_id
-                    });
-                    link.href = `lifecycle-review.php?${lifecycleQuery.toString()}`;
-                    link.textContent = 'Review';
-                    actionCell.appendChild(link);
-                    tr.appendChild(actionCell);
-                    elements.tableBody.appendChild(tr);
+            tr.addEventListener('click', (event) => {
+                const interactiveTarget = event.target instanceof Element
+                    && event.target.closest('a, button, input, select, textarea, label');
+                if (interactiveTarget) {
                     return;
                 }
-                const query = new URLSearchParams({
-                    instance_id: assignment.workflow_instance_id,
-                    agreement_id: assignment.entity_id
-                });
-                const reviewPages = {
-                    VP_INITIAL: 'workflow-review.php',
-                    LEGAL_REVIEW: 'legal-review.php',
-                    FINANCE_REVIEW: 'finance-review.php',
-                    VP_FINAL: 'vp-review.php',
-                    PRESIDENT_APPROVAL: 'president-review.php'
-                };
-                link.href = `${reviewPages[assignment.step_key]}?${query.toString()}`;
-                link.textContent = 'Review';
-                actionCell.appendChild(link);
-            } else {
-                const link = document.createElement('a');
-                link.className = 'btn btn-sm btn-outline-primary';
-                link.href = `agreement.php?id=${encodeURIComponent(
-                    assignment.subject_agreement_id || assignment.entity_id
-                )}`;
-                link.textContent = 'Open Agreement';
-                actionCell.appendChild(link);
-            }
+                openAssignment(assignment);
+            });
 
-            tr.appendChild(actionCell);
+            tr.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+                event.preventDefault();
+                openAssignment(assignment);
+            });
+
             elements.tableBody.appendChild(tr);
         });
     }
@@ -186,6 +294,9 @@
         elements.empty.classList.add('d-none');
         elements.tableWrap.classList.add('d-none');
         elements.refresh.disabled = true;
+        if (elements.markAllRead) {
+            elements.markAllRead.disabled = true;
+        }
 
         try {
             const user = await AgreementApi.requireSession();
@@ -215,11 +326,11 @@
                     Number(assignment.instance_step_id)
                 )
             );
-            const rows = await addAgreementDetails([
+            rows = await addAgreementDetails([
                 ...configurable,
                 ...legacy
             ]);
-            render(rows);
+            render();
         } catch (error) {
             showError(error);
         } finally {
@@ -228,6 +339,25 @@
     }
 
     elements.refresh.addEventListener('click', loadInbox);
+    elements.unreadOnly?.addEventListener('change', render);
+    elements.markAllRead?.addEventListener('click', async () => {
+        elements.markAllRead.disabled = true;
+        elements.alert.classList.add('d-none');
+
+        try {
+            await AgreementApi.request('/workflow-inbox/read-all', {
+                method: 'POST'
+            });
+            rows.forEach((assignment) => {
+                assignment.is_read = true;
+                assignment.read_at = new Date().toISOString();
+            });
+            render();
+        } catch (error) {
+            showError(error);
+        }
+    });
+
     showCompletionFeedback();
     loadInbox();
 })();

@@ -1,0 +1,224 @@
+
+
+/* ============================================================
+   INITIATIVE HUB REFINEMENT V1
+   Compact introduction + stronger action hierarchy.
+   ============================================================ */
+
+.initiative-hub-hero {
+    min-height: 0;
+    padding: clamp(1.15rem, 2.6vw, 1.7rem);
+    border-radius: 1.15rem;
+}
+
+.initiative-hub-hero .eyebrow {
+    margin-bottom: .4rem !important;
+}
+
+.initiative-hub-hero h1 {
+    max-width: 46rem;
+    font-size: clamp(1.65rem, 2.8vw, 2.45rem);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+}
+
+.initiative-hub-hero > p:not(.eyebrow) {
+    max-width: 42rem;
+    margin-top: .55rem;
+    line-height: 1.55;
+}
+
+.initiative-hub-hero .dashboard-role-chip {
+    margin-top: .75rem;
+}
+
+.initiative-hub-section-title {
+    margin-top: 1.2rem;
+    margin-bottom: .65rem;
+}
+
+.initiative-hub-section-title h2 {
+    font-size: 1.1rem;
+}
+
+/*
+ * These cards are already anchor elements,
+ * so the entire card remains clickable.
+ */
+.initiative-hub-actions {
+    gap: .75rem;
+}
+
+.initiative-hub-actions .dashboard-action {
+    min-height: 7.4rem;
+    padding: 1rem 1.05rem;
+    border-radius: .9rem;
+    cursor: pointer;
+}
+
+.initiative-hub-actions .dashboard-action strong {
+    font-size: .95rem;
+    line-height: 1.35;
+}
+
+.initiative-hub-actions .dashboard-action small {
+    margin-top: .4rem;
+    font-size: .76rem;
+    line-height: 1.5;
+}
+
+.initiative-hub-actions .dashboard-action span {
+    margin-top: .75rem;
+    font-size: .74rem;
+}
+
+.initiative-hub-actions .dashboard-action:focus {
+    outline: none;
+}
+
+.initiative-hub-actions .dashboard-action:focus-visible {
+    outline: 3px solid rgba(13, 74, 167, .22);
+    outline-offset: 3px;
+}
+
+.initiative-hub-actions + .row {
+    margin-top: 1rem !important;
+}
+
+@media (max-width: 575.98px) {
+    .initiative-hub-hero {
+        padding: 1rem;
+    }
+
+    .initiative-hub-hero h1 {
+        font-size: 1.65rem;
+    }
+
+    .initiative-hub-actions .dashboard-action {
+        min-height: 6.8rem;
+    }
+}
+
+/* ============================================================
+   INITIATIVE HUB COMPACT HERO V2
+   Give primary actions more above-the-fold priority.
+   ============================================================ */
+
+.initiative-hub-hero {
+    padding: 1rem 1.25rem !important;
+    border-radius: 1rem;
+}
+
+.initiative-hub-hero .eyebrow {
+    margin-bottom: .3rem !important;
+    font-size: .68rem;
+}
+
+.initiative-hub-hero h1 {
+    max-width: 43rem;
+    font-size: clamp(1.55rem, 2.15vw, 2rem) !important;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+}
+
+.initiative-hub-hero > p:not(.eyebrow) {
+    max-width: 40rem;
+    margin-top: .45rem !important;
+    font-size: .9rem;
+    line-height: 1.45;
+}
+
+.initiative-hub-hero .dashboard-role-chip {
+    margin-top: .6rem !important;
+    padding: .3rem .6rem;
+    font-size: .65rem;
+}
+
+.initiative-hub-section-title {
+    margin-top: .9rem !important;
+    margin-bottom: .55rem !important;
+}
+
+@media (max-width: 575.98px) {
+    .initiative-hub-hero {
+        padding: .9rem 1rem !important;
+    }
+
+    .initiative-hub-hero h1 {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* ============================================================
+   INITIATIVE HUB FINAL POLISH V3
+   Calmer Hero title + clearer interactive action cards.
+   ============================================================ */
+
+/* Slightly calmer hierarchy without making the title weak. */
+.initiative-hub-hero h1 {
+    max-width: 42rem;
+    font-size: clamp(1.45rem, 1.9vw, 1.85rem) !important;
+    line-height: 1.1;
+}
+
+/* Make the full-card interaction visually obvious. */
+.initiative-hub-actions .dashboard-action {
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        border-color 160ms ease,
+        background-color 160ms ease;
+}
+
+.initiative-hub-actions .dashboard-action:hover {
+    transform: translateY(-2px);
+    border-color: rgba(13, 74, 167, .3);
+    box-shadow: 0 10px 24px rgba(15, 42, 76, .09);
+    background-color: #ffffff;
+}
+
+.initiative-hub-actions .dashboard-action:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(13, 74, 167, .5);
+    box-shadow: 0 10px 24px rgba(15, 42, 76, .09);
+}
+
+/* Give the action cue a little more response on hover. */
+.initiative-hub-actions .dashboard-action span {
+    transition: transform 160ms ease;
+}
+
+html[dir="ltr"]
+.initiative-hub-actions .dashboard-action:hover span,
+html[dir="ltr"]
+.initiative-hub-actions .dashboard-action:focus-visible span {
+    transform: translateX(2px);
+}
+
+html[dir="rtl"]
+.initiative-hub-actions .dashboard-action:hover span,
+html[dir="rtl"]
+.initiative-hub-actions .dashboard-action:focus-visible span {
+    transform: translateX(-2px);
+}
+
+/* Respect reduced-motion accessibility preferences. */
+@media (prefers-reduced-motion: reduce) {
+    .initiative-hub-actions .dashboard-action,
+    .initiative-hub-actions .dashboard-action span {
+        transition: none;
+    }
+
+    .initiative-hub-actions .dashboard-action:hover,
+    .initiative-hub-actions .dashboard-action:focus-visible,
+    .initiative-hub-actions .dashboard-action:hover span,
+    .initiative-hub-actions .dashboard-action:focus-visible span {
+        transform: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .initiative-hub-hero h1 {
+        font-size: 1.4rem !important;
+    }
+}

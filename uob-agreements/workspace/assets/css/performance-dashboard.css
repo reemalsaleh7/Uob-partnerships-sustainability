@@ -1,0 +1,90 @@
+
+
+/* ============================================================
+   PERFORMANCE DASHBOARD COMPACT HEADER V1
+   Tighter above-the-fold layout without changing dashboard data.
+   ============================================================ */
+
+.performance-dashboard-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 52rem) max-content;
+    justify-content: start !important;
+    align-items: end;
+    column-gap: 2rem !important;
+    row-gap: .8rem !important;
+}
+
+.performance-dashboard-heading > div:first-child {
+    min-width: 0;
+}
+
+.performance-dashboard-heading .eyebrow {
+    margin-bottom: .45rem !important;
+}
+
+.performance-dashboard-heading h1 {
+    margin-bottom: .45rem !important;
+}
+
+.performance-dashboard-heading .text-secondary {
+    max-width: 46rem;
+    margin-bottom: .65rem !important;
+    line-height: 1.5;
+}
+
+.performance-dashboard-heading .performance-scope-note {
+    padding: .32rem .62rem;
+}
+
+/*
+ * Keep Reporting year connected to the dashboard heading instead
+ * of leaving it isolated at the far edge of the workspace.
+ */
+.performance-dashboard-year {
+    align-self: end;
+    min-width: 7rem;
+    padding-bottom: .05rem;
+}
+
+.performance-dashboard-year .form-label {
+    margin-bottom: .35rem;
+}
+
+.performance-dashboard-year .form-select {
+    min-width: 6.2rem;
+}
+
+/*
+ * The generic dashboard section title uses a 2rem top margin.
+ * On this page it creates too much empty space before Portfolio status.
+ */
+[data-dashboard-content] > .dashboard-section-title:first-child {
+    margin-top: 1rem;
+    margin-bottom: .65rem;
+}
+
+/* Keep KPI rows visually connected to their heading. */
+[data-dashboard-content] > [data-agreement-kpis] {
+    margin-top: 0;
+}
+
+@media (max-width: 991.98px) {
+    .performance-dashboard-heading {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .performance-dashboard-year {
+        width: min(10rem, 100%);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .performance-dashboard-heading {
+        row-gap: .7rem !important;
+    }
+
+    [data-dashboard-content] > .dashboard-section-title:first-child {
+        margin-top: .8rem;
+    }
+}

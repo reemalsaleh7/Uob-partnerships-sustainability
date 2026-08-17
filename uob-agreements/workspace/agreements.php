@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
 
-workspaceHeader('Agreements', 'agreements');
+workspaceHeader(
+    'Agreements',
+    'agreements',
+    ['assets/css/agreements.css']
+);
 ?>
 
-<section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
+<section class="page-heading agreements-page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
     <div>
         <p class="eyebrow mb-2">Partnership portfolio</p>
         <h1 class="display-6 mb-2">Agreements</h1>
@@ -27,17 +31,18 @@ workspaceHeader('Agreements', 'agreements');
     </div>
 </section>
 
-<section class="workspace-card mt-4" aria-labelledby="agreement-list-title">
+<section class="workspace-card agreements-register-card mt-4" aria-labelledby="agreement-list-title">
     <div class="workspace-card-header">
         <div>
             <h2 id="agreement-list-title" class="h5 mb-1">Agreement register</h2>
-            <p class="text-secondary small mb-0" data-result-summary>
+            <!-- AGREEMENT REGISTER SUMMARY DEDUPLICATION V3 -->
+<p class="d-none" data-result-summary aria-hidden="true">
                 Loading Agreements…
             </p>
         </div>
     </div>
 
-    <div class="agreement-scope-bar" aria-label="Agreement view" data-agreement-scopes>
+    <div class="agreement-scope-bar agreements-compact-scopes" aria-label="Agreement view" data-agreement-scopes>
         <button class="agreement-scope-button active" type="button" data-agreement-scope="ACTIVE">
             <strong data-scope-count="ACTIVE">0</strong>
             <span>Active Agreements</span>
@@ -60,15 +65,14 @@ workspaceHeader('Agreements', 'agreements');
         </button>
     </div>
 
-    <div class="agreement-discovery-note d-none" data-faculty-agreement-note>
-        <div>
-            <strong>Build an Initiative on an active partnership</strong>
-            <p>Choose an active Agreement below, review its objectives, then use it as the partnership context for your Initiative request.</p>
-        </div>
-        <a class="btn btn-sm btn-outline-primary" href="initiative-hub.php">Initiative guidance</a>
-    </div>
-
-    <div class="filter-bar progressive-search" data-agreement-search-filters aria-label="Advanced search">
+        <!-- AGREEMENT INITIATIVE BANNER REMOVED V2
+         Keep this hidden hook because agreements.js updates its visibility. -->
+    <div
+        class="d-none"
+        data-faculty-agreement-note
+        aria-hidden="true"
+    ></div>
+<div class="filter-bar progressive-search" data-agreement-search-filters aria-label="Advanced search">
         <div class="progressive-search-primary">
             <div class="progressive-search-field">
                 <label for="agreement-search" class="form-label">Search Agreements</label>

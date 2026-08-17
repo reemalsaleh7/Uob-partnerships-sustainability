@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/includes/layout.php';
-workspaceHeader('Lifecycle requests', 'lifecycle');
+workspaceHeader(
+    'Lifecycle requests',
+    'lifecycle',
+    ['assets/css/lifecycle-requests.css']
+);
 ?>
 
-<section class="page-heading">
+<section class="page-heading lifecycle-requests-heading">
     <p class="eyebrow mb-2">Agreement governance</p>
     <h1 class="display-6 mb-2">Lifecycle requests</h1>
     <p class="text-secondary mb-0">Renewal, amendment, and termination requests remain separate from approved Agreement records.</p>
@@ -96,10 +100,58 @@ workspaceHeader('Lifecycle requests', 'lifecycle');
     </div>
 </section>
 
-<div id="lifecycle-empty" class="empty-state mt-4 d-none">
-    <h2 class="h5">No lifecycle requests</h2>
-    <p class="text-secondary mb-0">Open an approved or active Agreement to start a renewal, amendment, or termination request.</p>
-</div>
+<!-- LIFECYCLE REQUESTS EMPTY STATE V1 -->
+<section
+    id="lifecycle-empty"
+    class="workspace-card lifecycle-empty-card mt-4 d-none"
+    aria-labelledby="lifecycle-empty-title"
+>
+    <div class="lifecycle-empty-content">
+        <div class="lifecycle-empty-icon" aria-hidden="true">
+            <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                focusable="false"
+            >
+                <path
+                    d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M14 3v5h5M9 13h6M9 17h4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </svg>
+        </div>
+
+        <div class="lifecycle-empty-copy">
+            <h2 id="lifecycle-empty-title" class="h5 mb-2">
+                No lifecycle requests
+            </h2>
+
+            <p class="text-secondary mb-0">
+                Open an approved or active Agreement to start a renewal,
+                amendment, or termination request.
+            </p>
+        </div>
+
+        <a
+            href="agreements.php"
+            class="btn btn-primary lifecycle-empty-action"
+        >
+            Browse Agreements
+        </a>
+    </div>
+</section>
 
 <?php workspaceFooter([
     'assets/js/advanced-search.js',

@@ -142,7 +142,34 @@
             : (hour < 18 ? 'Good afternoon' : 'Good evening');
 
         elements.greeting.textContent = `${timeGreeting}, ${firstName}`;
-        elements.role.textContent = `${roleName(user)} · ${AgreementApi.primaryContext(user)}`;
+                /*
+         * OVERVIEW ROLE CONTEXT DEDUPLICATION V1
+         * Avoid repeating the same role when primaryContext()
+         * already includes it.
+         */
+        const roleContextParts = [
+            roleName(user),
+            ...String(
+                AgreementApi.primaryContext(user) || ''
+            ).split(' · ')
+        ]
+            .map((part) => part.trim())
+            .filter(Boolean);
+
+        const seenRoleContextParts = new Set();
+
+        elements.role.textContent = roleContextParts
+            .filter((part) => {
+                const key = part.toLocaleLowerCase();
+
+                if (seenRoleContextParts.has(key)) {
+                    return false;
+                }
+
+                seenRoleContextParts.add(key);
+                return true;
+            })
+            .join(' · ');
         elements.title.textContent = 'Agreements and Initiatives, together in one workspace.';
         elements.description.textContent = 'See what needs your attention, follow both approval routes, and move University partnerships into measurable action.';
     }

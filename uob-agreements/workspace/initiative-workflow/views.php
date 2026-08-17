@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if ($view === 'list'): ?>
-<section class="page-heading d-flex flex-wrap justify-content-between align-items-start gap-3">
+<section class="page-heading d-flex flex-wrap justify-content-between align-items-start gap-3 initiative-requests-heading">
     <div>
         <p class="eyebrow mb-2">Initiatives</p>
         <h1 class="display-6 mb-2">Initiative requests</h1>
@@ -56,16 +56,16 @@ if ($view === 'list'): ?>
 
 <div class="alert alert-danger mt-4 d-none" role="alert" data-module-alert></div>
 
-<section class="workspace-card mt-4">
+<section class="workspace-card mt-4 initiative-requests-list-card">
     <div class="workspace-card-header">
         <div>
             <h2 class="h5 mb-1">My visible requests</h2>
             <p class="small text-secondary mb-0">
-                Requests you created, joined, review, or administer.
+                Requests you can access as a creator, collaborator, reviewer, or administrator.
             </p>
         </div>
         <div class="initiative-filter-row">
-            <input class="form-control" type="search" placeholder="Search title or request code" data-search>
+            <input class="form-control" type="search" placeholder="Search any word in the request" data-search>
             <select class="form-select" data-status-filter>
                 <option value="">All statuses</option>
                 <option value="DRAFT">Draft</option>
@@ -110,7 +110,7 @@ if ($view === 'list'): ?>
     <a href="initiative-workflow.php" class="back-link">← Back to Initiative requests</a>
 </div>
 
-<section class="page-heading d-flex flex-wrap justify-content-between align-items-start gap-3">
+<section class="page-heading d-flex flex-wrap justify-content-between align-items-start gap-3 initiative-requests-heading">
     <div>
         <p class="eyebrow mb-2">Initiatives</p>
         <h1 class="display-6 mb-2">Notifications</h1>
@@ -129,7 +129,7 @@ if ($view === 'list'): ?>
 
 <div class="alert alert-danger mt-4 d-none" role="alert" data-module-alert></div>
 
-<section class="workspace-card mt-4">
+<section class="workspace-card mt-4 initiative-requests-list-card">
     <div class="workspace-card-header">
         <div>
             <h2 class="h5 mb-1">Initiative activity</h2>
@@ -164,6 +164,325 @@ if ($view === 'list'): ?>
     ></div>
 </section>
 
+<?php elseif ($view === 'monitoring'): ?>
+
+<div class="initiative-monitoring" data-monitoring-root>
+
+    <div class="monitoring-breadcrumb mb-3">
+        <a href="initiative-workflow.php">
+            Initiative requests
+        </a>
+        <span aria-hidden="true">/</span>
+        <span>Monitoring</span>
+    </div>
+
+    <section class="monitoring-hero">
+        <div class="monitoring-hero-copy">
+            <span class="monitoring-kicker">ADMIN WORKSPACE</span>
+
+            <h1>Initiative Monitoring</h1>
+
+            <p>
+                See what needs attention, track every Initiative request,
+                and review notifications and workflow activity from one place.
+            </p>
+
+            <div class="monitoring-help-note">
+                <strong>New here?</strong>
+                Start with <b>Needs attention</b>, then open a request
+                to review its full workflow and history.
+            </div>
+        </div>
+
+        <div class="monitoring-hero-actions">
+            <a
+                class="btn btn-light"
+                href="initiative-workflow.php"
+            >
+                View requests
+            </a>
+
+            <button
+                class="btn btn-primary"
+                type="button"
+                data-monitoring-refresh
+            >
+                Refresh data
+            </button>
+        </div>
+    </section>
+
+    <div
+        class="alert alert-danger d-none mt-4"
+        role="alert"
+        data-monitoring-error
+    ></div>
+
+    <div
+        class="monitoring-loading mt-4"
+        data-monitoring-loading
+    >
+        <div
+            class="spinner-border spinner-border-sm"
+            aria-hidden="true"
+        ></div>
+        <span>Loading monitoring data…</span>
+    </div>
+
+    <div class="d-none" data-monitoring-content>
+
+        <section
+            class="monitoring-metrics"
+            aria-label="Initiative monitoring summary"
+        >
+            <article class="monitoring-metric">
+                <span class="monitoring-metric-label">
+                    Needs review
+                </span>
+                <strong data-monitoring-stat="under_review">0</strong>
+                <small>Requests moving through approval</small>
+            </article>
+
+            <article class="monitoring-metric monitoring-metric-warning">
+                <span class="monitoring-metric-label">
+                    Revision required
+                </span>
+                <strong data-monitoring-stat="revision_required">0</strong>
+                <small>Requests waiting for changes</small>
+            </article>
+
+            <article class="monitoring-metric monitoring-metric-success">
+                <span class="monitoring-metric-label">
+                    Approved
+                </span>
+                <strong data-monitoring-stat="approved">0</strong>
+                <small>Requests successfully approved</small>
+            </article>
+
+            <article class="monitoring-metric">
+                <span class="monitoring-metric-label">
+                    Total requests
+                </span>
+                <strong data-monitoring-stat="total_requests">0</strong>
+                <small>All Initiative requests in the system</small>
+            </article>
+        </section>
+
+        <section class="monitoring-attention-card">
+            <div class="monitoring-section-heading">
+                <div>
+                    <span class="monitoring-section-kicker">
+                        PRIORITY
+                    </span>
+                    <h2>Needs attention</h2>
+                    <p>
+                        Requests currently under review or requiring revision.
+                    </p>
+                </div>
+
+                <span
+                    class="monitoring-attention-count"
+                    data-monitoring-attention-count
+                >
+                    0 items
+                </span>
+            </div>
+
+            <div
+                class="monitoring-attention-list"
+                data-monitoring-attention
+            ></div>
+        </section>
+
+        <section class="monitoring-workspace">
+
+            <div class="monitoring-workspace-header">
+                <div>
+                    <span class="monitoring-section-kicker">
+                        SYSTEM MONITORING
+                    </span>
+                    <h2>Explore activity</h2>
+                    <p>
+                        Search the system or switch between requests,
+                        notifications, and audit activity.
+                    </p>
+                </div>
+            </div>
+
+            <div class="monitoring-toolbar">
+                <div class="monitoring-search">
+                    <label for="monitoringSearch">
+                        Search
+                    </label>
+
+                    <input
+                        id="monitoringSearch"
+                        class="form-control"
+                        type="search"
+                        placeholder="Request code, title, user, event..."
+                        data-monitoring-search
+                    >
+                </div>
+
+                <div class="monitoring-filter">
+                    <label for="monitoringStatus">
+                        Request status
+                    </label>
+
+                    <select
+                        id="monitoringStatus"
+                        class="form-select"
+                        data-monitoring-status-filter
+                    >
+                        <option value="">All statuses</option>
+                        <option value="UNDER_REVIEW">Under review</option>
+                        <option value="REVISION_REQUIRED">
+                            Revision required
+                        </option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="CONVERTING">Converting</option>
+                        <option value="CONVERTED">Converted</option>
+                    </select>
+                </div>
+            </div>
+
+            <div
+                class="monitoring-tabs"
+                role="tablist"
+                aria-label="Monitoring data"
+            >
+                <button
+                    class="monitoring-tab active"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    data-monitoring-tab="requests"
+                >
+                    Requests
+                </button>
+
+                <button
+                    class="monitoring-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    data-monitoring-tab="notifications"
+                >
+                    Notifications
+                </button>
+
+                <button
+                    class="monitoring-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    data-monitoring-tab="events"
+                >
+                    Activity
+                </button>
+            </div>
+
+            <div
+                class="monitoring-panel"
+                data-monitoring-panel="requests"
+            >
+                <div class="monitoring-panel-heading">
+                    <div>
+                        <h3>Initiative requests</h3>
+                        <p>
+                            Current status, stage, owner, and waiting time.
+                        </p>
+                    </div>
+
+                    <span
+                        class="monitoring-result-count"
+                        data-monitoring-request-count
+                    ></span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table monitoring-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Request</th>
+                                <th>Requester</th>
+                                <th>Status</th>
+                                <th>Current stage</th>
+                                <th>Waiting</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody data-monitoring-requests></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div
+                class="monitoring-panel d-none"
+                data-monitoring-panel="notifications"
+            >
+                <div class="monitoring-panel-heading">
+                    <div>
+                        <h3>Notifications</h3>
+                        <p>
+                            Who received each Initiative notification
+                            and whether it was read.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table monitoring-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Request</th>
+                                <th>Recipient</th>
+                                <th>Type</th>
+                                <th>Notification</th>
+                                <th>State</th>
+                            </tr>
+                        </thead>
+                        <tbody data-monitoring-notifications></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div
+                class="monitoring-panel d-none"
+                data-monitoring-panel="events"
+            >
+                <div class="monitoring-panel-heading">
+                    <div>
+                        <h3>System activity</h3>
+                        <p>
+                            Audit history of workflow events and status changes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table monitoring-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Request</th>
+                                <th>Event</th>
+                                <th>Actor</th>
+                                <th>Status change</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody data-monitoring-events></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+</div>
 <?php elseif ($view === 'form'): ?>
 <script>
 document.body.classList.add('initiative-form-focus');
@@ -2614,7 +2933,7 @@ document.getElementById('workspaceSidebar')?.classList.remove('is-open');
         </form>
     </section>
 
-    <section class="workspace-card mt-4">
+    <section class="workspace-card mt-4 initiative-requests-list-card">
         <div class="workspace-card-header">
             <div>
                 <h2 class="h5 mb-1">Approval progress</h2>

@@ -19,25 +19,205 @@ workspaceHeader(
 );
 ?>
 
-<section class="page-heading workflow-admin-heading">
-    <div>
-        <p class="eyebrow mb-2"><?= htmlspecialchars($text('Administration', 'الإدارة'), ENT_QUOTES, 'UTF-8') ?></p>
-        <h1 class="display-6 mb-2"><?= htmlspecialchars($text('Workflow template management', 'إدارة قوالب سير العمل'), ENT_QUOTES, 'UTF-8') ?></h1>
-        <p class="text-secondary mb-0"><?= htmlspecialchars(
-            $text(
-                'Build versioned Agreement and Initiative approval routes. Published changes apply only to new workflows.',
-                'أنشئ مسارات اعتماد بإصدارات للاتفاقيات والمبادرات. التغييرات المنشورة تطبق على مسارات العمل الجديدة فقط.'
-            ),
-            ENT_QUOTES,
-            'UTF-8'
-        ) ?></p>
+<section class="workflow-admin-hero">
+    <div class="workflow-admin-hero-main">
+
+        <div class="workflow-admin-breadcrumb">
+            <span>
+                <?= htmlspecialchars(
+                    $text('Administration', 'الإدارة'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </span>
+
+            <span aria-hidden="true">/</span>
+
+            <strong>
+                <?= htmlspecialchars(
+                    $text('Workflow templates', 'قوالب سير العمل'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </strong>
+        </div>
+
+        <p class="workflow-admin-kicker">
+            <?= htmlspecialchars(
+                $text(
+                    'WORKFLOW ADMINISTRATION',
+                    'إدارة سير العمل'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </p>
+
+        <h1>
+            <?= htmlspecialchars(
+                $text(
+                    'Workflow template management',
+                    'إدارة قوالب سير العمل'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </h1>
+
+        <p class="workflow-admin-description">
+            <?= htmlspecialchars(
+                $text(
+                    'Configure how Agreements and Initiatives move through approval. Follow the four steps below from template selection to publishing.',
+                    'حدّد كيفية انتقال الاتفاقيات والمبادرات خلال مراحل الاعتماد. اتبع الخطوات الأربع من اختيار القالب حتى نشر الإصدار.'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </p>
+
+        <div class="workflow-admin-guide">
+
+            <div class="workflow-admin-guide-step">
+                <span>1</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Choose template',
+                                'اختر القالب'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Select Agreement or Initiative approval.',
+                                'اختر مسار اعتماد الاتفاقيات أو المبادرات.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="workflow-admin-guide-step">
+                <span>2</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Review route',
+                                'راجع المسار'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Understand the current stages and possible scenarios.',
+                                'افهم المراحل الحالية والسيناريوهات المحتملة.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="workflow-admin-guide-step">
+                <span>3</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Edit stages',
+                                'عدّل المراحل'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Adjust responsibility, order, scope, and reminders.',
+                                'عدّل المسؤولية والترتيب والنطاق والتذكيرات.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="workflow-admin-guide-step">
+                <span>4</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Publish version',
+                                'انشر الإصدار'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Explain the change and publish safely.',
+                                'وضّح سبب التغيير ثم انشر الإصدار بأمان.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+        </div>
     </div>
-    <div class="workflow-admin-heading-actions">
-        <a class="btn btn-outline-secondary" href="admin-users.php"><?= htmlspecialchars($text('User management', 'إدارة المستخدمين'), ENT_QUOTES, 'UTF-8') ?></a>
-        <button class="btn btn-outline-primary" type="button" data-workflow-refresh><?= htmlspecialchars($text('Refresh', 'تحديث'), ENT_QUOTES, 'UTF-8') ?></button>
+
+    <div class="workflow-admin-hero-actions">
+
+        <a
+            class="btn btn-light"
+            href="admin-users.php"
+        >
+            <?= htmlspecialchars(
+                $text(
+                    'User management',
+                    'إدارة المستخدمين'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </a>
+
+        <button
+            class="btn btn-primary"
+            type="button"
+            data-workflow-refresh
+        >
+            <?= htmlspecialchars(
+                $text('Refresh data', 'تحديث البيانات'),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </button>
+
     </div>
 </section>
-
 <div class="alert alert-danger d-none mt-4" role="alert" tabindex="-1" data-workflow-alert></div>
 <div class="alert alert-success d-none mt-4" role="status" tabindex="-1" data-workflow-success></div>
 
@@ -58,12 +238,40 @@ workspaceHeader(
 
 <div class="workflow-template-shell mt-4">
     <aside class="workspace-card workflow-template-list-card">
-        <div class="workspace-card-header">
+        <div class="workspace-card-header workflow-admin-section-header">
             <div>
-                <h2 class="h5 mb-1"><?= htmlspecialchars($text('Templates', 'القوالب'), ENT_QUOTES, 'UTF-8') ?></h2>
-                <p class="small text-secondary mb-0"><?= htmlspecialchars($text('Choose the route to edit', 'اختاري المسار المراد تعديله'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="workflow-admin-section-step mb-1">
+                    <?= htmlspecialchars(
+                        $text('STEP 1', 'الخطوة 1'),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
+
+                <h2 class="h5 mb-1">
+                    <?= htmlspecialchars(
+                        $text(
+                            'Choose a template',
+                            'اختر القالب'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </h2>
+
+                <p class="small text-secondary mb-0">
+                    <?= htmlspecialchars(
+                        $text(
+                            'Select the approval route you want to review or change.',
+                            'اختر مسار الاعتماد الذي تريد مراجعته أو تعديله.'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
             </div>
         </div>
+
         <div class="workflow-template-list" data-template-list></div>
         <div class="workflow-version-panel">
             <h3 class="h6 mb-2"><?= htmlspecialchars($text('Published versions', 'الإصدارات المنشورة'), ENT_QUOTES, 'UTF-8') ?></h3>
@@ -80,16 +288,23 @@ workspaceHeader(
         <form class="d-none" data-workflow-form>
             <div class="workflow-editor-header">
                 <div>
-                    <div class="workflow-template-title-row">
+                    <p class="workflow-admin-section-step mb-1">
+                    <?= htmlspecialchars(
+                        $text(
+                            'STEP 2 · REVIEW ROUTE',
+                            'الخطوة 2 · مراجعة المسار'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
+
+                <div class="workflow-template-title-row">
                         <h2 class="h4 mb-0" data-template-title></h2>
                         <span class="workflow-version-badge" data-template-version></span>
                     </div>
                     <p class="small text-secondary mt-2 mb-0" data-template-meta></p>
                 </div>
-                <button class="btn btn-primary" type="button" data-add-stage>
-                    <span aria-hidden="true">＋</span>
-                    <?= htmlspecialchars($text('Add stage', 'إضافة مرحلة'), ENT_QUOTES, 'UTF-8') ?>
-                </button>
             </div>
 
             <div class="mt-4">
@@ -159,11 +374,102 @@ workspaceHeader(
                 </div>
             </section>
 
-            <div class="workflow-stage-list mt-4" data-stage-list></div>
+            <section class="workflow-stage-section mt-4">
+                <div class="workflow-stage-section-heading">
+                    <div>
+                        <p class="workflow-admin-section-step mb-1">
+                            <?= htmlspecialchars(
+                                $text(
+                                    'STEP 3',
+                                    'الخطوة 3'
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
+                        </p>
+
+                        <h3 class="h5 mb-1">
+                            <?= htmlspecialchars(
+                                $text(
+                                    'Edit workflow stages',
+                                    'تعديل مراحل سير العمل'
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
+                        </h3>
+
+                        <p class="small text-secondary mb-0">
+                            <?= htmlspecialchars(
+                                $text(
+                                    'Review each stage from top to bottom. Change the responsible position, scope, order, requirement, or reminder only when needed.',
+                                    'راجع كل مرحلة من الأعلى إلى الأسفل، وعدّل المسؤول أو النطاق أو الترتيب أو الإلزام أو التذكير عند الحاجة فقط.'
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
+                        </p>
+                    </div>
+
+                    <button
+                        class="btn btn-primary"
+                        type="button"
+                        data-add-stage
+                    >
+                        <?= htmlspecialchars(
+                            $text(
+                                'Add stage',
+                                'إضافة مرحلة'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </button>
+
+                </div>
+
+                <div
+                    class="workflow-stage-list"
+                    data-stage-list
+                ></div>
+            </section>
 
             <section class="workflow-publish-panel mt-4">
                 <div class="flex-grow-1">
-                    <label class="form-label" for="workflow-publish-reason"><?= htmlspecialchars($text('Reason for publishing', 'سبب نشر الإصدار'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <p class="workflow-admin-section-step mb-1">
+                    <?= htmlspecialchars(
+                        $text(
+                            'STEP 4 · PUBLISH',
+                            'الخطوة 4 · النشر'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
+
+                <h3 class="h6 mb-1">
+                    <?= htmlspecialchars(
+                        $text(
+                            'Publish a new workflow version',
+                            'نشر إصدار جديد من سير العمل'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </h3>
+
+                <p class="small text-secondary mb-3">
+                    <?= htmlspecialchars(
+                        $text(
+                            'Describe why the workflow changed. Publishing creates a new version for future requests.',
+                            'وضّح سبب تغيير سير العمل. النشر ينشئ إصدارًا جديدًا للطلبات المستقبلية.'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
+
+                <label class="form-label" for="workflow-publish-reason"><?= htmlspecialchars($text('Reason for publishing', 'سبب نشر الإصدار'), ENT_QUOTES, 'UTF-8') ?></label>
                     <textarea
                         class="form-control"
                         id="workflow-publish-reason"

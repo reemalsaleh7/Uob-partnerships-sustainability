@@ -1,0 +1,103 @@
+
+
+/* ============================================================
+   LIFECYCLE REQUESTS POLISH V1
+   Compact heading + actionable empty state.
+   ============================================================ */
+
+.lifecycle-requests-heading {
+    max-width: 58rem;
+}
+
+.lifecycle-requests-heading .eyebrow {
+    margin-bottom: .45rem !important;
+}
+
+.lifecycle-requests-heading h1 {
+    margin-bottom: .4rem !important;
+    line-height: 1.1;
+}
+
+.lifecycle-requests-heading .text-secondary {
+    max-width: 54rem;
+    line-height: 1.5;
+}
+
+.lifecycle-empty-card.mt-4 {
+    margin-top: 1.1rem !important;
+}
+
+.lifecycle-empty-card {
+    min-height: 17rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.lifecycle-empty-card.d-none {
+    display: none !important;
+}
+
+.lifecycle-empty-content {
+    width: min(100%, 42rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.lifecycle-empty-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 1rem;
+
+    color: var(--bs-primary);
+    background: rgba(13, 110, 253, .07);
+
+    border: 1px solid rgba(13, 110, 253, .12);
+    border-radius: 1rem;
+}
+
+.lifecycle-empty-icon svg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.lifecycle-empty-copy {
+    max-width: 39rem;
+}
+
+.lifecycle-empty-copy h2 {
+    line-height: 1.25;
+}
+
+.lifecycle-empty-copy p {
+    line-height: 1.6;
+}
+
+.lifecycle-empty-action {
+    margin-top: 1.2rem;
+    min-width: 9.5rem;
+}
+
+.lifecycle-empty-action:focus-visible {
+    outline: 3px solid rgba(13, 74, 167, .18);
+    outline-offset: 3px;
+}
+
+@media (max-width: 575.98px) {
+    .lifecycle-empty-card {
+        min-height: 15rem;
+        padding: 1.5rem 1.1rem;
+    }
+
+    .lifecycle-empty-action {
+        width: 100%;
+    }
+}

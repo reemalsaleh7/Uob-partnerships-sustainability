@@ -134,13 +134,19 @@ HTML;
         : '';
 
     $initiativeRequestsActive = $currentScript === 'initiative-workflow.php'
-        && $initiativeView !== 'notifications'
+        && !in_array($initiativeView, ['notifications', 'monitoring'], true)
         ? ' active'
         : '';
 
     $initiativeNotificationsActive =
         $currentScript === 'initiative-workflow.php'
         && $initiativeView === 'notifications'
+            ? ' active'
+            : '';
+
+    $initiativeMonitoringActive =
+        $currentScript === 'initiative-workflow.php'
+        && $initiativeView === 'monitoring'
             ? ' active'
             : '';
 
@@ -176,6 +182,62 @@ HTML;
                     <small data-user-context>Secure workspace</small>
                 </div>
             </div>
+            <script>
+            /* SESSION IDENTITY INSTANT HYDRATION */
+            (() => {
+                try {
+                    const cached = JSON.parse(
+                        sessionStorage.getItem(
+                            'uob-workspace-identity-v1'
+                        ) || 'null'
+                    );
+
+                    if (!cached || typeof cached !== 'object') {
+                        return;
+                    }
+
+                    const sidebar =
+                        document.querySelector(
+                            '.workspace-sidebar-context'
+                        );
+
+                    if (!sidebar) {
+                        return;
+                    }
+
+                    const name =
+                        sidebar.querySelector(
+                            '[data-user-name]'
+                        );
+
+                    const initials =
+                        sidebar.querySelector(
+                            '[data-user-initials]'
+                        );
+
+                    const context =
+                        sidebar.querySelector(
+                            '[data-user-context]'
+                        );
+
+                    if (name && cached.name) {
+                        name.textContent = cached.name;
+                    }
+
+                    if (initials && cached.initials) {
+                        initials.textContent =
+                            cached.initials;
+                    }
+
+                    if (context && cached.context) {
+                        context.textContent =
+                            cached.context;
+                    }
+                } catch (error) {
+                    // /me will populate the account normally.
+                }
+            })();
+            </script>
 
             <nav class="workspace-side-nav">
                 <p class="workspace-nav-label">Workspace</p>
@@ -185,6 +247,7 @@ HTML;
                 <a class="workspace-nav-link{$agreementsActive}" href="agreements.php" data-agreement-nav>
                     <span>Agreements</span><small>Portfolio and records</small>
                 </a>
+                <p class="workspace-nav-label mt-4 d-none" data-sidebar-review-label>Reviews &amp; workflows</p>
                 <a class="workspace-nav-link{$workflowActive} d-none" href="workflow-inbox.php" data-workflow-nav>
                     <span>Review inbox</span><small>Assigned decisions</small>
                     <b class="workspace-nav-count d-none" data-workflow-nav-count></b>
@@ -193,7 +256,7 @@ HTML;
                     <span>Lifecycle requests</span><small>Renew, amend, terminate</small>
                 </a>
 
-                <p class="workspace-nav-label mt-4" data-sidebar-performance-label>Performance</p>
+                <p class="workspace-nav-label mt-4 d-none" data-sidebar-performance-label>Performance</p>
                 <a class="workspace-nav-link{$performanceActive} d-none" href="performance-reports.php" data-performance-nav>
                     <span>Annual reports</span><small>Evidence and outcomes</small>
                 </a>
@@ -208,13 +271,13 @@ HTML;
                 <a class="workspace-nav-link{$initiativeRequestsActive}" href="initiative-workflow.php">
                     <span>Initiative requests</span><small>Create, review, and follow</small>
                 </a>
-                <a class="workspace-nav-link{$initiativeNotificationsActive}" href="initiative-workflow.php?view=notifications">
-                    <span>Notifications</span><small>Assignments and updates</small>
-                    <b
-                        class="workspace-nav-count d-none"
-                        data-initiative-notification-count
-                        aria-label="Unread Initiative notifications"
-                    ></b>
+                <a
+                    class="workspace-nav-link{$initiativeMonitoringActive} d-none"
+                    href="initiative-workflow.php?view=monitoring"
+                    data-initiative-monitoring-nav
+                >
+                    <span>Initiative Monitoring</span>
+                    <small>System-wide workflow oversight</small>
                 </a>
                 <a class="workspace-nav-link{$finalInitiativesActive}" href="initiative-portfolio.php">
                     <span>Final Initiatives</span><small>Approved and existing records</small>
@@ -249,6 +312,23 @@ HTML;
                     <strong>{$safeTitle}</strong>
                 </div>
                 <div class="workspace-topbar-actions" data-session-panel>
+                    <a
+                        class="workspace-notification-button{$initiativeNotificationsActive}"
+                        href="initiative-workflow.php?view=notifications"
+                        aria-label="Notifications"
+                        title="Notifications"
+                        data-workspace-notifications-topbar
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <b
+                            class="workspace-notification-count d-none"
+                            data-initiative-notification-count
+                            aria-label="Unread Initiative notifications"
+                        ></b>
+                    </a>
                     <a
                         class="workspace-language-toggle"
                         href="{$languageUrl}"

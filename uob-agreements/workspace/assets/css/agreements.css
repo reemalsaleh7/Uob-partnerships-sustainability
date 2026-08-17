@@ -1,0 +1,147 @@
+
+
+/* ============================================================
+   AGREEMENTS REGISTER REFINEMENT V1
+   Compact scope navigation + stronger register hierarchy.
+   ============================================================ */
+
+.agreements-page-heading {
+    padding-block: .15rem;
+}
+
+.agreements-page-heading > div:first-child {
+    max-width: 48rem;
+}
+
+.agreements-page-heading h1 {
+    margin-bottom: .35rem !important;
+    line-height: 1.1;
+}
+
+.agreements-page-heading [data-agreement-page-description] {
+    max-width: 44rem;
+    font-size: .95rem;
+    line-height: 1.5;
+}
+
+/* Bring the working register closer to the introduction. */
+.agreements-register-card.mt-4 {
+    margin-top: 1rem !important;
+}
+
+/* Slightly tighter register heading. */
+.agreements-register-card > .workspace-card-header {
+    padding-top: 1rem;
+    padding-bottom: .85rem;
+}
+
+/*
+ * The four scopes behave like view filters, not dashboard KPI cards.
+ * Keep their counts and labels, remove repeated explanatory copy.
+ */
+.agreements-register-card
+.agreements-compact-scopes {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: .5rem !important;
+
+    padding: .7rem 1.25rem !important;
+
+    background: #fff;
+}
+
+.agreements-register-card
+.agreements-compact-scopes
+.agreement-scope-button {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+
+    min-height: 3.15rem;
+    padding: .65rem .75rem !important;
+
+    border-radius: .75rem;
+    box-shadow: none;
+}
+
+.agreements-register-card
+.agreements-compact-scopes
+.agreement-scope-button strong {
+    flex: 0 0 auto;
+
+    min-width: 1.8rem;
+
+    font-size: 1rem !important;
+    line-height: 1;
+    text-align: center;
+}
+
+.agreements-register-card
+.agreements-compact-scopes
+.agreement-scope-button span {
+    margin-top: 0 !important;
+
+    overflow: hidden;
+
+    font-size: .72rem !important;
+    line-height: 1.25;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agreements-register-card
+.agreements-compact-scopes
+.agreement-scope-button small {
+    display: none !important;
+}
+
+.agreements-register-card
+.agreements-compact-scopes
+.agreement-scope-button.active {
+    box-shadow: 0 .35rem .9rem rgba(11, 31, 58, .12);
+}
+
+/* Search should visually follow the scope selector without a large gap. */
+.agreements-register-card
+[data-agreement-search-filters] {
+    padding-top: .8rem;
+}
+
+/* Keep keyboard navigation obvious. */
+.agreements-register-card
+.agreement-scope-button:focus-visible {
+    outline: 3px solid rgba(13, 74, 167, .22);
+    outline-offset: 2px;
+}
+
+/* Faculty-only contextual note remains useful, just more compact. */
+.agreements-register-card
+.agreement-discovery-note {
+    margin-top: .7rem;
+    padding: .7rem .85rem;
+}
+
+@media (max-width: 991.98px) {
+    .agreements-register-card
+    .agreements-compact-scopes {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .agreements-page-heading [data-agreement-page-description] {
+        font-size: .88rem;
+    }
+
+    .agreements-register-card
+    .agreements-compact-scopes {
+        grid-template-columns: 1fr !important;
+        padding-inline: 1rem !important;
+    }
+
+    .agreements-register-card
+    .agreements-compact-scopes
+    .agreement-scope-button {
+        min-height: 2.9rem;
+    }
+}

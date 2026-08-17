@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
 
-workspaceHeader('Performance dashboard', 'performance-dashboard');
+workspaceHeader(
+    'Performance dashboard',
+    'performance-dashboard',
+    ['assets/css/performance-dashboard.css']
+);
 ?>
 
-<section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
+<section class="page-heading performance-dashboard-heading d-flex flex-column flex-lg-row gap-3">
     <div>
         <p class="eyebrow mb-2">Delivery and accountability</p>
         <h1 class="display-6 mb-2">Performance dashboard</h1>
         <p class="text-secondary mb-3">See whether Agreements are active, reports are on time, and promised outcomes are being achieved.</p>
         <span class="performance-scope-note" data-dashboard-scope>Loading reporting scope…</span>
     </div>
-    <div class="align-self-lg-end">
+    <div class="performance-dashboard-year">
         <label class="form-label small fw-semibold" for="dashboard-year">Reporting year</label>
         <select id="dashboard-year" class="form-select" data-dashboard-year></select>
     </div>

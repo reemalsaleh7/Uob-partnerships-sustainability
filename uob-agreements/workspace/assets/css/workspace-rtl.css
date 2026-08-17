@@ -556,3 +556,43 @@ html[dir="rtl"] #agreement-table-wrap{
         min-width:54rem !important;
     }
 }
+
+/* ============================================================
+   RTL SIDEBAR COLLAPSED LAYOUT FIX
+   Expand the workspace when the right sidebar is hidden.
+   ============================================================ */
+
+@media (min-width: 992px) {
+    /*
+     * workspace-rtl.css loads after the sidebar polish stylesheet,
+     * so this rule must live here to override the normal RTL
+     * margin-right reservation when the sidebar is collapsed.
+     */
+    html[dir="rtl"]
+    .workspace-app.sidebar-collapsed
+    .workspace-stage {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    /*
+     * Normal expanded state keeps exactly one sidebar-width
+     * reservation on the logical right side.
+     */
+    html[dir="rtl"]
+    .workspace-app:not(.sidebar-collapsed)
+    .workspace-stage {
+        margin-right: var(--workspace-sidebar) !important;
+        margin-left: 0 !important;
+    }
+
+    /*
+     * Smooth content reflow when opening / closing navigation.
+     */
+    html[dir="rtl"] .workspace-stage {
+        min-width: 0;
+        transition:
+            margin-right 220ms ease,
+            margin-left 220ms ease !important;
+    }
+}

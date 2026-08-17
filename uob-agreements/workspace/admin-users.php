@@ -16,50 +16,186 @@ workspaceHeader(
 );
 ?>
 
-<section class="page-heading admin-users-heading">
-    <div>
-        <p class="eyebrow mb-2">
-            <?= htmlspecialchars($text('Administration', 'الإدارة'), ENT_QUOTES, 'UTF-8') ?>
+<section class="admin-users-hero">
+    <div class="admin-users-hero-main">
+        <div class="admin-users-breadcrumb">
+            <span>
+                <?= htmlspecialchars(
+                    $text('Administration', 'الإدارة'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </span>
+            <span aria-hidden="true">/</span>
+            <strong>
+                <?= htmlspecialchars(
+                    $text('User management', 'إدارة المستخدمين'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </strong>
+        </div>
+
+        <p class="admin-users-kicker">
+            <?= htmlspecialchars(
+                $text('ADMIN WORKSPACE', 'مساحة عمل الإدارة'),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
         </p>
-        <h1 class="display-6 mb-2">
-            <?= htmlspecialchars($text('User management', 'إدارة المستخدمين'), ENT_QUOTES, 'UTF-8') ?>
+
+        <h1>
+            <?= htmlspecialchars(
+                $text('User management', 'إدارة المستخدمين'),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
         </h1>
-        <p class="text-secondary mb-0">
+
+        <p class="admin-users-hero-description">
             <?= htmlspecialchars(
                 $text(
-                    'Manage identity data, workflow authority, creation access, and organizational assignments from one audited workspace.',
-                    'إدارة بيانات الهوية وصلاحيات سير العمل وإمكانية إنشاء الاتفاقيات والمبادرات والتكليفات التنظيمية من مساحة واحدة موثقة.'
+                    'Find an account, understand what access it has, then make audited changes from one clear workspace.',
+                    'ابحث عن الحساب، وافهم صلاحياته، ثم نفّذ التغييرات الموثقة من مساحة عمل واضحة واحدة.'
                 ),
                 ENT_QUOTES,
                 'UTF-8'
             ) ?>
         </p>
+
+        <div
+            class="admin-users-start-guide"
+            aria-label="<?= htmlspecialchars(
+                $text(
+                    'How to manage a user',
+                    'طريقة إدارة المستخدم'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>"
+        >
+            <div class="admin-users-guide-step">
+                <span class="admin-users-guide-number">1</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text('Find a user', 'ابحث عن مستخدم'),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Search by name, ID, email, phone, or unit.',
+                                'ابحث بالاسم أو الرقم أو البريد أو الهاتف أو الوحدة.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="admin-users-guide-step">
+                <span class="admin-users-guide-number">2</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Choose what to change',
+                                'اختر ما تريد تغييره'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Review identity, access, workflow position, or organization.',
+                                'راجع البيانات أو الصلاحيات أو موقع سير العمل أو الجهة التنظيمية.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+
+            <div class="admin-users-guide-step">
+                <span class="admin-users-guide-number">3</span>
+                <div>
+                    <strong>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Explain and save',
+                                'وضّح السبب واحفظ'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </strong>
+                    <small>
+                        <?= htmlspecialchars(
+                            $text(
+                                'Enter a reason so the change is preserved in the audit history.',
+                                'اكتب سبب التغيير ليتم حفظه في سجل التدقيق.'
+                            ),
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>
+                    </small>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
 
-        <a class="btn btn-outline-primary" href="admin-workflows.php">
-
-            <?= htmlspecialchars($text('Workflow templates', 'قوالب سير العمل'), ENT_QUOTES, 'UTF-8') ?>
-
+    <div class="admin-users-hero-actions">
+        <a
+            class="btn btn-light"
+            href="admin-workflows.php"
+        >
+            <?= htmlspecialchars(
+                $text(
+                    'Workflow templates',
+                    'قوالب سير العمل'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
         </a>
 
-        <div class="admin-heading-badge" aria-label="Protected administrator area">
+        <span class="admin-users-admin-badge">
+            <span
+                class="admin-users-admin-dot"
+                aria-hidden="true"
+            ></span>
 
-            <span aria-hidden="true">🔐</span>
-
-            <strong><?= htmlspecialchars($text('Admin only', 'للإدارة فقط'), ENT_QUOTES, 'UTF-8') ?></strong>
-
-        </div>
-
+            <?= htmlspecialchars(
+                $text(
+                    'System Administrator only',
+                    'لمسؤول النظام فقط'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>
+        </span>
     </div>
 </section>
-
 <div class="alert alert-danger mt-4 d-none" role="alert" tabindex="-1" data-admin-users-alert></div>
 <div class="alert alert-success mt-4 d-none" role="status" tabindex="-1" data-admin-users-success></div>
 
 <section class="workspace-card admin-users-controls mt-4" aria-labelledby="admin-user-search-title">
     <div class="workspace-card-header align-items-start">
         <div>
+            <p class="admin-section-step mb-1">
+                <?= htmlspecialchars(
+                    $text('STEP 1', 'الخطوة 1'),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </p>
             <h2 class="h5 mb-1" id="admin-user-search-title">
                 <?= htmlspecialchars($text('Find a user', 'البحث عن مستخدم'), ENT_QUOTES, 'UTF-8') ?>
             </h2>
@@ -108,9 +244,80 @@ workspaceHeader(
             <label class="form-label" for="admin-user-unit-filter">
                 <?= htmlspecialchars($text('Organizational unit', 'الوحدة التنظيمية'), ENT_QUOTES, 'UTF-8') ?>
             </label>
-            <select class="form-select" id="admin-user-unit-filter" data-admin-user-unit-filter>
-                <option value=""><?= htmlspecialchars($text('All units', 'جميع الوحدات'), ENT_QUOTES, 'UTF-8') ?></option>
-            </select>
+            <div class="admin-unit-picker" data-admin-unit-picker>
+    <button
+        class="admin-unit-picker-trigger"
+        id="admin-user-unit-filter"
+        type="button"
+        aria-expanded="false"
+        aria-controls="admin-unit-picker-panel"
+        data-admin-unit-picker-trigger
+    >
+        <span class="admin-unit-picker-trigger-copy">
+            <span class="admin-unit-picker-kicker">
+                <?= htmlspecialchars($text('Filter scope', 'نطاق التصفية'), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <strong data-admin-unit-picker-summary>
+                <?= htmlspecialchars($text('All units', 'جميع الوحدات'), ENT_QUOTES, 'UTF-8') ?>
+            </strong>
+        </span>
+
+        <span class="admin-unit-picker-trigger-meta">
+            <span class="admin-unit-picker-count" data-admin-unit-picker-count>
+                <?= htmlspecialchars($text('All', 'الكل'), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <span class="admin-unit-picker-chevron" aria-hidden="true">⌄</span>
+        </span>
+    </button>
+
+    <input type="hidden" value="" data-admin-user-unit-filter>
+
+    <div
+        class="admin-unit-picker-panel d-none"
+        id="admin-unit-picker-panel"
+        data-admin-unit-picker-panel
+    >
+        <div class="admin-unit-picker-toolbar">
+            <div class="admin-unit-picker-search-wrap">
+                <span class="admin-unit-picker-search-icon" aria-hidden="true">⌕</span>
+                <input
+                    class="form-control admin-unit-picker-search"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="<?= htmlspecialchars(
+                        $text(
+                            'Search colleges, departments, or offices',
+                            'ابحث عن كلية أو قسم أو مكتب'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                    data-admin-unit-picker-search
+                >
+            </div>
+        </div>
+
+        <div class="admin-unit-picker-list" data-admin-unit-picker-list></div>
+
+        <div class="admin-unit-picker-footer">
+            <button
+                class="btn btn-outline-secondary"
+                type="button"
+                data-admin-unit-picker-clear
+            >
+                <?= htmlspecialchars($text('Clear', 'مسح'), ENT_QUOTES, 'UTF-8') ?>
+            </button>
+
+            <button
+                class="btn btn-primary"
+                type="button"
+                data-admin-unit-picker-done
+            >
+                <?= htmlspecialchars($text('Close', 'إغلاق'), ENT_QUOTES, 'UTF-8') ?>
+            </button>
+        </div>
+    </div>
+</div>
         </div>
     </form>
 </section>
@@ -119,6 +326,13 @@ workspaceHeader(
     <section class="workspace-card admin-users-list-card" aria-labelledby="admin-users-list-title">
         <div class="workspace-card-header">
             <div>
+                <p class="admin-section-step mb-1">
+                    <?= htmlspecialchars(
+                        $text('STEP 2', 'الخطوة 2'),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
                 <h2 class="h5 mb-1" id="admin-users-list-title">
                     <?= htmlspecialchars($text('Users', 'المستخدمون'), ENT_QUOTES, 'UTF-8') ?>
                 </h2>
@@ -163,6 +377,40 @@ workspaceHeader(
     </section>
 
     <section class="workspace-card admin-user-editor" aria-labelledby="admin-user-editor-title">
+
+        <div class="admin-user-editor-guide">
+            <div>
+                <p class="admin-section-step mb-1">
+                    <?= htmlspecialchars(
+                        $text('STEP 3', 'الخطوة 3'),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </p>
+
+                <strong>
+                    <?= htmlspecialchars(
+                        $text(
+                            'Review and edit the selected account',
+                            'راجع وعدّل الحساب المحدد'
+                        ),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </strong>
+            </div>
+
+            <small>
+                <?= htmlspecialchars(
+                    $text(
+                        'Use the tabs below to change identity, access, workflow position, organization, or review history.',
+                        'استخدم التبويبات أدناه لتعديل البيانات أو الصلاحيات أو موقع سير العمل أو الجهة التنظيمية أو مراجعة السجل.'
+                    ),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
+            </small>
+        </div>
         <div class="admin-user-placeholder" data-admin-user-placeholder>
             <span aria-hidden="true">🪪</span>
             <h2 class="h5 mb-2" id="admin-user-editor-title">

@@ -199,7 +199,7 @@
             const user = await AgreementApi.requireSession();
             if (!AgreementApi.hasPermission(user, 'MANAGE_AGREEMENT_REPORTS')
                 && !AgreementApi.hasPermission(user, 'REVIEW_AGREEMENT_REPORTS')) {
-                throw new AgreementApi.ApiError('You do not have permission to view performance reports.', 403, null);
+                throw new AgreementApi.ApiError('You do not have permission to view annual reports.', 403, null);
             }
             const payload = await AgreementApi.performanceReports();
             reports = payload.reports || [];
@@ -209,7 +209,7 @@
             render();
         } catch (error) {
             elements.loading.classList.add('d-none');
-            elements.alert.textContent = error.message || 'Performance reports could not be loaded.';
+            elements.alert.textContent = error.message || 'Annual reports could not be loaded.';
             elements.alert.classList.remove('d-none');
             elements.alert.focus();
         }

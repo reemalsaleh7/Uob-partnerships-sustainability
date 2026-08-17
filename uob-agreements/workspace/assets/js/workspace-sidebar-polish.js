@@ -1,31 +1,80 @@
 (function () {
     'use strict';
 
-    const performanceLabel = document.querySelector(
-        '[data-sidebar-performance-label]'
-    );
+    function installConditionalGroupLabels() {
+        const groups = [
+            {
+                label: document.querySelector(
+                    '[data-sidebar-review-label]'
+                ),
+                links: [
+                    document.querySelector('[data-workflow-nav]'),
+                    document.querySelector('[data-lifecycle-nav]')
+                ]
+            },
+            {
+                label: document.querySelector(
+                    '[data-sidebar-performance-label]'
+                ),
+                links: [
+                    document.querySelector('[data-performance-nav]'),
+                    document.querySelector(
+                        '[data-performance-dashboard-nav]'
+                    )
+                ]
+            }
+        ];
 
-    if (performanceLabel) {
-        const performanceLinks = [
-            document.querySelector('[data-performance-nav]'),
-            document.querySelector(
-                '[data-performance-dashboard-nav]'
-            )
-        ].filter(Boolean);
+        function sync() {
+            groups.forEach(({ label, links }) => {
+                if (!label) {
+                    return;
+                }
 
-        const hasVisibleLink = performanceLinks.some(
-            (link) => !link.classList.contains('d-none')
-        );
+                const hasVisibleLink = links
+                    .filter(Boolean)
+                    .some(
+                        (link) =>
+                            !link.classList.contains('d-none')
+                    );
 
-        performanceLabel.classList.toggle(
-            'd-none',
-            !hasVisibleLink
-        );
+                label.classList.toggle(
+                    'd-none',
+                    !hasVisibleLink
+                );
+            });
+        }
+
+        sync();
+
+        if (typeof MutationObserver !== 'undefined') {
+            const observer = new MutationObserver(sync);
+
+            groups.forEach(({ links }) => {
+                links.filter(Boolean).forEach((link) => {
+                    observer.observe(
+                        link,
+                        {
+                            attributes: true,
+                            attributeFilter: ['class']
+                        }
+                    );
+                });
+            });
+        }
     }
+
+    installConditionalGroupLabels();
 
     const sidebar = document.querySelector('.workspace-sidebar');
 
     if (!sidebar) {
+        return;
+    }
+
+    const sidebarNav = sidebar.querySelector('.workspace-side-nav');
+
+    if (!sidebarNav) {
         return;
     }
 
@@ -46,7 +95,7 @@
 
         const userLink = document.createElement('a');
         const usersActive = window.location.pathname.endsWith('/admin-users.php');
-        userLink.className = `workspace-nav-link d-none${usersActive ? ' active' : ''}`;
+        userLink.className = `workspace-nav-link${usersActive ? ' active' : ' d-none'}`;
         userLink.href = 'admin-users.php';
         userLink.dataset.adminUsersNav = '';
 
@@ -62,7 +111,7 @@
         const workflowsActive = window.location.pathname.endsWith(
             '/admin-workflows.php'
         );
-        workflowLink.className = `workspace-nav-link d-none${workflowsActive ? ' active' : ''}`;
+        workflowLink.className = `workspace-nav-link${workflowsActive ? ' active' : ' d-none'}`;
         workflowLink.href = 'admin-workflows.php';
         workflowLink.dataset.adminWorkflowsNav = '';
 
@@ -76,9 +125,27 @@
             : 'Stages, ordering, and responsibility';
         workflowLink.append(workflowTitle, workflowDescription);
 
-        navigation.insertBefore(label, accountLabel);
-        navigation.insertBefore(userLink, accountLabel);
-        navigation.insertBefore(workflowLink, accountLabel);
+        if (usersActive || workflowsActive) {
+            label.classList.remove('d-none');
+        }
+        const administrationAnchor =
+            navigation.querySelector('[data-sidebar-review-label]')
+            || accountLabel;
+
+        navigation.insertBefore(
+            label,
+            administrationAnchor
+        );
+
+        navigation.insertBefore(
+            userLink,
+            administrationAnchor
+        );
+
+        navigation.insertBefore(
+            workflowLink,
+            administrationAnchor
+        );
 
         AgreementApi.request('/me')
             .then((user) => {
@@ -104,6 +171,350 @@
     }
 
     installAdministrationNavigation();
+
+    /*
+     * Keep the sidebar visually stable between full page navigations.
+     * Permissions are still enforced by the backend; this cache only
+     * remembers UI visibility to avoid links jumping after page load.
+     */
+    const sidebarVisualStateKey = 'uob-sidebar-visual-state-v4';
+    const sidebarScrollStateKey = 'uob-sidebar-scroll-v4';
+
+    const conditionalSidebarSelectors = [
+        '[data-agreement-nav]',
+        '[data-workflow-nav]',
+        '[data-lifecycle-nav]',
+        '[data-performance-nav]',
+        '[data-performance-dashboard-nav]',
+        '[data-initiative-monitoring-nav]',
+        '[data-admin-users-nav]',
+        '[data-admin-workflows-nav]'
+    ];
+
+    function sidebarConditionalElements() {
+        return conditionalSidebarSelectors
+            .map((selector) => ({
+                selector,
+                element: document.querySelector(selector)
+            }))
+            .filter(({ element }) => Boolean(element));
+    }
+
+    function syncSidebarGroupLabels() {
+        const groups = [
+            {
+                label: document.querySelector(
+                    '[data-admin-users-group]'
+                ),
+                links: [
+                    document.querySelector('[data-admin-users-nav]'),
+                    document.querySelector('[data-admin-workflows-nav]')
+                ]
+            },
+            {
+                label: document.querySelector(
+                    '[data-sidebar-review-label]'
+                ),
+                links: [
+                    document.querySelector('[data-workflow-nav]'),
+                    document.querySelector('[data-lifecycle-nav]')
+                ]
+            },
+            {
+                label: document.querySelector(
+                    '[data-sidebar-performance-label]'
+                ),
+                links: [
+                    document.querySelector('[data-performance-nav]'),
+                    document.querySelector(
+                        '[data-performance-dashboard-nav]'
+                    )
+                ]
+            }
+        ];
+
+        groups.forEach(({ label, links }) => {
+            if (!label) {
+                return;
+            }
+
+            const hasVisibleLink = links
+                .filter(Boolean)
+                .some(
+                    (link) =>
+                        !link.classList.contains('d-none')
+                );
+
+            label.classList.toggle(
+                'd-none',
+                !hasVisibleLink
+            );
+        });
+    }
+
+    function restoreSidebarVisibility() {
+        let savedState = null;
+
+        try {
+            savedState = JSON.parse(
+                sessionStorage.getItem(
+                    sidebarVisualStateKey
+                ) || 'null'
+            );
+        } catch (error) {
+            savedState = null;
+        }
+
+        if (!savedState || typeof savedState !== 'object') {
+            syncSidebarGroupLabels();
+            return;
+        }
+
+        sidebarConditionalElements().forEach(
+            ({ selector, element }) => {
+                /*
+                 * Never hide the current page's active link,
+                 * even if an old cache says otherwise.
+                 */
+                const shouldShow =
+                    element.classList.contains('active')
+                    || savedState[selector] === true;
+
+                element.classList.toggle(
+                    'd-none',
+                    !shouldShow
+                );
+            }
+        );
+
+        syncSidebarGroupLabels();
+    }
+
+    function saveSidebarVisibility() {
+        const state = {};
+
+        sidebarConditionalElements().forEach(
+            ({ selector, element }) => {
+                state[selector] =
+                    !element.classList.contains('d-none');
+            }
+        );
+
+        try {
+            sessionStorage.setItem(
+                sidebarVisualStateKey,
+                JSON.stringify(state)
+            );
+        } catch (error) {
+            // Storage may be unavailable in some privacy modes.
+        }
+    }
+
+    function restoreSidebarScroll() {
+        let scrollTop = 0;
+
+        try {
+            scrollTop = Number(
+                sessionStorage.getItem(
+                    sidebarScrollStateKey
+                ) || 0
+            );
+        } catch (error) {
+            scrollTop = 0;
+        }
+
+        if (
+            Number.isFinite(scrollTop)
+            && scrollTop > 0
+        ) {
+            requestAnimationFrame(() => {
+                sidebarNav.scrollTop = scrollTop;
+            });
+        }
+    }
+
+    function saveSidebarScroll() {
+        try {
+            sessionStorage.setItem(
+                sidebarScrollStateKey,
+                String(sidebarNav.scrollTop)
+            );
+        } catch (error) {
+            // Storage may be unavailable in some privacy modes.
+        }
+    }
+
+    /*
+     * ACTIVE SIDEBAR VISIBILITY V5
+     * Keep the current page and its section heading visible.
+     */
+    /*
+     * ACTIVE SIDEBAR GEOMETRY FIX V6
+     *
+     * Compare real viewport rectangles instead of offsetTop.
+     * This works regardless of the sidebar brand/account area
+     * above the scrolling navigation container.
+     */
+    function ensureActiveSidebarLinkVisible() {
+        const activeLink = sidebarNav.querySelector(
+            '.workspace-nav-link.active, ' +
+            '.workspace-nav-link.is-active, ' +
+            '.workspace-nav-link[aria-current="page"]'
+        );
+
+        if (
+            !activeLink
+            || activeLink.classList.contains('d-none')
+        ) {
+            return;
+        }
+
+        activeLink.setAttribute(
+            'aria-current',
+            'page'
+        );
+
+        let sectionLabel = null;
+        let sibling = activeLink.previousElementSibling;
+
+        while (sibling) {
+            if (
+                sibling.classList.contains(
+                    'workspace-nav-label'
+                )
+            ) {
+                sectionLabel = sibling;
+                break;
+            }
+
+            sibling = sibling.previousElementSibling;
+        }
+
+        const target =
+            sectionLabel || activeLink;
+
+        const padding = 10;
+
+        const navRect =
+            sidebarNav.getBoundingClientRect();
+
+        const targetRect =
+            target.getBoundingClientRect();
+
+        const activeRect =
+            activeLink.getBoundingClientRect();
+
+        /*
+         * Section heading is clipped above the navigation viewport.
+         */
+        if (
+            targetRect.top <
+            navRect.top + padding
+        ) {
+            sidebarNav.scrollTop +=
+                targetRect.top
+                - navRect.top
+                - padding;
+
+            return;
+        }
+
+        /*
+         * Active page is clipped below the navigation viewport.
+         */
+        if (
+            activeRect.bottom >
+            navRect.bottom - padding
+        ) {
+            sidebarNav.scrollTop +=
+                activeRect.bottom
+                - navRect.bottom
+                + padding;
+        }
+    }
+
+    restoreSidebarVisibility();
+    restoreSidebarScroll();
+    ensureActiveSidebarLinkVisible();
+
+    let sidebarStateFrame = null;
+
+    function scheduleSidebarStateSave() {
+        if (sidebarStateFrame !== null) {
+            return;
+        }
+
+        sidebarStateFrame = requestAnimationFrame(() => {
+            sidebarStateFrame = null;
+            saveSidebarVisibility();
+            syncSidebarGroupLabels();
+            ensureActiveSidebarLinkVisible();
+        });
+    }
+
+    if (typeof MutationObserver !== 'undefined') {
+        const sidebarStateObserver = new MutationObserver(
+            (mutations) => {
+                const relevantChange = mutations.some(
+                    (mutation) =>
+                        mutation.type === 'attributes'
+                        && mutation.attributeName === 'class'
+                );
+
+                if (relevantChange) {
+                    scheduleSidebarStateSave();
+                }
+            }
+        );
+
+        sidebarStateObserver.observe(
+            sidebar,
+            {
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+            }
+        );
+    }
+
+    let sidebarScrollFrame = null;
+
+    sidebarNav.addEventListener(
+        'scroll',
+        () => {
+            if (sidebarScrollFrame !== null) {
+                return;
+            }
+
+            sidebarScrollFrame = requestAnimationFrame(() => {
+                sidebarScrollFrame = null;
+                saveSidebarScroll();
+            });
+        },
+        { passive: true }
+    );
+
+    window.addEventListener('pagehide', () => {
+        saveSidebarVisibility();
+        saveSidebarScroll();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-logout]')) {
+            return;
+        }
+
+        try {
+            sessionStorage.removeItem(
+                sidebarVisualStateKey
+            );
+            sessionStorage.removeItem(
+                sidebarScrollStateKey
+            );
+        } catch (error) {
+            // Nothing else is required.
+        }
+    });
 
     const tooltip = document.createElement('div');
     tooltip.className = 'workspace-sidebar-tooltip';

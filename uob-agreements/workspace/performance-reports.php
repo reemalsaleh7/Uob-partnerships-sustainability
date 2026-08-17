@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
 
-workspaceHeader('Performance reports', 'performance');
+workspaceHeader(
+    'Annual reports',
+    'performance',
+    ['assets/css/performance-reports.css']
+);
 ?>
 
-<section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
+<section class="page-heading performance-reports-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
     <div>
         <p class="eyebrow mb-2">Agreement monitoring</p>
-        <h1 class="display-6 mb-3">Performance reports</h1>
+        <h1 class="display-6 mb-2">Annual reports</h1>
         <p class="lead text-secondary mb-0">
             Prepare annual reports, respond to returns, and review submitted evidence.
         </p>
@@ -105,7 +109,7 @@ workspaceHeader('Performance reports', 'performance');
     </div>
     <div class="loading-state" data-report-list-loading>
         <div class="spinner-border text-primary" aria-hidden="true"></div>
-        <span>Loading performance reports…</span>
+        <span>Loading annual reports…</span>
     </div>
     <div class="empty-state d-none" data-report-list-empty>
         <p class="text-secondary mb-0">No reporting periods match this view.</p>

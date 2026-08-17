@@ -297,3 +297,504 @@
         width:min(var(--workspace-sidebar),88vw);
     }
 }
+
+/* ============================================================
+   UI UX PRO MAX SIDEBAR V2
+   Enterprise navigation + direction-aware collapse
+   ============================================================ */
+
+.workspace-sidebar {
+    --sidebar-surface: #0b2038;
+    --sidebar-surface-deep: #07182b;
+    --sidebar-hover: rgba(255, 255, 255, 0.065);
+    --sidebar-active: rgba(255, 255, 255, 0.11);
+    --sidebar-line: rgba(255, 255, 255, 0.09);
+    --sidebar-muted: rgba(255, 255, 255, 0.58);
+
+    padding: 1rem 0.85rem 0.85rem;
+    background:
+        linear-gradient(
+            180deg,
+            var(--sidebar-surface) 0%,
+            var(--sidebar-surface-deep) 100%
+        );
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 8px 0 28px rgba(5, 18, 33, 0.10);
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(255, 255, 255, 0.18)
+        transparent;
+}
+
+.workspace-sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.workspace-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.workspace-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+}
+
+/* Brand — clear but not oversized */
+.workspace-sidebar-brand {
+    min-height: 54px;
+    padding: 0.15rem 0.45rem 0.85rem;
+    border-bottom: 1px solid var(--sidebar-line);
+}
+
+.workspace-sidebar-brand strong {
+    font-size: 0.92rem;
+    font-weight: 850;
+    letter-spacing: -0.015em;
+}
+
+.workspace-sidebar-brand small {
+    margin-top: 0.12rem;
+    color: var(--sidebar-muted);
+    font-size: 0.62rem;
+    font-weight: 650;
+    letter-spacing: 0.015em;
+}
+
+/* Signed-in user context */
+.workspace-sidebar-context {
+    gap: 0.65rem;
+    margin: 0.75rem 0 0.55rem;
+    padding: 0.65rem 0.7rem;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid var(--sidebar-line);
+    border-radius: 0.8rem;
+}
+
+.workspace-sidebar-context strong {
+    font-size: 0.76rem;
+    font-weight: 750;
+}
+
+.workspace-sidebar-context small {
+    margin-top: 0.08rem;
+    color: var(--sidebar-muted);
+    font-size: 0.61rem;
+}
+
+/* Navigation hierarchy */
+.workspace-side-nav {
+    padding-top: 0.2rem;
+}
+
+.workspace-nav-label {
+    margin: 0.8rem 0.7rem 0.28rem;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.075em;
+}
+
+.workspace-nav-link {
+    position: relative;
+    min-height: 43px;
+    margin: 2px 0;
+    padding: 0.5rem 0.68rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.74);
+    border: 1px solid transparent;
+    border-radius: 0.68rem;
+    transition:
+        color 140ms ease,
+        background-color 140ms ease,
+        border-color 140ms ease;
+}
+
+.workspace-nav-link:hover {
+    color: #ffffff;
+    background: var(--sidebar-hover);
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.workspace-nav-link:focus-visible {
+    outline: none;
+    color: #ffffff;
+    background: var(--sidebar-hover);
+    box-shadow:
+        0 0 0 2px var(--sidebar-surface-deep),
+        0 0 0 4px rgba(147, 197, 253, 0.6);
+}
+
+.workspace-nav-link.is-active,
+.workspace-nav-link.active,
+.workspace-nav-link[aria-current="page"] {
+    color: #ffffff;
+    background: var(--sidebar-active);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Active indicator uses logical side — works in LTR + RTL */
+.workspace-nav-link.is-active::before,
+.workspace-nav-link.active::before,
+.workspace-nav-link[aria-current="page"]::before {
+    position: absolute;
+    inset-block: 9px;
+    inset-inline-start: -1px;
+    width: 3px;
+    background: #d6b657;
+    border-radius: 999px;
+    content: "";
+}
+
+.workspace-nav-link span {
+    font-size: 0.78rem;
+    font-weight: 720;
+    line-height: 1.25;
+}
+
+.workspace-nav-link small {
+    margin-top: 0.12rem;
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 0.57rem;
+    line-height: 1.25;
+}
+
+.workspace-nav-link:hover small,
+.workspace-nav-link.is-active small,
+.workspace-nav-link.active small,
+.workspace-nav-link[aria-current="page"] small {
+    color: rgba(255, 255, 255, 0.63);
+}
+
+.workspace-sidebar-footer {
+    margin-top: 0.55rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--sidebar-line);
+}
+
+/* ============================================================
+   RTL DESKTOP FIX
+
+   Current base CSS always hides toward the left.
+   In RTL the sidebar lives on the RIGHT, so it must leave
+   the viewport toward +X instead.
+   ============================================================ */
+
+[dir="rtl"] .workspace-sidebar {
+    left: auto;
+    right: 0;
+    border-right: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: -8px 0 28px rgba(5, 18, 33, 0.10);
+}
+
+[dir="rtl"] .workspace-stage {
+    margin-left: 0;
+    margin-right: var(--workspace-sidebar);
+    transition: margin-right 220ms ease;
+}
+
+[dir="rtl"]
+.workspace-app.sidebar-collapsed
+.workspace-sidebar {
+    transform: translateX(105%);
+}
+
+[dir="rtl"]
+.workspace-app.sidebar-collapsed
+.workspace-stage {
+    margin-right: 0;
+}
+
+/* Arabic typography does not benefit from forced tracking */
+[dir="rtl"] .workspace-nav-label,
+[dir="rtl"] .workspace-sidebar-brand small {
+    letter-spacing: 0;
+}
+
+/* ============================================================
+   Mobile / tablet directional behaviour
+   ============================================================ */
+
+@media (max-width: 991.98px) {
+    [dir="rtl"] .workspace-sidebar {
+        left: auto;
+        right: 0;
+        transform: translateX(105%);
+        box-shadow: -1.25rem 0 3rem rgba(6, 20, 36, 0.24);
+    }
+
+    [dir="rtl"] .workspace-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    [dir="rtl"] .workspace-stage {
+        margin-right: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workspace-sidebar,
+    .workspace-stage,
+    .workspace-nav-link {
+        transition-duration: 0.01ms !important;
+    }
+}
+/* ============================================================
+   UI UX PRO MAX NAVIGATION V3
+   Compact grouped sidebar + topbar notification control
+   ============================================================ */
+
+/*
+ * The sidebar is navigation, not a second content column.
+ * Keep labels scan-friendly and reduce unnecessary descriptions.
+ */
+.workspace-side-nav {
+    padding-top: 0.1rem;
+}
+
+.workspace-side-nav > .workspace-nav-label {
+    margin: 0.72rem 0.55rem 0.28rem !important;
+    padding-top: 0.62rem;
+    color: rgba(218, 227, 239, 0.48);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 0.56rem;
+    font-weight: 850;
+    letter-spacing: 0.065em;
+}
+
+.workspace-side-nav > .workspace-nav-label:first-child {
+    margin-top: 0.15rem !important;
+    padding-top: 0;
+    border-top: 0;
+}
+
+.workspace-nav-link {
+    min-height: 40px;
+    margin: 1px 0;
+    padding: 0.5rem 0.72rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 0.62rem;
+}
+
+.workspace-nav-link span {
+    min-width: 0;
+    font-size: 0.76rem;
+    font-weight: 740;
+    line-height: 1.2;
+}
+
+/*
+ * Descriptions made the long sidebar difficult to scan.
+ * Primary labels remain; group headings provide the hierarchy.
+ */
+.workspace-nav-link small {
+    display: none !important;
+}
+
+/* Keep workflow unread badges away from the nav label. */
+.workspace-nav-link:has(.workspace-nav-count) {
+    padding-inline-end: 2.55rem;
+}
+
+.workspace-nav-count {
+    top: 50%;
+    right: auto;
+    inset-inline-end: 0.65rem;
+    transform: translateY(-50%);
+}
+
+/* Topbar notification bell */
+.workspace-notification-button {
+    position: relative;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #526277;
+    background: #ffffff;
+    border: 1px solid #d9e1ea;
+    border-radius: 0.72rem;
+    text-decoration: none;
+    transition:
+        color 140ms ease,
+        background-color 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease;
+}
+
+.workspace-notification-button:hover,
+.workspace-notification-button:focus-visible,
+.workspace-notification-button.active {
+    color: #1e3a5f;
+    background: #f5f8fc;
+    border-color: #b9c9da;
+}
+
+.workspace-notification-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.12);
+}
+
+.workspace-notification-button svg {
+    width: 1.12rem;
+    height: 1.12rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.workspace-notification-count {
+    position: absolute;
+    top: -0.28rem;
+    inset-inline-end: -0.28rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.28rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: #b4233c;
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+    font-size: 0.56rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+    .workspace-notification-button {
+        width: 2.35rem;
+        height: 2.35rem;
+        flex-basis: 2.35rem;
+    }
+}
+
+/* ============================================================
+   STABLE SIDEBAR NAVIGATION V4
+   Direction-aware alignment + no visual jumping
+   ============================================================ */
+
+.workspace-sidebar {
+    scroll-behavior: auto;
+}
+
+/*
+ * CSS logical "start":
+ * LTR / English = left
+ * RTL / Arabic  = right
+ */
+.workspace-sidebar-brand span,
+.workspace-sidebar-context > div,
+.workspace-nav-label,
+.workspace-nav-link,
+.workspace-nav-link span,
+.workspace-sidebar-footer {
+    text-align: start !important;
+}
+
+.workspace-sidebar-brand span,
+.workspace-sidebar-context > div,
+.workspace-nav-link span {
+    min-width: 0;
+}
+
+.workspace-nav-link span {
+    width: 100%;
+}
+
+/* English */
+html[dir="ltr"] .workspace-sidebar,
+html[dir="ltr"] .workspace-side-nav,
+html[dir="ltr"] .workspace-nav-link,
+html[dir="ltr"] .workspace-nav-label {
+    direction: ltr;
+    text-align: left !important;
+}
+
+/* Arabic */
+html[dir="rtl"] .workspace-sidebar,
+html[dir="rtl"] .workspace-side-nav,
+html[dir="rtl"] .workspace-nav-link,
+html[dir="rtl"] .workspace-nav-label {
+    direction: rtl;
+    text-align: right !important;
+}
+
+html[dir="ltr"] .workspace-nav-link span,
+html[dir="ltr"] .workspace-sidebar-brand span,
+html[dir="ltr"] .workspace-sidebar-context > div {
+    text-align: left !important;
+}
+
+html[dir="rtl"] .workspace-nav-link span,
+html[dir="rtl"] .workspace-sidebar-brand span,
+html[dir="rtl"] .workspace-sidebar-context > div {
+    text-align: right !important;
+}
+
+/*
+ * Keep links visually anchored.
+ * Hover/focus should change state, not move the navigation.
+ */
+.workspace-sidebar .workspace-nav-link,
+.workspace-sidebar .workspace-nav-link:hover,
+.workspace-sidebar .workspace-nav-link:focus,
+.workspace-sidebar .workspace-nav-link:focus-visible,
+.workspace-sidebar .workspace-nav-link.active {
+    transform: none !important;
+}
+
+/* Reduce perceived movement when permissions refresh. */
+.workspace-side-nav {
+    overflow-anchor: none;
+}
+
+/* ============================================================
+   ACTIVE SIDEBAR GEOMETRY FIX V6
+   Navigation should reposition instantly, without visual jumping.
+   ============================================================ */
+
+.workspace-side-nav {
+    scroll-behavior: auto !important;
+}
+
+/* ============================================================
+   SIDEBAR IDENTITY DEDUPLICATION V7
+   User identity already lives in the persistent topbar.
+   ============================================================ */
+
+/*
+ * Keep the element in the DOM so existing session/identity JS
+ * remains safe, but remove the duplicate visual card.
+ */
+.workspace-sidebar-context {
+    display: none !important;
+}
+
+/*
+ * With the identity card gone, let navigation start sooner
+ * and give the sidebar more usable vertical space.
+ */
+.workspace-side-nav {
+    padding-top: .7rem;
+}
+
+/* Keep brand/navigation separation clear without a large gap. */
+.workspace-sidebar-brand {
+    margin-bottom: .15rem;
+}
+
+@media (max-width: 991.98px) {
+    .workspace-side-nav {
+        padding-top: .6rem;
+    }
+}

@@ -1,0 +1,56 @@
+/* ============================================================
+   OVERVIEW COMPACT HERO V1
+   Keep the welcome useful without pushing priorities below fold.
+   ============================================================ */
+
+.dashboard-welcome.dashboard-overview-hero {
+    min-height: 0;
+    padding: 1.15rem 1.4rem !important;
+    border-radius: 1.1rem;
+}
+
+.dashboard-welcome.dashboard-overview-hero .eyebrow {
+    margin-bottom: .35rem !important;
+    font-size: .7rem;
+}
+
+.dashboard-welcome.dashboard-overview-hero h1 {
+    max-width: 48rem;
+    margin: 0;
+    font-size: clamp(1.6rem, 2.25vw, 2.15rem) !important;
+    line-height: 1.1;
+    letter-spacing: -.025em;
+}
+
+.dashboard-welcome.dashboard-overview-hero > p:not(.eyebrow) {
+    max-width: 48rem;
+    margin-top: .55rem !important;
+    font-size: .92rem;
+    line-height: 1.55;
+}
+
+.dashboard-welcome.dashboard-overview-hero .dashboard-role-chip {
+    margin-top: .65rem !important;
+    padding: .3rem .6rem;
+    font-size: .67rem;
+}
+
+/* Bring the real dashboard work closer to the welcome. */
+.dashboard-overview-hero + .dashboard-priority-heading {
+    margin-top: 1.1rem !important;
+    margin-bottom: .65rem !important;
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-welcome.dashboard-overview-hero {
+        padding: 1rem !important;
+    }
+
+    .dashboard-welcome.dashboard-overview-hero h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .dashboard-welcome.dashboard-overview-hero > p:not(.eyebrow) {
+        font-size: .86rem;
+    }
+}

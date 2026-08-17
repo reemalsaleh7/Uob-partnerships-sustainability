@@ -51,6 +51,7 @@
         sourceTemplate: null,
         versions: [],
         stages: [],
+        openStageIndex: 0,
         busy: false
     };
 
@@ -246,6 +247,75 @@
         });
     }
 
+    function decorateStageAccordions() {
+        const cards = Array.from(
+            elements.stageList.querySelectorAll(
+                '.workflow-stage-card'
+            )
+        );
+
+        cards.forEach((card, index) => {
+            const actions = card.querySelector(
+                '.workflow-stage-actions'
+            );
+
+            if (!actions) {
+                return;
+            }
+
+            let toggle = card.querySelector(
+                '[data-stage-toggle]'
+            );
+
+            if (!toggle) {
+                toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className =
+                    'btn btn-sm btn-outline-primary workflow-stage-toggle';
+                toggle.dataset.stageToggle = '';
+                actions.prepend(toggle);
+            }
+
+            const isOpen =
+                state.openStageIndex === index;
+
+            card.classList.toggle(
+                'is-collapsed',
+                !isOpen
+            );
+
+            toggle.setAttribute(
+                'aria-expanded',
+                isOpen ? 'true' : 'false'
+            );
+
+            toggle.setAttribute(
+                'aria-label',
+                isOpen
+                    ? t(
+                        `Collapse stage ${index + 1}`,
+                        `طي المرحلة ${index + 1}`
+                    )
+                    : t(
+                        `Edit stage ${index + 1}`,
+                        `تعديل المرحلة ${index + 1}`
+                    )
+            );
+
+            toggle.textContent = isOpen
+                ? t('Close', 'إغلاق')
+                : t('Edit', 'تعديل');
+
+            toggle.onclick = () => {
+                state.openStageIndex =
+                    state.openStageIndex === index
+                        ? -1
+                        : index;
+
+                decorateStageAccordions();
+            };
+        });
+    }
     function renderStages() {
         elements.stageList.replaceChildren();
         const phases = stagePhaseData();
@@ -379,6 +449,7 @@
 
             elements.stageList.append(fragment);
         });
+            decorateStageAccordions();
     }
 
     function moveStage(index, direction) {
@@ -388,6 +459,7 @@
         }
         const [stage] = state.stages.splice(index, 1);
         state.stages.splice(target, 0, stage);
+                state.openStageIndex = target;
         renderStages();
         renderRouteSummary();
     }
@@ -407,6 +479,7 @@
             is_system_step: false,
             allow_revision: true
         });
+        state.openStageIndex = state.stages.length - 1;
         renderStages();
         renderRouteSummary();
         elements.stageList.lastElementChild?.scrollIntoView({
@@ -419,6 +492,7 @@
         state.sourceTemplate = template;
         state.versions = versions || state.versions;
         state.stages = (template.steps || []).map(cloneStage);
+        state.openStageIndex = 0;
         if (!preserveActiveId) {
             state.activeTemplateId = template.workflow_template_id;
         }

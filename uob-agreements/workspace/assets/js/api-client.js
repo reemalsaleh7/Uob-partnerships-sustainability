@@ -15,6 +15,7 @@
 
     const apiBase = `${applicationRoot()}/api/index.php`;
     const tabSessionStorageKey = 'uob-agreement-tab-session';
+    const identityCacheStorageKey = 'uob-workspace-identity-v1';
     let volatileTabSessionId = null;
 
     function newTabSessionId() {
@@ -66,6 +67,7 @@
 
         try {
             global.sessionStorage.removeItem(tabSessionStorageKey);
+            global.sessionStorage.removeItem(identityCacheStorageKey);
         } catch (error) {
             // There is nothing else to clear when storage is unavailable.
         }
@@ -292,6 +294,23 @@
     }
 
     function bindSessionControls(user) {
+        /*
+         * SESSION IDENTITY CACHE V1
+         * Visual data only — no permissions or authorization state.
+         */
+        try {
+            global.sessionStorage.setItem(
+                identityCacheStorageKey,
+                JSON.stringify({
+                    name: displayName(user),
+                    initials: initials(user),
+                    context: primaryContext(user)
+                })
+            );
+        } catch (error) {
+            // Continue normally if browser storage is unavailable.
+        }
+
         document.querySelectorAll('[data-session-panel]').forEach((element) => {
             element.classList.remove('d-none');
             element.classList.add('d-flex');

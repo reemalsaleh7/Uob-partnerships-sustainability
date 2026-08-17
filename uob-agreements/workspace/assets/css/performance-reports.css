@@ -1,0 +1,44 @@
+
+
+/* ============================================================
+   ANNUAL REPORTS CLEANUP V1
+   Consistent naming + remove duplicated dashboard navigation.
+   ============================================================ */
+
+.performance-reports-heading {
+    padding-block: .2rem;
+}
+
+.performance-reports-heading > div:first-child {
+    max-width: 48rem;
+}
+
+.performance-reports-heading h1 {
+    line-height: 1.1;
+}
+
+.performance-reports-heading .lead {
+    max-width: 44rem;
+    font-size: 1rem;
+    line-height: 1.55;
+}
+
+/*
+ * Performance dashboard already has its own persistent Sidebar
+ * destination. Keep this element in the DOM because existing JS
+ * updates its permission visibility.
+ */
+.performance-reports-heading [data-dashboard-link] {
+    display: none !important;
+}
+
+.performance-reports-heading + .alert + .workspace-card,
+.performance-reports-heading ~ .workspace-card:first-of-type {
+    margin-top: 1rem !important;
+}
+
+@media (max-width: 575.98px) {
+    .performance-reports-heading .lead {
+        font-size: .92rem;
+    }
+}

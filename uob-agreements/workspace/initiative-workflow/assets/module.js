@@ -1257,58 +1257,233 @@
             ));
         }
 
+        // INITIATIVE FINAL MENU CLEANUP V6
         function renderApprovedMenu() {
             if (!approvedMenu || !approvedOptions) {
                 return;
             }
 
             const eligible = eligibleConversions();
+            const existingAction = document.querySelector(
+                '[data-add-existing-initiative]'
+            );
+
+            const canRegisterExisting = Boolean(
+                existingAction
+                && !existingAction.classList.contains('d-none')
+            );
+
+            /*
+             * Rebuild the dropdown every time so the static
+             * Register Existing option and approved requests
+             * stay in one clean menu.
+             */
             approvedOptions.replaceChildren();
+
+            const toggle = approvedMenu.querySelector(
+                '[data-bs-toggle="dropdown"]'
+            );
+
+            if (toggle) {
+                toggle.textContent = 'Final Initiative';
+                toggle.setAttribute(
+                    'aria-label',
+                    'Final Initiative options'
+                );
+            }
+
             approvedMenu.classList.toggle(
                 'd-none',
-                eligible.length === 0
+                !canRegisterExisting && eligible.length === 0
             );
+
+            if (canRegisterExisting) {
+                const existingItem = document.createElement('li');
+                const existingLink = document.createElement('a');
+
+                existingLink.className =
+                    'dropdown-item initiative-final-existing-option';
+
+                existingLink.href =
+                    existingAction.getAttribute('href')
+                    || 'register-existing-initiative.php';
+
+                const existingTitle =
+                    document.createElement('strong');
+
+                existingTitle.className = 'd-block';
+                existingTitle.textContent =
+                    'Register Existing Initiative';
+
+                const existingDetail =
+                    document.createElement('small');
+
+                existingDetail.className = 'text-secondary';
+                existingDetail.textContent =
+                    'Record an Initiative approved outside this workflow';
+
+                existingLink.append(
+                    existingTitle,
+                    existingDetail
+                );
+
+                existingItem.append(existingLink);
+                approvedOptions.append(existingItem);
+
+                if (eligible.length > 0) {
+                    const dividerItem =
+                        document.createElement('li');
+
+                    const divider =
+                        document.createElement('hr');
+
+                    divider.className = 'dropdown-divider';
+
+                    dividerItem.append(divider);
+                    approvedOptions.append(dividerItem);
+                }
+            }
 
             eligible.forEach((item) => {
                 const listItem = document.createElement('li');
                 const link = document.createElement('a');
+
                 link.className = 'dropdown-item';
+
                 link.href =
                     `add-initiative-approved.php?request_id=${
                         encodeURIComponent(item.request_id)
                     }`;
 
+                // INITIATIVE DROPDOWN LABELS V8
                 const title = document.createElement('strong');
                 title.className = 'd-block';
-                title.textContent = text(item.title);
+
+                const itemTitle = text(item.title).trim();
+                const requestCode = text(
+                    item.request_code,
+                    'Approved request'
+                );
+
+                const hasGenericTitle =
+                    !itemTitle
+                    || itemTitle.toLowerCase() === 'initiative';
+
+                title.textContent =
+                    hasGenericTitle
+                        ? requestCode
+                        : itemTitle;
 
                 const detail = document.createElement('small');
                 detail.className = 'text-secondary';
+
+                const conversionLabel =
+                    item.status === 'CONVERTING'
+                        ? 'Continue draft'
+                        : 'Convert to Final Initiative';
+
                 detail.textContent =
-                    `${text(item.request_code, 'Approved request')} · ${
-                        item.status === 'CONVERTING'
-                            ? 'Continue draft'
-                            : 'Create Final Initiative'
-                    }`;
+                    hasGenericTitle
+                        ? `Approved request · ${conversionLabel}`
+                        : `${requestCode} · ${conversionLabel}`;
 
                 link.append(title, detail);
                 listItem.append(link);
                 approvedOptions.append(listItem);
             });
         }
-
         function render() {
-            const query = search.value.trim().toLowerCase();
-            const status = filter.value;
-            const items = state.items.filter((item) => {
-                const haystack =
-                    `${item.request_code || ''} ${item.title || ''}`
-                        .toLowerCase();
+            // INITIATIVE SMART SEARCH V10
+            const normalizeSearch = (value) => String(value ?? '')
+                .normalize('NFKD')
+                .toLowerCase()
 
-                return (
-                    (!query || haystack.includes(query))
-                    && (!status || item.status === status)
+                /* Latin + Arabic diacritics */
+                .replace(
+                    /[\u0300-\u036f\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed]/g,
+                    ''
+                )
+
+                /* Arabic tatweel */
+                .replace(/\u0640/g, '')
+
+                /* Normalize common Arabic letter variants */
+                .replace(/[أإآٱ]/g, 'ا')
+                .replace(/ى/g, 'ي')
+
+                /* Treat punctuation as spaces */
+                .replace(
+                    /[_\-–—/\\.,:;()[\]{}]+/g,
+                    ' '
+                )
+
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const queryTerms = normalizeSearch(
+                search.value
+            )
+                .split(' ')
+                .filter(Boolean);
+
+            const status = filter.value;
+
+            const items = state.items.filter((item) => {
+
+                /*
+                 * Search across the whole useful request context,
+                 * not only title and request code.
+                 */
+                const searchableValues = [
+                    item.request_code,
+
+                    /*
+                     * INITIATIVE COMPLETE RECORD SEARCH V11C
+                     * Search the complete initiative request database record.
+                     */
+                    item.request_search_blob,
+                    item.title,
+                    item.description,
+                    item.initiative_type,
+                    item.objective,
+                    item.expected_impact,
+                    item.beneficiaries,
+                    item.proposed_start_date,
+                    item.proposed_end_date,
+                    item.requester_role_key,
+                    item.requester_name,
+                    item.current_stage_label,
+                    item.status
+                ];
+
+                const haystack = normalizeSearch(
+                    searchableValues
+                        .filter(
+                            (value) =>
+                                value !== null
+                                && value !== undefined
+                        )
+                        .join(' ')
                 );
+
+                /*
+                 * Example:
+                 * "energy student"
+                 *
+                 * Both words may appear in different fields
+                 * of the same request.
+                 */
+                const matchesSearch =
+                    queryTerms.length === 0
+                    || queryTerms.every(
+                        (term) => haystack.includes(term)
+                    );
+
+                const matchesStatus =
+                    !status
+                    || item.status === status;
+
+                return matchesSearch && matchesStatus;
             });
 
             body.replaceChildren();
@@ -1421,7 +1596,7 @@
                     conversionLink.textContent =
                         item.status === 'CONVERTING'
                             ? 'Continue Final Initiative'
-                            : 'Create Final Initiative';
+                            : 'Convert to Final Initiative';
                     conversionLink.setAttribute(
                         'aria-label',
                         `${conversionLink.textContent}: ${
@@ -1486,6 +1661,19 @@
     }
 
     function routeFor(user) {
+        const isSystemAdministrator =
+            (user.roles || []).includes('System Administrator')
+            || (user.positions || []).some(
+                (item) => item.position === 'System Administrator'
+            );
+
+        if (isSystemAdministrator) {
+            return [
+                'Requester',
+                'Vice President / Office',
+                'President / Office'
+            ];
+        }
         const roles = new Set(user.roles || []);
         const positions = (user.positions || [])
             .map((item) => item.position);
@@ -3246,9 +3434,14 @@
                 fillDraft(draft);
             } else {
                 formField('requester_mobile').value = profile.mobile || '';
+                const suggestedRequesterType =
+                    String(profile.position || '').trim().toLowerCase()
+                        === 'system administrator'
+                        ? 'STAFF'
+                        : profile.suggested_requester_type;
                 setRadioValue(
                     'requester_type',
-                    profile.suggested_requester_type
+                    suggestedRequesterType
                 );
 
                 if (
@@ -3345,6 +3538,775 @@
         updateProgress();
     }
 
+    async function initializeMonitoring() {
+        const loading = document.querySelector('[data-monitoring-loading]');
+        const content = document.querySelector('[data-monitoring-content]');
+        const errorBox = document.querySelector('[data-monitoring-error]');
+        const refreshButton = document.querySelector('[data-monitoring-refresh]');
+
+        const requestsBody = document.querySelector('[data-monitoring-requests]');
+        const notificationsBody = document.querySelector('[data-monitoring-notifications]');
+        const eventsBody = document.querySelector('[data-monitoring-events]');
+
+        const attentionList = document.querySelector('[data-monitoring-attention]');
+        const attentionCount = document.querySelector(
+            '[data-monitoring-attention-count]'
+        );
+        const requestCount = document.querySelector(
+            '[data-monitoring-request-count]'
+        );
+
+        const searchInput = document.querySelector('[data-monitoring-search]');
+        const statusFilter = document.querySelector(
+            '[data-monitoring-status-filter]'
+        );
+
+        const tabs = Array.from(
+            document.querySelectorAll('[data-monitoring-tab]')
+        );
+        const panels = Array.from(
+            document.querySelectorAll('[data-monitoring-panel]')
+        );
+
+        if (
+            !loading
+            || !content
+            || !requestsBody
+            || !notificationsBody
+            || !eventsBody
+        ) {
+            return;
+        }
+
+        let monitoringData = {
+            requests: [],
+            notifications: [],
+            events: []
+        };
+
+        let activeTab = 'requests';
+
+        function formatDateTime(value) {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return date.toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+        }
+
+        function formatWaiting(value) {
+            const seconds = Number(value || 0);
+
+            if (!Number.isFinite(seconds) || seconds <= 0) {
+                return '-';
+            }
+
+            const days = Math.floor(seconds / 86400);
+
+            if (days > 0) {
+                const hours = Math.floor((seconds % 86400) / 3600);
+                return `${days}d ${hours}h`;
+            }
+
+            const hours = Math.floor(seconds / 3600);
+
+            if (hours > 0) {
+                const minutes = Math.floor((seconds % 3600) / 60);
+                return `${hours}h ${minutes}m`;
+            }
+
+            return `${Math.max(1, Math.floor(seconds / 60))}m`;
+        }
+
+        function readableValue(value) {
+            if (!value) {
+                return '-';
+            }
+
+            return String(value)
+                .replaceAll('_', ' ')
+                .toLowerCase()
+                .replace(/\b\w/g, (character) => character.toUpperCase());
+        }
+
+        function statusLabel(status) {
+            const labels = {
+                UNDER_REVIEW: 'Under review',
+                REVISION_REQUIRED: 'Revision required',
+                APPROVED: 'Approved',
+                REJECTED: 'Rejected',
+                CONVERTING: 'Converting',
+                CONVERTED: 'Converted',
+                DRAFT: 'Draft'
+            };
+
+            return labels[status] || readableValue(status);
+        }
+
+        function statusClass(status) {
+            const classes = {
+                UNDER_REVIEW: 'monitoring-status-review',
+                REVISION_REQUIRED: 'monitoring-status-revision',
+                APPROVED: 'monitoring-status-approved',
+                REJECTED: 'monitoring-status-rejected',
+                CONVERTED: 'monitoring-status-converted',
+                CONVERTING: 'monitoring-status-neutral',
+                DRAFT: 'monitoring-status-neutral'
+            };
+
+            return classes[status] || 'monitoring-status-neutral';
+        }
+
+        function createStatusBadge(status) {
+            const badge = document.createElement('span');
+
+            badge.className =
+                `monitoring-status ${statusClass(status)}`;
+            badge.textContent = statusLabel(status);
+
+            return badge;
+        }
+
+        function addTextCell(row, value) {
+            const cell = document.createElement('td');
+            cell.textContent = value ?? '-';
+            row.appendChild(cell);
+            return cell;
+        }
+
+        function addEmptyRow(body, colspan, message) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+
+            cell.colSpan = colspan;
+            cell.className = 'monitoring-empty';
+            cell.textContent = message;
+
+            row.appendChild(cell);
+            body.appendChild(row);
+        }
+
+        function makeRowOpenRequest(row, requestId) {
+            if (!requestId) {
+                return;
+            }
+
+            const url =
+                `initiative-workflow.php?view=detail&id=${
+                    encodeURIComponent(requestId)
+                }`;
+
+            row.classList.add('monitoring-clickable-row');
+            row.tabIndex = 0;
+            row.setAttribute('role', 'link');
+            row.setAttribute(
+                'aria-label',
+                `Open Initiative request ${requestId}`
+            );
+
+            row.addEventListener('click', (event) => {
+                if (
+                    event.target.closest(
+                        'a, button, input, select, textarea'
+                    )
+                ) {
+                    return;
+                }
+
+                window.location.href = url;
+            });
+
+            row.addEventListener('keydown', (event) => {
+                if (
+                    event.key !== 'Enter'
+                    && event.key !== ' '
+                ) {
+                    return;
+                }
+
+                if (
+                    event.target.closest(
+                        'a, button, input, select, textarea'
+                    )
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+                window.location.href = url;
+            });
+        }
+        function requestMatchesSearch(request, search) {
+            if (!search) {
+                return true;
+            }
+
+            const haystack = [
+                request.request_code,
+                request.title,
+                request.requester_name,
+                request.status,
+                request.current_stage_label
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return haystack.includes(search);
+        }
+
+        function notificationMatchesSearch(notification, search) {
+            if (!search) {
+                return true;
+            }
+
+            const haystack = [
+                notification.request_code,
+                notification.request_title,
+                notification.recipient_name,
+                notification.notification_type,
+                notification.title,
+                notification.message
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return haystack.includes(search);
+        }
+
+        function eventMatchesSearch(event, search) {
+            if (!search) {
+                return true;
+            }
+
+            const haystack = [
+                event.request_code,
+                event.request_title,
+                event.event_type,
+                event.actor_name,
+                event.target_name,
+                event.from_status,
+                event.to_status,
+                event.event_note
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return haystack.includes(search);
+        }
+
+        function renderAttention(items) {
+            if (!attentionList) {
+                return;
+            }
+
+            attentionList.replaceChildren();
+
+            const priorityItems = items
+                .filter((request) => (
+                    request.status === 'UNDER_REVIEW'
+                    || request.status === 'REVISION_REQUIRED'
+                ))
+                .sort(
+                    (a, b) =>
+                        Number(b.waiting_seconds || 0)
+                        - Number(a.waiting_seconds || 0)
+                )
+                .slice(0, 8);
+
+            if (attentionCount) {
+                attentionCount.textContent =
+                    `${priorityItems.length} ${
+                        priorityItems.length === 1 ? 'item' : 'items'
+                    }`;
+            }
+
+            if (!priorityItems.length) {
+                const empty = document.createElement('div');
+                empty.className = 'monitoring-empty';
+                empty.textContent =
+                    'Nothing currently requires immediate attention.';
+                attentionList.appendChild(empty);
+                return;
+            }
+
+            priorityItems.forEach((request) => {
+                const item = document.createElement('article');
+                item.className = 'monitoring-attention-item';
+
+                const requestBlock = document.createElement('div');
+                requestBlock.className = 'monitoring-attention-request';
+
+                const link = document.createElement('a');
+                link.href =
+                    `initiative-workflow.php?view=detail&id=${
+                        encodeURIComponent(request.request_id)
+                    }`;
+                link.textContent =
+                    request.request_code || `#${request.request_id}`;
+
+                requestBlock.appendChild(link);
+
+                const title = document.createElement('small');
+                title.textContent = request.title || 'Untitled Initiative';
+                requestBlock.appendChild(title);
+
+                const context = document.createElement('div');
+                context.className = 'd-flex flex-wrap align-items-center gap-2';
+
+                context.appendChild(createStatusBadge(request.status));
+
+                const stage = document.createElement('span');
+                stage.className = 'small text-secondary';
+                stage.textContent =
+                    request.current_stage_label || 'No active stage';
+                context.appendChild(stage);
+
+                const action = document.createElement('a');
+                action.href =
+                    `initiative-workflow.php?view=detail&id=${
+                        encodeURIComponent(request.request_id)
+                    }`;
+                action.className = 'btn btn-sm btn-outline-primary';
+                action.textContent = 'View request';
+
+                item.appendChild(requestBlock);
+                item.appendChild(context);
+                item.appendChild(action);
+
+                attentionList.appendChild(item);
+            });
+        }
+
+        function renderRequests(items) {
+            requestsBody.replaceChildren();
+
+            if (requestCount) {
+                requestCount.textContent =
+                    `${items.length} ${
+                        items.length === 1 ? 'request' : 'requests'
+                    }`;
+            }
+
+            if (!items.length) {
+                addEmptyRow(
+                    requestsBody,
+                    6,
+                    'No requests match the current filters.'
+                );
+                return;
+            }
+
+            items.forEach((request) => {
+                const row = document.createElement('tr');
+                makeRowOpenRequest(row, request.request_id);
+
+                const requestCell = document.createElement('td');
+                const link = document.createElement('a');
+
+                link.href =
+                    `initiative-workflow.php?view=detail&id=${
+                        encodeURIComponent(request.request_id)
+                    }`;
+                link.className = 'fw-semibold text-decoration-none';
+                link.textContent =
+                    request.request_code || `#${request.request_id}`;
+
+                requestCell.appendChild(link);
+
+                if (request.title) {
+                    const title = document.createElement('div');
+                    title.className = 'small text-secondary mt-1';
+                    title.textContent = request.title;
+                    requestCell.appendChild(title);
+                }
+
+                row.appendChild(requestCell);
+
+                addTextCell(row, request.requester_name || '-');
+
+                const statusCell = document.createElement('td');
+                statusCell.appendChild(createStatusBadge(request.status));
+                row.appendChild(statusCell);
+
+                addTextCell(
+                    row,
+                    request.current_stage_label || '-'
+                );
+
+                addTextCell(
+                    row,
+                    formatWaiting(request.waiting_seconds)
+                );
+
+                addTextCell(
+                    row,
+                    formatDateTime(request.updated_at)
+                );
+
+                requestsBody.appendChild(row);
+            });
+        }
+
+        function renderNotifications(items) {
+            notificationsBody.replaceChildren();
+
+            if (!items.length) {
+                addEmptyRow(
+                    notificationsBody,
+                    6,
+                    'No notifications match your search.'
+                );
+                return;
+            }
+
+            items.forEach((notification) => {
+                const row = document.createElement('tr');
+                makeRowOpenRequest(row, notification.request_id);
+
+                addTextCell(
+                    row,
+                    formatDateTime(notification.created_at)
+                );
+
+                const requestCell = document.createElement('td');
+
+                if (notification.request_id) {
+                    const link = document.createElement('a');
+
+                    link.href =
+                        `initiative-workflow.php?view=detail&id=${
+                            encodeURIComponent(notification.request_id)
+                        }`;
+                    link.className = 'text-decoration-none fw-semibold';
+                    link.textContent =
+                        notification.request_code
+                        || `#${notification.request_id}`;
+
+                    requestCell.appendChild(link);
+                } else {
+                    requestCell.textContent = '-';
+                }
+
+                row.appendChild(requestCell);
+
+                addTextCell(
+                    row,
+                    notification.recipient_name
+                    || `User #${notification.recipient_user_id}`
+                );
+
+                addTextCell(
+                    row,
+                    readableValue(notification.notification_type)
+                );
+
+                const messageCell = document.createElement('td');
+
+                const title = document.createElement('div');
+                title.className = 'fw-semibold';
+                title.textContent =
+                    notification.title || 'Notification';
+                messageCell.appendChild(title);
+
+                if (notification.message) {
+                    const message = document.createElement('div');
+                    message.className = 'small text-secondary mt-1';
+                    message.textContent = notification.message;
+                    messageCell.appendChild(message);
+                }
+
+                row.appendChild(messageCell);
+
+                const stateCell = document.createElement('td');
+                const state = document.createElement('span');
+
+                state.className =
+                    booleanValue(notification.is_read)
+                        ? 'monitoring-status monitoring-status-neutral'
+                        : 'monitoring-status monitoring-status-review';
+
+                state.textContent =
+                    booleanValue(notification.is_read)
+                        ? 'Read'
+                        : 'Unread';
+
+                stateCell.appendChild(state);
+                row.appendChild(stateCell);
+
+                notificationsBody.appendChild(row);
+            });
+        }
+
+        function renderEvents(items) {
+            eventsBody.replaceChildren();
+
+            if (!items.length) {
+                addEmptyRow(
+                    eventsBody,
+                    6,
+                    'No activity matches your search.'
+                );
+                return;
+            }
+
+            items.forEach((event) => {
+                const row = document.createElement('tr');
+                makeRowOpenRequest(row, event.request_id);
+
+                addTextCell(
+                    row,
+                    formatDateTime(event.occurred_at)
+                );
+
+                const requestCell = document.createElement('td');
+
+                if (event.request_id) {
+                    const link = document.createElement('a');
+
+                    link.href =
+                        `initiative-workflow.php?view=detail&id=${
+                            encodeURIComponent(event.request_id)
+                        }`;
+                    link.className = 'text-decoration-none fw-semibold';
+                    link.textContent =
+                        event.request_code || `#${event.request_id}`;
+
+                    requestCell.appendChild(link);
+                } else {
+                    requestCell.textContent = '-';
+                }
+
+                row.appendChild(requestCell);
+
+                addTextCell(
+                    row,
+                    readableValue(event.event_type)
+                );
+
+                addTextCell(
+                    row,
+                    event.actor_name || 'System'
+                );
+
+                const fromStatus =
+                    event.from_status
+                        ? statusLabel(event.from_status)
+                        : '-';
+
+                const toStatus =
+                    event.to_status
+                        ? statusLabel(event.to_status)
+                        : '-';
+
+                addTextCell(
+                    row,
+                    fromStatus === toStatus
+                        ? toStatus
+                        : `${fromStatus} -> ${toStatus}`
+                );
+
+                addTextCell(
+                    row,
+                    event.event_note || '-'
+                );
+
+                eventsBody.appendChild(row);
+            });
+        }
+
+        function renderSummary(summary) {
+            document.querySelectorAll(
+                '[data-monitoring-stat]'
+            ).forEach((element) => {
+                const key = element.dataset.monitoringStat;
+
+                element.textContent = String(
+                    Number(summary?.[key] || 0)
+                );
+            });
+        }
+
+        function renderFilteredData() {
+            const search =
+                String(searchInput?.value || '')
+                    .trim()
+                    .toLowerCase();
+
+            const selectedStatus =
+                String(statusFilter?.value || '');
+
+            const filteredRequests =
+                monitoringData.requests.filter((request) => (
+                    requestMatchesSearch(request, search)
+                    && (
+                        !selectedStatus
+                        || request.status === selectedStatus
+                    )
+                ));
+
+            const filteredNotifications =
+                monitoringData.notifications.filter(
+                    (notification) =>
+                        notificationMatchesSearch(
+                            notification,
+                            search
+                        )
+                );
+
+            const filteredEvents =
+                monitoringData.events.filter(
+                    (event) =>
+                        eventMatchesSearch(event, search)
+                );
+
+            renderRequests(filteredRequests);
+            renderNotifications(filteredNotifications);
+            renderEvents(filteredEvents);
+        }
+
+        function activateTab(tabName) {
+            activeTab = tabName;
+
+            tabs.forEach((tab) => {
+                const isActive =
+                    tab.dataset.monitoringTab === tabName;
+
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute(
+                    'aria-selected',
+                    isActive ? 'true' : 'false'
+                );
+            });
+
+            panels.forEach((panel) => {
+                const isActive =
+                    panel.dataset.monitoringPanel === tabName;
+
+                panel.classList.toggle('d-none', !isActive);
+            });
+
+            if (statusFilter) {
+                const requestTabActive =
+                    tabName === 'requests';
+
+                statusFilter.disabled = !requestTabActive;
+
+                if (!requestTabActive) {
+                    statusFilter.title =
+                        'Status filtering applies to Requests.';
+                } else {
+                    statusFilter.removeAttribute('title');
+                }
+            }
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                activateTab(tab.dataset.monitoringTab);
+            });
+
+            tab.addEventListener('keydown', (event) => {
+                if (
+                    event.key !== 'ArrowRight'
+                    && event.key !== 'ArrowLeft'
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const currentIndex = tabs.indexOf(tab);
+                const direction =
+                    event.key === 'ArrowRight' ? 1 : -1;
+
+                const nextIndex =
+                    (currentIndex + direction + tabs.length)
+                    % tabs.length;
+
+                const nextTab = tabs[nextIndex];
+
+                activateTab(nextTab.dataset.monitoringTab);
+                nextTab.focus();
+            });
+        });
+
+        searchInput?.addEventListener(
+            'input',
+            renderFilteredData
+        );
+
+        statusFilter?.addEventListener(
+            'change',
+            renderFilteredData
+        );
+
+        async function load() {
+            loading.classList.remove('d-none');
+            content.classList.add('d-none');
+            errorBox?.classList.add('d-none');
+
+            if (refreshButton) {
+                refreshButton.disabled = true;
+            }
+
+            try {
+                const payload = await AgreementApi.request(
+                    '/initiative-requests/admin/monitoring?limit=250'
+                );
+
+                monitoringData = {
+                    requests: Array.isArray(payload?.requests)
+                        ? payload.requests
+                        : [],
+                    notifications:
+                        Array.isArray(payload?.notifications)
+                            ? payload.notifications
+                            : [],
+                    events: Array.isArray(payload?.events)
+                        ? payload.events
+                        : []
+                };
+
+                renderSummary(payload?.summary || {});
+                renderAttention(monitoringData.requests);
+                renderFilteredData();
+                activateTab(activeTab);
+
+                loading.classList.add('d-none');
+                content.classList.remove('d-none');
+            } catch (error) {
+                loading.classList.add('d-none');
+
+                if (errorBox) {
+                    errorBox.textContent =
+                        error?.message
+                        || 'Initiative monitoring could not be loaded.';
+
+                    errorBox.classList.remove('d-none');
+                }
+            } finally {
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                }
+            }
+        }
+
+        refreshButton?.addEventListener('click', load);
+
+        await load();
+    }
     async function initializeNotifications() {
         const loading = document.querySelector(
             '[data-notifications-loading]'
@@ -7274,6 +8236,8 @@
         initializeConversion();
     } else if (view === 'detail') {
         initializeDetail();
+    } else if (view === 'monitoring') {
+        initializeMonitoring();
     } else if (view === 'notifications') {
         initializeNotifications();
     } else {

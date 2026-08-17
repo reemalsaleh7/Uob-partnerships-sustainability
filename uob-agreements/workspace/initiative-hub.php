@@ -4,27 +4,27 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
 
-workspaceHeader('Initiative hub', 'initiatives');
+workspaceHeader(
+    'Initiative hub',
+    'initiatives',
+    ['assets/css/initiative-hub.css']
+);
 ?>
 
-<section class="dashboard-welcome">
+<section class="dashboard-welcome initiative-hub-hero">
     <p class="eyebrow mb-2">Initiatives</p>
     <h1>Move an idea from your department to University approval.</h1>
-    <p>
-        Faculty and Department Heads can propose initiatives. The request then moves through Department,
-        College, Vice President, and President approval.
-    </p>
+    <p>Faculty and Department Heads can propose initiatives.</p>
     <span class="dashboard-role-chip" data-initiative-access>Checking your initiative access…</span>
 </section>
 
-<div class="dashboard-section-title">
+<div class="dashboard-section-title initiative-hub-section-title">
     <div>
         <h2>Initiative actions</h2>
-        <p>The Initiative module remains connected while its teammate completes the new workflow implementation.</p>
     </div>
 </div>
 
-<section class="dashboard-action-grid">
+<section class="dashboard-action-grid initiative-hub-actions">
     <a
         class="dashboard-action d-none"
         href="#"

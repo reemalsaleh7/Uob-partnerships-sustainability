@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/layout.php';
 
-workspaceHeader('Overview', 'dashboard');
+workspaceHeader(
+    'Overview',
+    'dashboard',
+    ['assets/css/dashboard-overview.css']
+);
 ?>
 
 <div class="alert alert-danger d-none" role="alert" tabindex="-1" data-dashboard-alert></div>
@@ -15,7 +19,7 @@ workspaceHeader('Overview', 'dashboard');
 </div>
 
 <div class="d-none" data-dashboard-content>
-    <section class="dashboard-welcome">
+    <section class="dashboard-welcome dashboard-overview-hero">
         <p class="eyebrow mb-2" data-dashboard-greeting>Welcome back</p>
         <h1 data-dashboard-title>Agreements and Initiatives, together in one workspace.</h1>
         <p data-dashboard-description>

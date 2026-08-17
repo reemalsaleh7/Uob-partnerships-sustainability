@@ -1,0 +1,147 @@
+
+
+/* ============================================================
+   REVIEW INBOX REFINEMENT V1
+   Consistent naming + consolidated inbox controls.
+   ============================================================ */
+
+.review-inbox-heading {
+    max-width: 52rem;
+    padding-block: .15rem;
+}
+
+.review-inbox-heading .eyebrow {
+    margin-bottom: .4rem !important;
+}
+
+.review-inbox-heading h1 {
+    margin-bottom: .35rem !important;
+    line-height: 1.1;
+}
+
+.review-inbox-heading .text-secondary {
+    max-width: 46rem;
+    font-size: .95rem;
+    line-height: 1.5;
+}
+
+/* Bring actual assigned work closer to the introduction. */
+.review-inbox-card.mt-4 {
+    margin-top: 1rem !important;
+}
+
+.review-inbox-card-header {
+    gap: 1rem;
+}
+
+.review-inbox-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .55rem;
+}
+
+.review-inbox-controls .form-check {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+
+    min-height: 2rem;
+    margin-inline-end: .2rem;
+}
+
+.review-inbox-controls .form-check-input {
+    margin-top: 0;
+}
+
+.review-inbox-controls .form-check-label {
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.review-inbox-controls .btn {
+    min-height: 2rem;
+    padding: .35rem .65rem;
+    font-size: .74rem;
+    white-space: nowrap;
+}
+
+/* Keep keyboard interaction clear. */
+.review-inbox-controls .btn:focus-visible,
+.review-inbox-controls .form-check-input:focus-visible {
+    outline: 3px solid rgba(13, 74, 167, .18);
+    outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+    .review-inbox-card-header {
+        align-items: flex-start;
+    }
+
+    .review-inbox-controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* ============================================================
+   REVIEW INBOX REFRESH ICON V2
+   Compact icon-only refresh action.
+   ============================================================ */
+
+.review-inbox-refresh-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 2.25rem !important;
+
+    padding: 0 !important;
+    border-radius: .65rem;
+}
+
+.review-inbox-refresh-button svg {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+}
+
+.review-inbox-refresh-button:hover svg {
+    transform: rotate(18deg);
+}
+
+.review-inbox-refresh-button svg {
+    transition: transform 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .review-inbox-refresh-button svg {
+        transition: none;
+    }
+
+    .review-inbox-refresh-button:hover svg {
+        transform: none;
+    }
+}
+
+/* ============================================================
+   REVIEW INBOX DISABLED ACTION POLISH V4
+   Make unavailable bulk actions visually unmistakable.
+   ============================================================ */
+
+.review-inbox-controls [data-mark-all-workflow-read]:disabled {
+    opacity: .42;
+    cursor: default;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.review-inbox-controls [data-mark-all-workflow-read]:disabled:hover,
+.review-inbox-controls [data-mark-all-workflow-read]:disabled:active {
+    box-shadow: none !important;
+    transform: none !important;
+}

@@ -9,7 +9,7 @@ if ($view === 'legacy') {
     $view = 'existing';
 }
 
-$allowedViews = ['list', 'form', 'detail', 'notifications', 'convert', 'existing'];
+$allowedViews = ['list', 'form', 'detail', 'notifications', 'monitoring', 'convert', 'existing'];
 
 if (!in_array($view, $allowedViews, true)) {
     http_response_code(404);
@@ -21,6 +21,7 @@ $titles = [
     'form' => 'Initiative request form',
     'detail' => 'Initiative request',
     'notifications' => 'Initiative notifications',
+    'monitoring' => 'Initiative Monitoring',
     'convert' => 'Create Final Initiative',
     'existing' => 'Register Existing Initiative',
 ];

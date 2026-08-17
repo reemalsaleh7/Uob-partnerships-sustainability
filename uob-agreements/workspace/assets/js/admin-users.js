@@ -769,17 +769,48 @@
         select.appendChild(option);
     }
 
-    function unitLabel(unit) {
-        const indentation = '— '.repeat(Math.max(0, Number(unit.depth) || 0));
+    function unitTypeName(unit) {
         const typeNames = {
             UNIVERSITY: t('University', 'جامعة'),
             OFFICE: t('Office', 'مكتب'),
             COLLEGE: t('College', 'كلية'),
             DEPARTMENT: t('Department', 'قسم')
         };
-        const code = unit.code ? ` · ${unit.code}` : '';
-        const inactive = unit.is_active ? '' : ` · ${t('inactive', 'غير نشطة')}`;
-        return `${indentation}${unit.name}${code} · ${typeNames[unit.unit_type] || unit.unit_type}${inactive}`;
+
+        return typeNames[unit?.unit_type] || unit?.unit_type || '';
+    }
+
+    function unitLabel(unit) {
+        const code = unit.code ? ` (${unit.code})` : '';
+        const inactive = unit.is_active
+            ? ''
+            : ` · ${t('inactive', 'غير نشطة')}`;
+
+        return `${unitTypeName(unit)} · ${unit.name}${code}${inactive}`;
+    }
+
+    function unitFilterLabel(unit) {
+        const code = unit.code ? ` (${unit.code})` : '';
+        return `${unit.name}${code}`;
+    }
+
+    function appendUnitFilterGroup(label, units, labelBuilder = unitFilterLabel) {
+        if (!Array.isArray(units) || units.length === 0) {
+            return;
+        }
+
+        const group = document.createElement('optgroup');
+        group.label = label;
+
+        units.forEach((unit) => {
+            appendOption(
+                group,
+                unit.unit_id,
+                labelBuilder(unit)
+            );
+        });
+
+        elements.unitFilter.appendChild(group);
     }
 
     function selectedUnit() {
@@ -802,6 +833,9 @@
             'vice president': 'VP',
             'vice president office staff': 'VP',
             'vice president office delegate': 'VP',
+            'vice president for academic affairs': 'VPAA',
+            'vice president for academic affairs office staff': 'VPAA',
+            'vice president for academic affairs office delegate': 'VPAA',
             'legal reviewer': 'LEGAL',
             'finance reviewer': 'FIN'
         };
@@ -819,6 +853,9 @@
             'president office delegate': ['OFFICE'],
             'vice president office staff': ['OFFICE'],
             'vice president office delegate': ['OFFICE'],
+            'vice president for academic affairs': ['OFFICE'],
+            'vice president for academic affairs office staff': ['OFFICE'],
+            'vice president for academic affairs office delegate': ['OFFICE'],
             'legal reviewer': ['OFFICE'],
             'finance reviewer': ['OFFICE']
         }[positionName] || [];
@@ -864,24 +901,655 @@
         }
     }
 
-    function populateOptions() {
-        const unitPrompt = elements.unit.options[0].cloneNode(true);
-        const filterPrompt = elements.unitFilter.options[0].cloneNode(true);
-        elements.unit.replaceChildren(unitPrompt);
-        elements.unitFilter.replaceChildren(filterPrompt);
+    function ensureUnitFilterState() {
+        if (!(state.unitFilterDraft instanceof Set)) {
+            state.unitFilterDraft = new Set();
+        }
 
-        (state.options?.units || []).forEach((unit) => {
+        if (!(state.unitFilterOpenGroups instanceof Set)) {
+            state.unitFilterOpenGroups = new Set();
+        }
+    }
+
+    function unitFilterDom() {
+        return {
+            root: document.querySelector('[data-admin-unit-picker]'),
+            trigger: document.querySelector('[data-admin-unit-picker-trigger]'),
+            summary: document.querySelector('[data-admin-unit-picker-summary]'),
+            count: document.querySelector('[data-admin-unit-picker-count]'),
+            panel: document.querySelector('[data-admin-unit-picker-panel]'),
+            search: document.querySelector('[data-admin-unit-picker-search]'),
+            list: document.querySelector('[data-admin-unit-picker-list]'),
+            clear: document.querySelector('[data-admin-unit-picker-clear]'),
+            done: document.querySelector('[data-admin-unit-picker-done]')
+        };
+    }
+
+    function parseUnitFilterIds(value) {
+        return new Set(
+            String(value || '')
+                .split(',')
+                .map((part) => Number(part.trim()))
+                .filter((id) => Number.isInteger(id) && id > 0)
+        );
+    }
+
+    function activeOrganizationalUnits() {
+        return (state.options?.units || []).filter(
+            (unit) => unit.is_active === true
+        );
+    }
+
+    function collegeDepartments(collegeId) {
+        return activeOrganizationalUnits()
+            .filter(
+                (unit) =>
+                    unit.unit_type === 'DEPARTMENT'
+                    && Number(unit.parent_unit_id) === Number(collegeId)
+            )
+            .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    }
+
+    function selectionState(ids) {
+        const numericIds = ids.map(Number);
+
+        const selectedCount = numericIds.filter(
+            (id) => state.unitFilterDraft.has(id)
+        ).length;
+
+        return {
+            checked:
+                numericIds.length > 0
+                && selectedCount === numericIds.length,
+            indeterminate:
+                selectedCount > 0
+                && selectedCount < numericIds.length,
+            selectedCount
+        };
+    }
+
+    function renderUnitFilterListPreservingScroll() {
+        const dom = unitFilterDom();
+        const previousScrollTop = dom.list?.scrollTop || 0;
+
+        renderUnitFilterList();
+
+        if (dom.list) {
+            dom.list.scrollTop = previousScrollTop;
+        }
+    }
+
+    function commitUnitFilterSelection() {
+        const nextValue = Array.from(state.unitFilterDraft)
+            .sort((a, b) => a - b)
+            .join(',');
+
+        const changed =
+            elements.unitFilter.value !== nextValue;
+
+        elements.unitFilter.value = nextValue;
+        updateUnitFilterSummary();
+
+        if (changed) {
+            elements.unitFilter.dispatchEvent(
+                new Event('change', { bubbles: true })
+            );
+        }
+    }
+
+    function setGroupSelection(ids, checked) {
+        ids.map(Number).forEach((id) => {
+            if (checked) {
+                state.unitFilterDraft.add(id);
+            } else {
+                state.unitFilterDraft.delete(id);
+            }
+        });
+
+        renderUnitFilterListPreservingScroll();
+        commitUnitFilterSelection();
+    }
+
+    function makeCheckbox(checked, indeterminate = false) {
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'admin-unit-checkbox';
+        input.checked = checked;
+        input.indeterminate = indeterminate;
+        return input;
+    }
+
+    function createUnitItem(unit, customName = null) {
+        const row = document.createElement('label');
+        row.className = 'admin-unit-item';
+
+        const checkboxWrap = document.createElement('span');
+        checkboxWrap.className = 'admin-unit-checkbox-wrap';
+
+        const checkbox = makeCheckbox(
+            state.unitFilterDraft.has(Number(unit.unit_id))
+        );
+
+        checkbox.addEventListener('change', () => {
+            const id = Number(unit.unit_id);
+
+            if (checkbox.checked) {
+                state.unitFilterDraft.add(id);
+            } else {
+                state.unitFilterDraft.delete(id);
+            }
+            renderUnitFilterListPreservingScroll();
+            commitUnitFilterSelection();
+        });
+
+        checkboxWrap.appendChild(checkbox);
+
+        const copy = document.createElement('span');
+        copy.className = 'admin-unit-item-copy';
+
+        const name = document.createElement('span');
+        name.className = 'admin-unit-item-name';
+        name.textContent = customName || unit.name;
+
+        const meta = document.createElement('span');
+        meta.className = 'admin-unit-item-meta';
+        meta.textContent = [
+            unit.code || '',
+            unitTypeName(unit)
+        ].filter(Boolean).join(' · ');
+
+        copy.append(name, meta);
+        row.append(checkboxWrap, copy);
+
+        return row;
+    }
+
+    function createUnitGroup({
+        key,
+        title,
+        subtitle,
+        selectionIds,
+        displayUnits,
+        collegeUnit = null,
+        forceOpen = false
+    }) {
+        const current = selectionState(selectionIds);
+
+        const isOpen =
+            forceOpen
+            || state.unitFilterOpenGroups.has(key);
+
+        const group = document.createElement('section');
+        group.className =
+            `admin-unit-group${isOpen ? ' is-open' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'admin-unit-group-header';
+
+        const checkboxWrap = document.createElement('label');
+        checkboxWrap.className = 'admin-unit-checkbox-wrap';
+
+        const checkbox = makeCheckbox(
+            current.checked,
+            current.indeterminate
+        );
+
+        checkbox.setAttribute(
+            'aria-label',
+            `${t('Select all', 'اختيار الكل')} ${title}`
+        );
+
+        checkbox.addEventListener('change', (event) => {
+            event.stopPropagation();
+            setGroupSelection(selectionIds, checkbox.checked);
+        });
+
+        checkboxWrap.appendChild(checkbox);
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'admin-unit-group-toggle';
+        toggle.setAttribute(
+            'aria-expanded',
+            isOpen ? 'true' : 'false'
+        );
+
+        const copy = document.createElement('span');
+        copy.className = 'admin-unit-group-copy';
+
+        const heading = document.createElement('span');
+        heading.className = 'admin-unit-group-title';
+        heading.textContent = title;
+
+        const subheading = document.createElement('span');
+        subheading.className = 'admin-unit-group-subtitle';
+        subheading.textContent = subtitle;
+
+        copy.append(heading, subheading);
+
+        const status = document.createElement('span');
+        status.className = 'admin-unit-group-status';
+
+        if (current.selectedCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'admin-unit-selected-badge';
+            badge.textContent = t(
+                `${current.selectedCount} selected`,
+                `${current.selectedCount} محدد`
+            );
+            status.appendChild(badge);
+        }
+
+        const arrow = document.createElement('span');
+        arrow.className = 'admin-unit-collapse-icon';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '⌄';
+
+        status.appendChild(arrow);
+        toggle.append(copy, status);
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (state.unitFilterOpenGroups.has(key)) {
+                state.unitFilterOpenGroups.clear();
+            } else {
+                state.unitFilterOpenGroups.clear();
+                state.unitFilterOpenGroups.add(key);
+            }
+
+            renderUnitFilterListPreservingScroll();
+        });
+
+        header.append(checkboxWrap, toggle);
+        group.appendChild(header);
+
+        if (isOpen) {
+            const children = document.createElement('div');
+            children.className = 'admin-unit-group-children';
+
+            if (collegeUnit) {
+                children.appendChild(
+                    createUnitItem(
+                        collegeUnit,
+                        t(
+                            'College level — Dean',
+                            'مستوى الكلية — العميد'
+                        )
+                    )
+                );
+            }
+
+            displayUnits.forEach((unit) => {
+                children.appendChild(createUnitItem(unit));
+            });
+
+            group.appendChild(children);
+        }
+
+        return group;
+    }
+
+    function updateUnitFilterSummary() {
+        const dom = unitFilterDom();
+        if (!dom.summary || !dom.count) return;
+
+        const selectedIds =
+            parseUnitFilterIds(elements.unitFilter.value);
+
+        if (selectedIds.size === 0) {
+            dom.summary.textContent = t(
+                'All units',
+                'جميع الوحدات'
+            );
+            dom.count.textContent = t('All', 'الكل');
+            return;
+        }
+
+        const colleges = activeOrganizationalUnits().filter(
+            (unit) => unit.unit_type === 'COLLEGE'
+        );
+
+        for (const college of colleges) {
+            const ids = new Set([
+                Number(college.unit_id),
+                ...collegeDepartments(college.unit_id)
+                    .map((unit) => Number(unit.unit_id))
+            ]);
+
+            const exact =
+                ids.size === selectedIds.size
+                && Array.from(ids).every(
+                    (id) => selectedIds.has(id)
+                );
+
+            if (exact) {
+                dom.summary.textContent = t(
+                    `${college.name} · all departments`,
+                    `${college.name} · جميع الأقسام`
+                );
+                dom.count.textContent = String(ids.size);
+                return;
+            }
+        }
+
+        if (selectedIds.size === 1) {
+            const id = Array.from(selectedIds)[0];
+            const unit = activeOrganizationalUnits().find(
+                (candidate) =>
+                    Number(candidate.unit_id) === id
+            );
+
+            dom.summary.textContent =
+                unit?.name
+                || t('1 unit selected', 'وحدة واحدة محددة');
+
+            dom.count.textContent = '1';
+            return;
+        }
+
+        dom.summary.textContent = t(
+            `${selectedIds.size} organizational units selected`,
+            `تم تحديد ${selectedIds.size} وحدات تنظيمية`
+        );
+
+        dom.count.textContent = String(selectedIds.size);
+    }
+
+    function renderUnitFilterList() {
+        ensureUnitFilterState();
+
+        const dom = unitFilterDom();
+        if (!dom.list) return;
+
+        const units = activeOrganizationalUnits();
+
+        const query = String(dom.search?.value || '')
+            .trim()
+            .toLocaleLowerCase();
+
+        dom.list.replaceChildren();
+
+        const allRow = document.createElement('label');
+        allRow.className =
+            'admin-unit-item admin-unit-picker-all';
+
+        const allCheckWrap = document.createElement('span');
+        allCheckWrap.className = 'admin-unit-checkbox-wrap';
+
+        const allCheck = makeCheckbox(
+            state.unitFilterDraft.size === 0
+        );
+
+        allCheck.addEventListener('change', () => {
+            state.unitFilterDraft.clear();
+            renderUnitFilterListPreservingScroll();
+            commitUnitFilterSelection();
+        });
+
+        allCheckWrap.appendChild(allCheck);
+
+        const allCopy = document.createElement('span');
+        allCopy.className = 'admin-unit-item-copy';
+
+        const allName = document.createElement('span');
+        allName.className = 'admin-unit-item-name';
+        allName.textContent = t(
+            'All units',
+            'جميع الوحدات'
+        );
+
+        const allMeta = document.createElement('span');
+        allMeta.className = 'admin-unit-item-meta';
+        allMeta.textContent = t(
+            'Show users across the whole University',
+            'عرض المستخدمين في جميع وحدات الجامعة'
+        );
+
+        allCopy.append(allName, allMeta);
+        allRow.append(allCheckWrap, allCopy);
+        dom.list.appendChild(allRow);
+
+        const matches = (unit) => {
+            if (!query) return true;
+
+            return [
+                unit.name,
+                unit.code,
+                unit.unit_type
+            ].some((value) =>
+                String(value || '')
+                    .toLocaleLowerCase()
+                    .includes(query)
+            );
+        };
+
+        const offices = units
+            .filter((unit) => unit.unit_type === 'OFFICE')
+            .sort((a, b) =>
+                String(a.name).localeCompare(String(b.name))
+            );
+
+        const visibleOffices =
+            query
+                ? offices.filter(matches)
+                : offices;
+
+        if (
+            !query
+            || visibleOffices.length > 0
+            || 'offices'.includes(query)
+        ) {
+            dom.list.appendChild(
+                createUnitGroup({
+                    key: 'offices',
+                    title: t(
+                        'Offices & administrative units',
+                        'المكاتب والوحدات الإدارية'
+                    ),
+                    subtitle: t(
+                        `${offices.length} units`,
+                        `${offices.length} وحدات`
+                    ),
+                    selectionIds:
+                        offices.map(
+                            (unit) => Number(unit.unit_id)
+                        ),
+                    displayUnits: visibleOffices,
+                    forceOpen: false
+                })
+            );
+        }
+
+        const colleges = units
+            .filter((unit) => unit.unit_type === 'COLLEGE')
+            .sort((a, b) =>
+                String(a.name).localeCompare(String(b.name))
+            );
+
+        colleges.forEach((college) => {
+            const departments =
+                collegeDepartments(college.unit_id);
+
+            const collegeMatches = matches(college);
+            const visibleDepartments =
+                query
+                    ? departments.filter(matches)
+                    : departments;
+
+            if (
+                query
+                && !collegeMatches
+                && visibleDepartments.length === 0
+            ) {
+                return;
+            }
+
+            const allIds = [
+                Number(college.unit_id),
+                ...departments.map(
+                    (unit) => Number(unit.unit_id)
+                )
+            ];
+
+            dom.list.appendChild(
+                createUnitGroup({
+                    key: `college-${college.unit_id}`,
+                    title: college.name,
+                    subtitle: t(
+                        `${departments.length} departments`,
+                        `${departments.length} أقسام`
+                    ),
+                    selectionIds: allIds,
+                    displayUnits:
+                        query && !collegeMatches
+                            ? visibleDepartments
+                            : departments,
+                    collegeUnit: college,
+                    forceOpen: false
+                })
+            );
+        });
+
+        if (
+            dom.list.children.length === 1
+            && query !== ''
+        ) {
+            const empty = document.createElement('div');
+            empty.className = 'admin-unit-picker-empty';
+            empty.textContent = t(
+                'No organizational units match your search.',
+                'لا توجد وحدات تنظيمية مطابقة للبحث.'
+            );
+            dom.list.appendChild(empty);
+        }
+    }
+
+    function setUnitPickerOpen(open) {
+        ensureUnitFilterState();
+
+        const dom = unitFilterDom();
+        if (!dom.panel || !dom.trigger) return;
+
+        if (open) {
+            state.unitFilterDraft =
+                parseUnitFilterIds(
+                    elements.unitFilter.value
+                );
+
+            if (dom.search) {
+                dom.search.value = '';
+            }
+
+            renderUnitFilterList();
+
+            if (dom.list) {
+                dom.list.scrollTop = 0;
+            }
+        }
+
+        dom.panel.classList.toggle('d-none', !open);
+
+        dom.trigger.setAttribute(
+            'aria-expanded',
+            open ? 'true' : 'false'
+        );
+
+        if (open && dom.search) {
+            window.setTimeout(
+                () => dom.search.focus(),
+                0
+            );
+        }
+    }
+
+    function initializeUnitFilterPicker() {
+        ensureUnitFilterState();
+
+        const dom = unitFilterDom();
+
+        if (
+            !dom.root
+            || !dom.trigger
+            || !dom.panel
+            || !dom.list
+        ) {
+            return;
+        }
+
+        updateUnitFilterSummary();
+
+        if (dom.root.dataset.unitPickerBound === 'true') {
+            return;
+        }
+
+        dom.root.dataset.unitPickerBound = 'true';
+
+        dom.trigger.addEventListener('click', () => {
+            const open =
+                dom.trigger.getAttribute(
+                    'aria-expanded'
+                ) === 'true';
+
+            setUnitPickerOpen(!open);
+        });
+
+        dom.search?.addEventListener('input', () => {
+            state.unitFilterOpenGroups.clear();
+            renderUnitFilterList();
+        });
+
+        dom.clear?.addEventListener('click', () => {
+            state.unitFilterDraft.clear();
+            renderUnitFilterListPreservingScroll();
+            commitUnitFilterSelection();
+        });
+
+        dom.done?.addEventListener('click', () => {
+            setUnitPickerOpen(false);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (
+                dom.trigger.getAttribute(
+                    'aria-expanded'
+                ) === 'true'
+                && !dom.root.contains(event.target)
+            ) {
+                setUnitPickerOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (
+                event.key === 'Escape'
+                && dom.trigger.getAttribute(
+                    'aria-expanded'
+                ) === 'true'
+            ) {
+                setUnitPickerOpen(false);
+                dom.trigger.focus();
+            }
+        });
+    }
+
+    function populateOptions() {
+        const unitPrompt =
+            elements.unit.options[0].cloneNode(true);
+
+        elements.unit.replaceChildren(unitPrompt);
+
+        const units = state.options?.units || [];
+
+        units.forEach((unit) => {
             appendOption(
                 elements.unit,
                 unit.unit_id,
                 unitLabel(unit),
                 !unit.is_active
             );
-            if (unit.is_active) {
-                appendOption(elements.unitFilter, unit.unit_id, unitLabel(unit));
-            }
         });
 
+        initializeUnitFilterPicker();
         renderPositionOptions();
     }
 
@@ -1194,7 +1862,7 @@
         if (search) params.set('search', search);
         if (elements.status.value) params.set('active', elements.status.value);
         if (elements.unitFilter.value) {
-            params.set('unit_id', elements.unitFilter.value);
+            params.set('unit_ids', elements.unitFilter.value);
         }
         params.set('page', String(state.pagination.page));
         params.set('limit', '25');
