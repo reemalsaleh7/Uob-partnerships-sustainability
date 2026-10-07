@@ -6,6 +6,165 @@ require_once __DIR__ . '/includes/layout.php';
 
 workspaceHeader('Agreements', 'agreements');
 ?>
+<style>
+/* AGREEMENTS TABLE - CLEAN */
+
+.workspace-card{
+    overflow:hidden !important;
+}
+
+.table-responsive{
+    overflow-x:auto !important;
+}
+
+table{
+    width:100% !important;
+    border-collapse:collapse !important;
+}
+
+table th,
+table td{
+    padding:14px 16px !important;
+    vertical-align:middle !important;
+    border-bottom:1px solid #e7edf2 !important;
+}
+
+table th{
+    background:#f7f9fb !important;
+    color:#425a72 !important;
+    font-size:10px !important;
+    font-weight:900 !important;
+    text-transform:uppercase !important;
+}
+
+table td{
+    color:#173650 !important;
+    font-size:11px !important;
+    line-height:1.45 !important;
+}
+
+table td:nth-child(2){
+    min-width:220px;
+    font-weight:900;
+    color:#0b3157 !important;
+}
+
+table td:nth-child(3){
+    min-width:170px;
+}
+
+table td:nth-child(4){
+    min-width:90px;
+}
+
+table td:nth-child(5){
+    min-width:120px;
+}
+
+table td:nth-child(6){
+    min-width:130px;
+}
+
+table td:nth-child(7){
+    min-width:180px;
+}
+
+table td:nth-child(8){
+    min-width:130px;
+}
+
+/* View column */
+table th:last-child,
+table td:last-child{
+    transform:translateX(-1px);
+
+    width:85px !important;
+    min-width:85px !important;
+    text-align:center !important;
+}
+
+/* View button */
+table td:last-child a,
+table td:last-child button{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    min-width:58px;
+    padding:7px 11px;
+
+    background:#f6f9fc !important;
+    color:#1765a4 !important;
+
+    border:1px solid #d8e3ed !important;
+    border-radius:8px !important;
+
+    font-size:9px !important;
+    font-weight:900 !important;
+
+    text-decoration:none !important;
+}
+
+table tbody tr:hover{
+    background:#fafcfd !important;
+}
+/* ترتيب أعمدة Status / Origin / Relationship */
+
+table th:nth-child(4),
+table td:nth-child(4),
+table th:nth-child(5),
+table td:nth-child(5),
+table th:nth-child(6),
+table td:nth-child(6){
+    text-align:center !important;
+}
+
+/* نخلي محتوى الخلايا بالنص */
+table td:nth-child(4),
+table td:nth-child(5),
+table td:nth-child(6){
+    vertical-align:middle !important;
+}
+
+/* توحيد شكل الـ badges */
+table td:nth-child(4) .badge,
+table td:nth-child(5) .badge,
+table td:nth-child(6) .badge,
+table td:nth-child(4) span,
+table td:nth-child(5) span,
+table td:nth-child(6) span{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    min-height:36px !important;
+
+    padding:7px 12px !important;
+
+    border-radius:999px !important;
+
+    line-height:1.2 !important;
+    text-align:center !important;
+}
+
+/* Status أصغر شوي */
+table td:nth-child(4) .badge,
+table td:nth-child(4) span{
+    min-width:70px !important;
+}
+
+/* Origin */
+table td:nth-child(5) .badge,
+table td:nth-child(5) span{
+    min-width:110px !important;
+}
+
+/* Relationship */
+table td:nth-child(6) .badge,
+table td:nth-child(6) span{
+    min-width:110px !important;
+}
+</style>
 
 <section class="page-heading d-flex flex-column flex-lg-row justify-content-between gap-3">
     <div>

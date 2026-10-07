@@ -958,6 +958,72 @@ html[dir="ltr"] .sdgUnspecifiedCard{
     transition:none !important;
   }
 }
+/* =========================
+   UOB Recognitions - Simple Strip
+   ========================= */
+
+.uobRecognitions{
+  background:#ffffff;
+  padding:34px 0 40px;
+}
+
+.uobRecognitionsInner{
+  max-width:900px;
+  margin:0 auto;
+  padding:0 20px;
+}
+
+.uobRecognitionsTitle{
+  display:none;
+}
+
+.uobRecognitionsRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  flex-wrap:nowrap;
+}
+
+.uobRecognitionItem{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:auto;
+}
+
+.uobRecognitionItem img,
+.uobRecognitionItem.featured img{
+  width:180px;
+  height:180px;
+  max-width:none;
+  object-fit:contain;
+  display:block;
+
+  opacity:1;
+  transform:none !important;
+  filter:none !important;
+  transition:none !important;
+}
+
+.uobRecognitionItem:hover img,
+.uobRecognitionItem.featured:hover img{
+  transform:none !important;
+  filter:none !important;
+}
+
+@media(max-width:700px){
+  .uobRecognitionsRow{
+    flex-wrap:wrap;
+    gap:14px;
+  }
+
+  .uobRecognitionItem img,
+  .uobRecognitionItem.featured img{
+    width:95px;
+    height:95px;
+  }
+}
 </style>
 
 <section class="sdgPageHero">
@@ -1116,7 +1182,50 @@ html[dir="ltr"] .sdgUnspecifiedCard{
   </div>
 </section>
 
+<section class="uobRecognitions">
 
+  <div class="uobRecognitionsInner">
+
+    <div class="uobRecognitionsTitle">
+      <h2>University of Bahrain Recognitions</h2>
+      <p>Selected rankings and achievements</p>
+    </div>
+
+    <div class="uobRecognitionsRow">
+
+      <div class="uobRecognitionItem">
+        <img
+          src="assets/image/sdg/greenmetric.png"
+          alt="#1 in Bahrain - UI GreenMetric 2025"
+        >
+      </div>
+
+      <div class="uobRecognitionItem">
+        <img
+          src="assets/image/sdg/sdg4.png"
+          alt="#23 Worldwide - SDG 4"
+        >
+      </div>
+
+      <div class="uobRecognitionItem featured">
+        <img
+          src="assets/image/sdg/sdg17.png"
+          alt="#7 Worldwide - SDG 17"
+        >
+      </div>
+
+      <div class="uobRecognitionItem">
+        <img
+          src="assets/image/sdg/Top100-200.png"
+          alt="Top 101-200 - Sustainability Impact"
+        >
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
 
 <script>
 (function(){

@@ -92,26 +92,81 @@
         return metric;
     }
 
-    function workItem(title, detail, badge, href, module = '') {
-        const item = document.createElement('li');
-        item.className = `dashboard-list-item ${module ? `is-${module}` : ''}`.trim();
-        const copy = document.createElement('div');
-        const heading = document.createElement('strong');
-        heading.textContent = title;
-        const text = document.createElement('small');
-        text.textContent = detail;
-        copy.append(heading, text);
+    function workItem(
+    title,
+    detail,
+    badge,
+    href,
+    module = ''
+) {
 
-        const side = document.createElement(href ? 'a' : 'span');
-        if (href) side.href = href;
-        side.className = href
-            ? 'btn btn-sm btn-outline-primary align-self-center'
-            : 'align-self-center';
-        if (badge instanceof Node) side.append(badge);
-        else side.textContent = badge || 'Open';
-        item.append(copy, side);
-        return item;
+    const item = document.createElement('li');
+
+    item.className = [
+        'dashboard-list-item',
+        module ? `is-${module}` : ''
+    ].filter(Boolean).join(' ');
+
+
+    const copy = document.createElement('div');
+
+
+    let heading;
+
+
+    if (href) {
+
+        heading = document.createElement('a');
+
+        heading.href = href;
+
+        heading.className = 'dashboard-work-link';
+
+    } else {
+
+        heading = document.createElement('strong');
+
     }
+
+
+    heading.textContent = title;
+
+
+    const text = document.createElement('small');
+
+    text.textContent = detail;
+
+
+    copy.append(
+        heading,
+        text
+    );
+
+
+    const status = document.createElement('span');
+
+    status.className = 'dashboard-status-wrap';
+
+
+    if (badge instanceof Node) {
+
+        status.append(badge);
+
+    } else if (badge) {
+
+        status.textContent = badge;
+
+    }
+
+
+    item.append(
+        copy,
+        status
+    );
+
+
+    return item;
+}
 
     function emptyItem(message) {
         const empty = document.createElement('li');
@@ -143,8 +198,11 @@
 
         elements.greeting.textContent = `${timeGreeting}, ${firstName}`;
         elements.role.textContent = `${roleName(user)} · ${AgreementApi.primaryContext(user)}`;
-        elements.title.textContent = 'Agreements and Initiatives, together in one workspace.';
-        elements.description.textContent = 'See what needs your attention, follow both approval routes, and move University partnerships into measurable action.';
+        elements.title.textContent =
+    'Your partnerships workspace';
+
+elements.description.textContent =
+    'Manage agreements, initiatives, reviews, and updates from one place.';
     }
 
     function baseActions(user) {
