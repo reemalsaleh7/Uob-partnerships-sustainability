@@ -70,6 +70,9 @@ $dialog = workspaceSource(
 $workflowReview = workspaceSource(
     'uob-agreements/workspace/assets/js/workflow-review.js'
 );
+$workflowReviewPage = workspaceSource(
+    'uob-agreements/workspace/workflow-review.php'
+);
 $legalReview = workspaceSource(
     'uob-agreements/workspace/assets/js/legal-review.js'
 );
@@ -264,6 +267,23 @@ workspaceAssert(
         && str_contains($financeReview, 'agreementReviewUrl')
         && str_contains($agreementJs, "'SKIPPED'"),
     'Review return navigation or conditional Finance-stage display is incomplete'
+);
+workspaceAssert(
+    str_contains(
+        $workflowReviewPage,
+        "agreementDocumentsPanel('agreement_id', 'SUPPORTING')"
+    )
+        && str_contains(
+            $workflowReviewPage,
+            "'assets/js/agreement-documents.js'"
+        )
+        && !str_contains($workflowReview, 'documentsLoading')
+        && !str_contains($workflowReview, 'renderDocuments(')
+        && !str_contains(
+            $workflowReview,
+            'AgreementApi.documents(state.agreementId)'
+        ),
+    'Initial VP review still uses the retired duplicate document renderer'
 );
 workspaceAssert(
     str_contains($dashboard, 'data-dashboard-priorities')

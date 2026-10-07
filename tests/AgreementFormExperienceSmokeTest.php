@@ -50,6 +50,9 @@ $apiBoundary = agreementFormSource('api/index.php');
 $agreementController = agreementFormSource(
     'controllers/AgreementController.php'
 );
+$agreementRepository = agreementFormSource(
+    'repositories/AgreementRepository.php'
+);
 $clauseExtraction = agreementFormSource(
     'services/AgreementClauseExtractionService.php'
 );
@@ -383,6 +386,18 @@ agreementFormAssert(
             "showFeedback('Suggestions were applied"
         ),
     'Lifecycle boundaries, the media section, or local programme feedback are incorrect'
+);
+agreementFormAssert(
+    str_contains(
+        $agreementController,
+        "'signing_date', 'fixed_term_months', 'renewal_term_months'"
+    )
+        && str_contains($agreementRepository, "'fixed_term_months'")
+        && str_contains(
+            $agreementService,
+            'restoreMissingFixedTermMonths'
+        ),
+    'Fixed Agreement terms are not preserved or recovered before submission'
 );
 agreementFormAssert(
     preg_match(

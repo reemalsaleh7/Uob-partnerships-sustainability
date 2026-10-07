@@ -53,6 +53,23 @@
         updated: 'updated_at'
     };
 
+    const advancedFilters = UobAdvancedSearch.createFilterController({
+        root: '[data-lifecycle-search-filters]',
+        schema: searchSchema,
+        fields: [
+            { key: 'agreement', label: 'Agreement', placeholder: 'Enter an Agreement title or ID' },
+            { key: 'code', label: 'Agreement code', placeholder: 'Enter an Agreement code' },
+            { key: 'type', label: 'Request type', placeholder: 'For example, Renewal' },
+            { key: 'status', label: 'Status', placeholder: 'For example, Under review' },
+            { key: 'requester', label: 'Requested by', placeholder: 'Enter a person’s name' },
+            { key: 'start', label: 'Proposed start date', type: 'date' },
+            { key: 'end', label: 'Proposed end date', type: 'date' },
+            { key: 'termination', label: 'Termination details', placeholder: 'Enter a reason or date' },
+            { key: 'updated', label: 'Last updated', type: 'date' }
+        ],
+        onChange: render
+    });
+
     function cell(value) {
         const td = document.createElement('td');
         td.textContent = value ?? '—';
@@ -87,6 +104,7 @@
                 filters.search.value.trim(),
                 searchSchema
             )
+            && advancedFilters.matchesRules(request)
         );
     }
 
@@ -96,6 +114,7 @@
         empty.classList.toggle('d-none', visible.length !== 0);
         list.classList.toggle('d-none', requests.length === 0);
         count.textContent = `${visible.length} of ${requests.length} ${requests.length === 1 ? 'request' : 'requests'}`;
+        advancedFilters.refresh();
         rows.replaceChildren();
         visible.forEach((request) => {
                 const tr = document.createElement('tr');
@@ -130,6 +149,7 @@
         filters.type.value = '';
         filters.updatedFrom.value = '';
         filters.updatedTo.value = '';
+        advancedFilters.clearRules();
         render();
     }
 
