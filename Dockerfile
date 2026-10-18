@@ -17,7 +17,13 @@ RUN mkdir -p /var/www/html/uob-agreements/uploads \
     && chown -R www-data:www-data \
     /var/www/html/uob-agreements/uploads \
     /var/www/html/storage
-
+RUN printf '%s\n' \
+    'Alias /api /var/www/html/api' \
+    '<Directory /var/www/html/api>' \
+    'Require all granted' \
+    '</Directory>' \
+    > /etc/apache2/conf-available/uob-api.conf \
+    && a2enconf uob-api
 EXPOSE 80
 
 CMD ["apache2-foreground"]
