@@ -391,76 +391,130 @@ height: clamp(430px, 52vw, 700px);
     <div class="landing-underline mx-auto"></div>
 
     <style>
-      .clean-services-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 28px;
-        margin-top: 35px;
-      }
+.clean-services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 35px;
+}
 
-      .clean-service-card {
-        min-height: 310px;
-        background: #ffffff;
-        border: 1px solid rgba(230,235,242,.95);
-        border-radius: 24px;
-        padding: 38px 30px;
-        text-align: center;
-        text-decoration: none !important;
-        box-shadow: 0 14px 35px rgba(2,8,23,.08);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        transition: .25s ease;
-      }
+.clean-services-grid .clean-service-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 290px;
+  padding: 38px 30px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid #e2e7ee;
+  border-radius: 22px;
+  background: #fff;
+  text-align: start;
+  text-decoration: none;
+  box-shadow: 0 12px 30px #10254008;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
 
-      .clean-service-card:hover {
-        transform: translateY(-7px);
-        box-shadow: 0 22px 50px rgba(2,8,23,.14);
-      }
+/* خط ذهبي يتمدد عند مرور الماوس */
+.clean-service-card::before {
+  content: "";
+  width: 42px;
+  height: 4px;
+  margin-bottom: 28px;
+  border-radius: 4px;
+  background: #c6a24b;
+  transition: width .3s ease;
+}
 
-      .clean-service-icon {
-        width: 78px;
-        height: 78px;
-        border-radius: 50%;
-        background: #0b1f3a;
-        color: #faf8f6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 26px;
-        font-weight: 950;
-        margin-bottom: 24px;
-        box-shadow: 0 12px 28px rgba(11,31,58,.20);
-      }
+/* تفصيل بصري خفيف في زاوية الكرت */
+.clean-service-card::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -55px;
+  bottom: -65px;
+  width: 180px;
+  height: 180px;
+  border: 26px solid #c6a24b0d;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
 
-      .clean-service-card h3 {
-        color: #0b1f3a;
-        font-size: 26px;
-        font-weight: 950;
-        margin-bottom: 16px;
-        line-height: 1.4;
-      }
+.clean-services-grid .clean-service-card h3 {
+  margin: 0 0 16px;
+  color: #102540;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.5;
+}
 
-      .clean-service-card p {
-        color: #334155;
-        font-size: 17px;
-        font-weight: 800;
-        line-height: 1.9;
-        margin: 0;
-      }
+.clean-services-grid .clean-service-card p {
+  margin: 0;
+  color: #526175;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.9;
+}
 
-      @media (max-width: 992px) {
-        .clean-services-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
+/* تمييز كرت الاتفاقيات */
+.clean-services-grid .clean-service-card:nth-child(2) {
+  background: linear-gradient(135deg, #173957, #0b1f3a);
+  border-color: #173957;
+}
+
+.clean-services-grid .clean-service-card:nth-child(2) h3 {
+  color: #fff;
+}
+
+.clean-services-grid .clean-service-card:nth-child(2) p {
+  color: #dce5ef;
+}
+
+.clean-service-card:nth-child(2)::after {
+  border-color: #ffffff09;
+}
+
+.clean-services-grid .clean-service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 35px #10254014;
+}
+
+.clean-service-card:hover::before,
+.clean-service-card:focus-visible::before {
+  width: 85px;
+}
+
+.clean-service-card:focus-visible {
+  outline: 3px solid #c6a24b;
+  outline-offset: 4px;
+}
+
+@media (max-width: 850px) {
+  .clean-services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clean-services-grid .clean-service-card {
+    min-height: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clean-services-grid .clean-service-card,
+  .clean-service-card::before {
+    transition: none;
+  }
+
+  .clean-services-grid .clean-service-card:hover {
+    transform: none;
+  }
+}
+</style>
 
     <div class="clean-services-grid">
 
       <a class="clean-service-card" href="sdg.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-        <div class="clean-service-icon">SDG</div>
         <h3><?= h(tl('عرض SDGs والأثر', 'SDG Reporting & Impact')) ?></h3>
         <p>
           <?= h(tl(
@@ -471,7 +525,6 @@ height: clamp(430px, 52vw, 700px);
       </a>
 
       <a class="clean-service-card" href="agreements.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-        <div class="clean-service-icon">AGR</div>
         <h3><?= h(tl('دليل الاتفاقيات والشراكات', 'Partnerships & Agreements')) ?></h3>
         <p>
           <?= h(tl(
@@ -482,7 +535,6 @@ height: clamp(430px, 52vw, 700px);
       </a>
 
       <a class="clean-service-card" href="initiatives.php?lang=<?= h($_SESSION['lang'] ?? 'ar') ?>">
-        <div class="clean-service-icon">INI</div>
         <h3><?= h(tl('مكتبة المبادرات', 'Initiatives Library')) ?></h3>
         <p>
           <?= h(tl(
@@ -599,25 +651,7 @@ $chart_country_values = array_values($topCountries);
 
 
 
-      <div class="ins-card uob-reveal">
-        <div class="ins-head">
-          <div class="ins-title"><?= h(tl('توزيع الاتفاقيات حسب الحالة', 'Agreements by Status')) ?></div>
-          <div class="ins-sub"><?= h(tl('سارية/مقترحة/غير محددة', 'Active / Proposed / Undefined')) ?></div>
-        </div>
-        <div class="ins-body">
-          <canvas id="statusChart"></canvas>
-        </div>
-      </div>
-
-      <div class="ins-card uob-reveal">
-        <div class="ins-head">
-          <div class="ins-title"><?= h(tl('توزيع الاتفاقيات حسب النوع', 'Agreements by Type')) ?></div>
-          <div class="ins-sub"><?= h(tl('مذكرة تفاهم/إطار عمل...', 'MOU / Framework ...')) ?></div>
-        </div>
-        <div class="ins-body">
-          <canvas id="typeChart"></canvas>
-        </div>
-      </div>
+      
 
       <div class="ins-card ins-wide uob-reveal">
         <div class="ins-head">
